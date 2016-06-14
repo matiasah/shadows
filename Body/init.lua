@@ -8,7 +8,7 @@ assert(love.filesystem.load(Path.."/Circle.lua"))(Shadows)
 assert(love.filesystem.load(Path.."/Polygon.lua"))(Shadows)
 
 Body.__index = Body
-Body.x, Body.y, Body.z = 0, 0, 0
+Body.x, Body.y, Body.z = 0, 0, 1
 Body.Angle = 0
 
 function Shadows.CreateBody(World)
@@ -18,6 +18,20 @@ function Shadows.CreateBody(World)
 	World:AddBody(Body)
 	
 	return Body
+end
+
+function Body:Draw()
+	if self.Body then
+		for _, Fixture in pairs(self.Body:getFixtureList()) do
+			local Structure = Shadows.Shape[Fixture:getShape():type()]
+			if Structure then
+				Structure.Draw(Fixture)
+			end
+		end
+	end
+	for _, Shape in pairs(self.Shapes) do
+		Shape:Draw()
+	end
 end
 
 function Body:AddShape(Shape)
@@ -81,24 +95,23 @@ function Body:GetPosition()
 end
 
 function Body:GenerateShadows(Light)
-	local Shadows = {}
+	local Shapes = {}
 	if self.Body then
 		for _, Fixture in pairs(self.Body:getFixtureList()) do
-			local Shape = Fixture:getShape()
-			local Structure = Shadows.Shape[Shape:type()]
+			local Structure = Shadows.Shape[Fixture:getShape():type()]
 			if Structure then
-				for _, Shadow in pairs(Structure.GenerateShadows(Shape, self.Body, Light)) do
-					table.insert(Shadows, Shadow)
+				for _, Shadow in pairs(Structure.GenerateShadows(Fixture, self, Light)) do
+					table.insert(Shapes, Shadow)
 				end
 			end
 		end
-		return Shadows
+		return Shapes
 	end
 	
 	for _, Shape in pairs(self.Shapes) do
 		for _, Shadow in pairs(Shape:GenerateShadows(self, Light)) do
-			table.insert(Shadows, Shadow)
+			table.insert(Shapes, Shadow)
 		end
 	end
-	return Shadows
+	return Shapes
 end

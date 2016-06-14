@@ -17,31 +17,31 @@ function Shadows.CreatePolygon(Body, ...)
 	return Polygon
 end
 
+function Polygon:Draw()
+	love.graphics.polygon("fill", unpack(Polygon.GetVertices(self)))
+end
+
 function Polygon:GetVertices()
-	local Vertices = {}
-	for i = 1, #self.Vertices, 2 do
-		local vx, vy = self.Vertices[i], self.Vertices[i + 1]
-		local Length = math.sqrt(vx^2 + vy^2)
-		local Heading = math.atan2(vy, vx)
-		
-		Heading = Heading + math.rad(self.Body.Angle)
-		table.insert(Vertices, self.Body.x + math.cos(Heading) * Length)
-		table.insert(Vertices, self.Body.y + math.sin(Heading) * Length)
+	if type(self) == "table" then
+		local Vertices = {}
+		for i = 1, #self.Vertices, 2 do
+			local vx, vy = self.Vertices[i], self.Vertices[i + 1]
+			local Length = math.sqrt(vx^2 + vy^2)
+			local Heading = math.atan2(vy, vx)
+			
+			Heading = Heading + math.rad(self.Body.Angle)
+			table.insert(Vertices, self.Body.x + math.cos(Heading) * Length)
+			table.insert(Vertices, self.Body.y + math.sin(Heading) * Length)
+		end
+		return Vertices
 	end
-	return Vertices
+	return {self:getBody():getWorldPoints(self:getShape():getPoints())}
 end
 
 function Polygon:GenerateShadows(Body, Light)
 	local Shapes = {}
-	local ShadowsLength = 99999999
 	
-	local Vertices
-	if type(self) == "table" then
-		Vertices = self:GetVertices()
-	else
-		Vertices = Body:getWorldPoints(self:getPoints())
-	end
-	
+	local Vertices = Polygon.GetVertices(self)
 	local VerticesLength = #Vertices
 	local VisibleEdge = {}
 	
@@ -60,7 +60,7 @@ function Polygon:GenerateShadows(Body, Light)
 			Vertices[Index] - Light.x;
 			Vertices[Index + 1] - Light.y;
 		}
-			
+		
 		table.insert(VisibleEdge, (Normal[1] * Direction[1] + Normal[2] * Direction[2]) > 0)
 	end
 
@@ -73,7 +73,7 @@ function Polygon:GenerateShadows(Body, Light)
 		if PrevIndex <= 0 then
 			PrevIndex = VisibleEdges + PrevIndex
 		end
-			
+		
 		if not VisibleEdge[PrevIndex] and VisibleEdge[Index] then
 			FirstVertex = Index
 			
@@ -82,8 +82,8 @@ function Polygon:GenerateShadows(Body, Light)
 				Vertices[Index * 2];
 			}
 			
-			local Length = ShadowsLength
-			if Body.z and Light.z and Light.z > Body.z then
+			local Length = Shadows.MaxLength
+			if Light.z and Light.z > Body.z then
 				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 			end
 			
@@ -144,8 +144,8 @@ function Polygon:GenerateShadows(Body, Light)
 			table.insert(Geometry, Vertex[1])
 			table.insert(Geometry, Vertex[2])
 			
-			local Length = ShadowsLength
-			if Body.z and Light.z and Light.z > Body.z then
+			local Length = Shadows.MaxLength
+			if Light.z and Light.z > Body.z then
 				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 			end
 			
@@ -172,8 +172,8 @@ function Polygon:GenerateShadows(Body, Light)
 					Vertices[Index * 2];
 				}
 				
-				local Length = ShadowsLength
-				if Body.z and Light.z and Light.z > Body.z then
+				local Length = Shadows.MaxLength
+				if Light.z and Light.z > Body.z then
 					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 				end
 				
@@ -198,8 +198,8 @@ function Polygon:GenerateShadows(Body, Light)
 					Vertices[Index * 2];
 				}
 				
-				local Length = ShadowsLength
-				if Body.z and Light.z and Light.z > Body.z then
+				local Length = Shadows.MaxLength
+				if Light.z and Light.z > Body.z then
 					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 				end
 				
