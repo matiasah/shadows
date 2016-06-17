@@ -1,8 +1,6 @@
 local Shadows = ...
 local Polygon = {}
 
-Shadows.Shape.PolygonShape = Polygon
-
 Polygon.__index = Polygon
 Polygon.Angle = 0
 
@@ -17,31 +15,32 @@ function Shadows.CreatePolygon(Body, ...)
 	return Polygon
 end
 
+function Polygon:Remove()
+	self.Body.Shapes[self.ID] = nil
+end
+
 function Polygon:Draw()
-	love.graphics.polygon("fill", unpack(Polygon.GetVertices(self)))
+	love.graphics.polygon("fill", unpack(self:GetVertices()))
 end
 
 function Polygon:GetVertices()
-	if type(self) == "table" then
-		local Vertices = {}
-		for i = 1, #self.Vertices, 2 do
-			local vx, vy = self.Vertices[i], self.Vertices[i + 1]
-			local Length = math.sqrt(vx^2 + vy^2)
-			local Heading = math.atan2(vy, vx)
-			
-			Heading = Heading + math.rad(self.Body.Angle)
-			table.insert(Vertices, self.Body.x + math.cos(Heading) * Length)
-			table.insert(Vertices, self.Body.y + math.sin(Heading) * Length)
-		end
-		return Vertices
+	local Vertices = {}
+	for i = 1, #self.Vertices, 2 do
+		local vx, vy = self.Vertices[i], self.Vertices[i + 1]
+		local Length = math.sqrt(vx^2 + vy^2)
+		local Heading = math.atan2(vy, vx)
+		
+		Heading = Heading + math.rad(self.Body.Angle)
+		table.insert(Vertices, self.Body.x + math.cos(Heading) * Length)
+		table.insert(Vertices, self.Body.y + math.sin(Heading) * Length)
 	end
-	return {self:getBody():getWorldPoints(self:getShape():getPoints())}
+	return Vertices
 end
 
 function Polygon:GenerateShadows(Body, Light)
 	local Shapes = {}
 	
-	local Vertices = Polygon.GetVertices(self)
+	local Vertices = self:GetVertices()
 	local VerticesLength = #Vertices
 	local VisibleEdge = {}
 	

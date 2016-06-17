@@ -34,3 +34,7 @@ end
 function Room:GetColor()
 	return self.R, self.G, self.B, self.A
 end
+
+function Room:Remove()
+	self.World.Rooms[self.ID] = nil
+end

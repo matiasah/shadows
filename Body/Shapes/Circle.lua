@@ -1,8 +1,6 @@
 local Shadows = ...
 local Circle = {}
 
-Shadows.Shape.CircleShape = Circle
-
 Circle.__index = Circle
 
 function Shadows.CreateCircle(Body, x, y, Radius)
@@ -17,40 +15,32 @@ function Shadows.CreateCircle(Body, x, y, Radius)
 	return Circle
 end
 
+function Circle:Remove()
+	self.Body.Shapes[self.ID] = nil
+end
+
 function Circle:Draw()
-	if type(self) == "table" then
-		local Heading = math.atan2(self.y, self.x) + math.rad(self.Body.Angle)
-		local Length = math.sqrt(self.x^2 + self.y^2)
-		return love.graphics.circle("fill", self.Body.x + math.cos(Heading) * Length, self.Body.y + math.sin(Heading) * Length, self.Radius)
-	end
-	local Body = self:getBody()
-	local Shape = self:getShape()
-	local x, y = Body:getWorldPoint(Shape:getPoint())
-	love.graphics.circle("fill", x, y, Shape:getRadius())
+	local Heading = math.atan2(self.y, self.x) + math.rad(self.Body.Angle)
+	local Length = math.sqrt(self.x^2 + self.y^2)
+	return love.graphics.circle("fill", self.Body.x + math.cos(Heading) * Length, self.Body.y + math.sin(Heading) * Length, self.Radius)
 end
 
 function Circle:GetPosition()
-	if type(self) == "table" then
-		if self.x ~= 0 or self.y ~= 0 then
-			local Heading = math.atan2(self.y, self.x) + math.rad(self.Body.Angle)
-			local Length = math.sqrt(self.x^2 + self.y^2)
-			return self.Body.x + math.cos(Heading) * Length, self.Body.y + math.sin(Heading) * Length
-		end
-		return self.Body.x, self.Body.y
+	if self.x ~= 0 or self.y ~= 0 then
+		local Heading = math.atan2(self.y, self.x) + math.rad(self.Body.Angle)
+		local Length = math.sqrt(self.x^2 + self.y^2)
+		return self.Body.x + math.cos(Heading) * Length, self.Body.y + math.sin(Heading) * Length
 	end
-	return self:getBody():getWorldPoint(self:getShape():getPoint())
+	return self.Body.x, self.Body.y
 end
 
 function Circle:GetRadius()
-	if type(self) == "table" then
-		return self.Radius
-	end
-	return self:getShape():getRadius()
+	return self.Radius
 end
 
 function Circle:GenerateShadows(Body, Light)
-	local x, y = Circle.GetPosition(self)
-	local Radius = Circle.GetRadius(self)
+	local x, y = self:GetPosition()
+	local Radius = self:GetRadius()
 	
 	local Shapes = {}
 	local Distance = math.sqrt((x - Light.x)^2 + (y - Light.y)^2)

@@ -11,16 +11,15 @@ function Shadows.CreateWorld(Width, Height)
 	World.BodyCanvas = love.graphics.newCanvas(Width, Height)
 	
 	World.Filter = {
-		Blur = {Shader = Shadows.BlurShader, Active = true},
 		Bloom = {Shader = Shadows.BloomShader, Active = true},
+		Blur = {Shader = Shadows.BlurShader, Active = true},
+		Aberration = {Shader = Shadows.AberrationShader, Active = true},
+		--Constrast = {Shader = Shadows.ConstrastShader, Active = true},
 	}
 	
 	for FilterName, Filter in pairs(World.Filter) do
 		if Filter.Active then
 			Filter.Canvas = love.graphics.newCanvas(World.Canvas:getDimensions())
-		end
-		if Filter.Shader then
-			Filter.Shader:send("size", {World.Canvas:getDimensions()})
 		end
 	end
 	
@@ -65,25 +64,40 @@ function World:SetFilter(Name, Active)
 	end
 end
 
-function World:AddBody(Body)
+function World:SetPhysics(PhysicsWorld)
+	self.Physics = PhysicsWorld
+end
+
+function World:AddBody(Body, ID)
+	local ID = ID or #self.Bodies + 1
 	Body.World = self
+	Body.ID = ID
+	
 	self.Changed = true
 	self.UpdateCanvas = true
-	table.insert(self.Bodies, Body)
+	self.Bodies[ID] = Body
 end
 
 function World:AddLight(Light)
+	local ID = #self.Lights + 1
 	Light.World = self
 	Light.Changed = true
+	Light.ID = ID
+	
 	self.UpdateCanvas = true
-	table.insert(self.Lights, Light)
+	self.Lights[ID] = Light
+	return Light
 end
 
 function World:AddStar(Star)
+	local ID = #self.Stars + 1
 	Star.World = self
 	Star.Changed = true
+	Star.ID = ID
+	
 	self.UpdateCanvas = true
-	table.insert(self.Stars, Star)
+	self.Stars[ID] = Star
+	return Star
 end
 
 function World:AddRoom(Room)
@@ -122,10 +136,22 @@ function World:GetColor()
 end
 
 function World:update()
-	for Index, Body in pairs(self.Bodies) do
-		Body:Update()
+	if self.Physics then
+		for _, Body in pairs(self.Physics:getBodyList()) do
+			if not self.Bodies[Body] then
+				Shadows.CreateBody(self, Body).Body = Body
+			end
+		end
 	end
 	
+	for Index, Body in pairs(self.Bodies) do
+		if Body.Body and Body.Body:isDestroyed() then
+			self.Bodies[Index] = nil
+		else
+			Body:Update()
+		end
+	end
+
 	if self.Changed then
 		love.graphics.setCanvas(self.BodyCanvas)
 		love.graphics.clear(0, 0, 0, 255)
@@ -154,7 +180,7 @@ function World:update()
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		for _, Light in pairs(self.Stars) do
-			love.graphics.draw(Light.Canvas, Light.x - Light.Radius, Light.y - Light.Radius)
+			love.graphics.draw(Light.Canvas, math.max(Light.x - Light.Radius, 0), math.max(Light.y - Light.Radius, 0))
 		end
 		
 		love.graphics.setBlendMode("darken", "premultiplied")
@@ -165,7 +191,7 @@ function World:update()
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		for _, Light in pairs(self.Lights) do
-			love.graphics.draw(Light.Canvas, Light.x - Light.Radius, Light.y - Light.Radius)
+			love.graphics.draw(Light.Canvas, math.max(Light.x - Light.Radius, 0), math.max(Light.y - Light.Radius, 0))
 		end
 		
 		love.graphics.setBlendMode("alpha", "alphamultiply")

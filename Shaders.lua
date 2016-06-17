@@ -1,7 +1,7 @@
 local Shadows = ...
 
 Shadows.BlurShader = love.graphics.newShader [[
-	extern number radius = 2;
+	extern number radius = 1;
 	extern vec2 size;
 
 	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 pc)
@@ -18,30 +18,53 @@ Shadows.BlurShader = love.graphics.newShader [[
 		}
 		return color / ((2.0 * radius + 1.0) * (2.0 * radius + 1.0));
 	}
-]]
+]]; Shadows.BlurShader:send("size", {love.graphics.getDimensions()})
 
 Shadows.BloomShader = love.graphics.newShader [[
 	extern vec2 size;
-	extern int samples = 2; // pixels per axis; higher = bigger glow, worse performance
-	extern float quality = 4; // lower = smaller glow, better quality
+	extern int samples = 4; // pixels per axis; higher = bigger glow, worse performance
+	extern float quality = 2; // lower = smaller glow, better quality
 
-	vec4 effect(vec4 colour, Image tex, vec2 tc, vec2 sc)
-	{
-	  vec4 source = Texel(tex, tc);
-	  vec4 sum = vec4(0);
-	  int diff = (samples - 1) / 2;
-	  vec2 sizeFactor = vec2(1) / size * quality;
+	vec4 effect(vec4 colour, Image tex, vec2 tc, vec2 sc){
+		vec4 source = Texel(tex, tc);
+		vec4 sum = vec4(0);
+		int diff = (samples - 1) / 2;
+		vec2 sizeFactor = vec2(1) / size * quality;
 	  
-	  for (int x = -diff; x <= diff; x++)
-	  {
-		 for (int y = -diff; y <= diff; y++)
-		 {
-			vec2 offset = vec2(x, y) * sizeFactor;
-			sum += Texel(tex, tc + offset);
-		 }
-	  }
-	  
-	  return ((sum / (samples * samples)) + source) * colour;
+		for (int x = -diff; x <= diff; x++){
+			for (int y = -diff; y <= diff; y++)
+			{
+				vec2 offset = vec2(x, y) * sizeFactor;
+				sum += Texel(tex, tc + offset);
+			}
+		}
+		return ((sum / (samples * samples)) + source) * colour;
+	}
+]]; Shadows.BloomShader:send("size", {love.graphics.getDimensions()})
+
+-- https://love2d.org/forums/viewtopic.php?t=81014#p189754
+Shadows.AberrationShader = love.graphics.newShader([[
+	extern number aberration = 0.003;
+
+	vec4 effect(vec4 col, Image texture, vec2 texturePos, vec2 screenPos){
+		vec2 coords = texturePos;
+		vec2 offset = vec2(aberration, 0);
+
+		vec4 red = texture2D(texture , coords - offset);
+		vec4 green = texture2D(texture, coords);
+		vec4 blue = texture2D(texture, coords + offset);
+
+		vec4 finalColor = vec4(red.r, green.g, blue.b, 1.0f);
+		return finalColor;
+	}
+]])
+
+-- Light vs Shadow shader
+Shadows.ConstrastShader = love.graphics.newShader [[
+	vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords){
+		vec3 col = Texel(texture, texture_coords).rgb * 2.0;
+		col *= col;
+		return vec4(col, 1.0);
 	}
 ]]
 
