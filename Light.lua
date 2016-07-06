@@ -45,21 +45,8 @@ end
 
 function Light:Update()
 	if self.Changed or self.World.Changed then
-		local Translation = {
-			self.x - self.Radius;
-			self.y - self.Radius;
-		}
-		local LimitedTranslation = {
-			math.min(math.max(Translation[1], 0), self.World.Canvas:getWidth() - self.Radius * 2);
-			math.min(math.max(Translation[2], 0), self.World.Canvas:getHeight() - self.Radius * 2);
-		}
-		local OffsetTranslation = {
-			LimitedTranslation[1] - Translation[1];
-			LimitedTranslation[2] - Translation[2];
-		}
-		
 		love.graphics.setCanvas(self.ShadowCanvas)
-		love.graphics.translate(-LimitedTranslation[1], -LimitedTranslation[2])
+		love.graphics.translate(self.Radius - self.x, self.Radius - self.y)
 		love.graphics.clear(255, 255, 255, 255)
 		
 		love.graphics.setBlendMode("alpha", "alphamultiply")
@@ -79,11 +66,11 @@ function Light:Update()
 		if self.Image then
 			love.graphics.setBlendMode("lighten", "premultiplied")
 			love.graphics.setColor(self.R, self.G, self.B, self.A)
-			love.graphics.draw(self.Image, self.Radius - OffsetTranslation[1], self.Radius - OffsetTranslation[2])
+			love.graphics.draw(self.Image, self.Radius, self.Radius)
 		else
 			Shadows.LightShader:send("LightColor", {self.R/255, self.G/255, self.B/255})
 			Shadows.LightShader:send("LightRadius", self.Radius)
-			Shadows.LightShader:send("Center", {self.Radius - OffsetTranslation[1], self.Radius - OffsetTranslation[2], self.z})
+			Shadows.LightShader:send("Center", {self.Radius, self.Radius, self.z})
 			
 			local Arc = math.rad(self.Arc/2)
 			local Angle = math.rad(self.Angle) - math.pi/2
@@ -91,7 +78,7 @@ function Light:Update()
 			love.graphics.setShader(Shadows.LightShader)
 			love.graphics.setBlendMode("alpha")
 			love.graphics.setColor(255, 255, 255, self.A)
-			love.graphics.arc("fill", self.Radius - OffsetTranslation[1], self.Radius - OffsetTranslation[2], self.Radius, Angle - Arc, Angle + Arc)
+			love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
 			love.graphics.setShader()
 		end
 		

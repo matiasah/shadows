@@ -180,7 +180,7 @@ function World:update()
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		for _, Light in pairs(self.Stars) do
-			love.graphics.draw(Light.Canvas, math.max(Light.x - Light.Radius, 0), math.max(Light.y - Light.Radius, 0))
+			love.graphics.draw(Light.Canvas, Light.x - Light.Radius, Light.y - Light.Radius)
 		end
 		
 		love.graphics.setBlendMode("darken", "premultiplied")
@@ -191,7 +191,7 @@ function World:update()
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		for _, Light in pairs(self.Lights) do
-			love.graphics.draw(Light.Canvas, math.max(Light.x - Light.Radius, 0), math.max(Light.y - Light.Radius, 0))
+			love.graphics.draw(Light.Canvas, Light.x - Light.Radius, Light.y - Light.Radius)
 		end
 		
 		love.graphics.setBlendMode("alpha", "alphamultiply")
