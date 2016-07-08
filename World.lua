@@ -68,6 +68,10 @@ function World:SetPhysics(PhysicsWorld)
 	self.Physics = PhysicsWorld
 end
 
+function World:GetPhysics()
+	return self.Physics
+end
+
 function World:AddBody(Body, ID)
 	local ID = ID or #self.Bodies + 1
 	Body.World = self
