@@ -23,6 +23,10 @@ function Polygon:Draw()
 	love.graphics.polygon("fill", unpack(self:GetVertices()))
 end
 
+function Polygon:SetVertices(...)
+	self.Vertices = {...}
+end
+
 function Polygon:GetVertices()
 	local Vertices = {}
 	for i = 1, #self.Vertices, 2 do

@@ -19,10 +19,32 @@ function Circle:Remove()
 	self.Body.Shapes[self.ID] = nil
 end
 
+function Circle:SetRadius(Radius)
+	if self.Radius ~= Radius then
+		self.Radius = Radius
+		self.Body.World.Changed = true
+	end
+end
+
+function Circle:GetRadius()
+	return self.Radius
+end
+
 function Circle:Draw()
 	local Heading = math.atan2(self.y, self.x) + math.rad(self.Body.Angle)
 	local Length = math.sqrt(self.x^2 + self.y^2)
 	return love.graphics.circle("fill", self.Body.x + math.cos(Heading) * Length, self.Body.y + math.sin(Heading) * Length, self.Radius)
+end
+
+function Circle:SetPosition(x, y)
+	if self.x ~= x then
+		self.x = x
+		self.Body.World.Changed = true
+	end
+	if self.y ~= y then
+		self.y = y
+		self.Body.World.Changed = true
+	end
 end
 
 function Circle:GetPosition()
@@ -32,10 +54,6 @@ function Circle:GetPosition()
 		return self.Body.x + math.cos(Heading) * Length, self.Body.y + math.sin(Heading) * Length
 	end
 	return self.Body.x, self.Body.y
-end
-
-function Circle:GetRadius()
-	return self.Radius
 end
 
 function Circle:GenerateShadows(Body, Light)
