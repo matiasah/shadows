@@ -1,6 +1,6 @@
 # Shädows
 A Shadows & Lights engine for löve
-# Wiki
+### Wiki
 https://github.com/Starkkz/shadows/wiki
-# Issues
+### Issues
 https://github.com/Starkkz/shadows/issues
