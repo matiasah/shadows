@@ -14,7 +14,6 @@ function Shadows.CreateWorld(Width, Height)
 		Bloom = {Shader = Shadows.BloomShader, Active = true},
 		Blur = {Shader = Shadows.BlurShader, Active = true},
 		Aberration = {Shader = Shadows.AberrationShader, Active = true},
-		--Constrast = {Shader = Shadows.ConstrastShader, Active = true},
 	}
 	
 	for FilterName, Filter in pairs(World.Filter) do
