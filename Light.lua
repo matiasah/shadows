@@ -36,8 +36,29 @@ end
 function Light:GenerateShadows()
 	local Shadows = {}
 	for _, Body in pairs(self.World.Bodies) do
-		for _, Shadow in pairs(Body:GenerateShadows(self)) do
-			table.insert(Shadows, Shadow)
+		if Body.Body then
+			for _, Fixture in pairs(Body.Body:getFixtureList()) do
+				local Shape = Fixture:getShape()
+				if Shape.GenerateShadows then
+					local Radius = self.Radius + Shape:GetRadius(Body)
+					local x, y = Shape:GetPosition(Body)
+					if (x - self.x)^2 + (y - self.y)^2 < Radius * Radius then
+						for _, Shadow in pairs(Shape:GenerateShadows(Body, self)) do
+							table.insert(Shadows, Shadow)
+						end
+					end
+				end
+			end
+		else
+			for _, Shape in pairs(Body.Shapes) do
+				local Radius = self.Radius + Shape:GetRadius()
+				local x, y = Shape:GetPosition()
+				if (x - self.x)^2 + (y - self.y)^2 < Radius * Radius then
+					for _, Shadow in pairs(Shape:GenerateShadows(Body, self)) do
+						table.insert(Shadows, Shadow)
+					end
+				end
+			end
 		end
 	end
 	return Shadows

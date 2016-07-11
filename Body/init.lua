@@ -109,33 +109,3 @@ function Body:GetPosition()
 	end
 	return self.x, self.y, self.z
 end
-
-function Body:GenerateShadows(Light)
-	local Shapes = {}
-	if self.Body then
-		for _, Fixture in pairs(self.Body:getFixtureList()) do
-			local Shape = Fixture:getShape()
-			if Shape.GenerateShadows then
-				local Radius = Light.Radius + Shape:GetRadius(self)
-				local x, y = Shape:GetPosition(self)
-				if (x - Light.x)^2 + (y - Light.y)^2 < Radius * Radius then
-					for _, Shadow in pairs(Shape:GenerateShadows(self, Light)) do
-						table.insert(Shapes, Shadow)
-					end
-				end
-			end
-		end
-		return Shapes
-	end
-	
-	for _, Shape in pairs(self.Shapes) do
-		local Radius = Light.Radius + Shape:GetRadius()
-		local x, y = Shape:GetPosition()
-		if (x - Light.x)^2 + (y - Light.y)^2 < Radius * Radius then
-			for _, Shadow in pairs(Shape:GenerateShadows(self, Light)) do
-				table.insert(Shapes, Shadow)
-			end
-		end
-	end
-	return Shapes
-end

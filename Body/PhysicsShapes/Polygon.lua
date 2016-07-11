@@ -70,6 +70,11 @@ function Polygon:GenerateShadows(Body, Light)
 				Vertex[1] - Light.x;
 				Vertex[2] - Light.y;
 			}
+			
+			--local Heading = math.atan2(Direction[2], Direction[1])
+			--Direction[1] = math.cos(Heading + math.rad(5))
+			--Direction[2] = math.sin(Heading + math.rad(5))
+			
 			table.insert(Geometry, Vertex[1] + Direction[1] * Length)
 			table.insert(Geometry, Vertex[2] + Direction[2] * Length)
 			
@@ -132,6 +137,11 @@ function Polygon:GenerateShadows(Body, Light)
 				Vertex[1] - Light.x;
 				Vertex[2] - Light.y;
 			}
+			
+			--local Heading = math.atan2(Direction[2], Direction[1])
+			--Direction[1] = math.cos(Heading - math.rad(5))
+			--Direction[2] = math.sin(Heading - math.rad(5))
+			
 			table.insert(Geometry, Vertex[1] + Direction[1] * Length)
 			table.insert(Geometry, Vertex[2] + Direction[2] * Length)
 			break
