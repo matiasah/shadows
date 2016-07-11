@@ -56,11 +56,10 @@ function Circle:GetPosition()
 	return self.Body.x, self.Body.y
 end
 
-function Circle:GenerateShadows(Body, Light)
+function Circle:GenerateShadows(Shapes, Body, Light)
 	local x, y = self:GetPosition()
 	local Radius = self:GetRadius()
-	
-	local Shapes = {}
+
 	local Distance = math.sqrt((x - Light.x)^2 + (y - Light.y)^2)
 	if Distance > Radius then
 		local Heading = math.atan2(Light.x - x, y - Light.y) + math.pi/2
@@ -93,5 +92,4 @@ function Circle:GenerateShadows(Body, Light)
 			table.insert(Shapes, Circle)
 		end
 	end
-	return Shapes
 end

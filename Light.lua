@@ -34,7 +34,7 @@ function Shadows.CreateStar(World, Radius)
 end
 
 function Light:GenerateShadows()
-	local Shadows = {}
+	local Shapes = {}
 	for _, Body in pairs(self.World.Bodies) do
 		if Body.Body then
 			for _, Fixture in pairs(Body.Body:getFixtureList()) do
@@ -43,9 +43,7 @@ function Light:GenerateShadows()
 					local Radius = self.Radius + Shape:GetRadius(Body)
 					local x, y = Shape:GetPosition(Body)
 					if (x - self.x)^2 + (y - self.y)^2 < Radius * Radius then
-						for _, Shadow in pairs(Shape:GenerateShadows(Body, self)) do
-							table.insert(Shadows, Shadow)
-						end
+						Shape:GenerateShadows(Shapes, Body, self)
 					end
 				end
 			end
@@ -54,14 +52,12 @@ function Light:GenerateShadows()
 				local Radius = self.Radius + Shape:GetRadius()
 				local x, y = Shape:GetPosition()
 				if (x - self.x)^2 + (y - self.y)^2 < Radius * Radius then
-					for _, Shadow in pairs(Shape:GenerateShadows(Body, self)) do
-						table.insert(Shadows, Shadow)
-					end
+					Shape:GenerateShadows(Shapes, Body, self)
 				end
 			end
 		end
 	end
-	return Shadows
+	return Shapes
 end
 
 function Light:Update()

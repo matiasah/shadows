@@ -65,9 +65,7 @@ function Polygon:GetVertices()
 	return Vertices
 end
 
-function Polygon:GenerateShadows(Body, Light)
-	local Shapes = {}
-	
+function Polygon:GenerateShadows(Shapes, Body, Light)
 	local Vertices = self:GetVertices()
 	local VerticesLength = #Vertices
 	local VisibleEdge = {}
@@ -248,6 +246,4 @@ function Polygon:GenerateShadows(Body, Light)
 			table.insert(Shapes, Shadow)
 		end
 	end
-	
-	return Shapes
 end
