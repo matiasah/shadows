@@ -8,7 +8,8 @@ function Shadows.CreateCircle(Body, x, y, Radius)
 	
 	Circle.Body = Body
 	Circle.Radius = Radius
-	Circle.x, Circle.y = x, y
+	Circle.Heading = math.atan2(y, x)
+	Circle.Distance = math.sqrt(x^2 + y^2)
 	
 	Body:AddShape(Circle)
 	
@@ -48,10 +49,9 @@ function Circle:SetPosition(x, y)
 end
 
 function Circle:GetPosition()
-	if self.x ~= 0 or self.y ~= 0 then
-		local Heading = math.atan2(self.y, self.x) + math.rad(self.Body.Angle)
-		local Length = math.sqrt(self.x^2 + self.y^2)
-		return self.Body.x + math.cos(Heading) * Length, self.Body.y + math.sin(Heading) * Length
+	if self.Distance ~= 0 then
+		local Heading = self.Heading + math.rad(self.Body.Angle)
+		return self.Body.x + math.cos(Heading) * self.Distance, self.Body.y + math.sin(Heading) * self.Distance
 	end
 	return self.Body.x, self.Body.y
 end
