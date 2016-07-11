@@ -60,7 +60,7 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 			}
 			
 			local Length = Shadows.MaxLength
-			if Light.z and Light.z > Body.z then
+			if Light.z > Body.z then
 				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 			end
 			
@@ -127,7 +127,7 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 			table.insert(Geometry, Vertex[2])
 			
 			local Length = Shadows.MaxLength
-			if Light.z and Light.z > Body.z then
+			if Light.z > Body.z then
 				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 			end
 			
@@ -160,7 +160,7 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 				}
 				
 				local Length = Shadows.MaxLength
-				if Light.z and Light.z > Body.z then
+				if Light.z > Body.z then
 					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 				end
 				
@@ -186,7 +186,7 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 				}
 				
 				local Length = Shadows.MaxLength
-				if Light.z and Light.z > Body.z then
+				if Light.z > Body.z then
 					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 				end
 				

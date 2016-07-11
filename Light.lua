@@ -68,6 +68,7 @@ function Light:Update()
 		
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		love.graphics.setColor(0, 0, 0, 255)
+		
 		for _, Shadow in pairs(self:GenerateShadows()) do
 			love.graphics[Shadow.type]("fill", unpack(Shadow))
 		end

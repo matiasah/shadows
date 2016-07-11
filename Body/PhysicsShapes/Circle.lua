@@ -41,13 +41,15 @@ function Circle:GenerateShadows(Shapes, Body, Light)
 		table.insert(Shapes, Polygon)
 		
 		if Body.z < Light.z then
-			local Circle = {type = "circle"}
-			local Length = Body.z / math.atan2(Light.z, Length)
+			local Arc = {type = "arc"}
 			
-			Circle[1] = (Polygon[5] + Polygon[7])/2
-			Circle[2] = (Polygon[6] + Polygon[8])/2
-			Circle[3] = math.sqrt((Polygon[5] - Circle[1])^2 + (Polygon[6] - Circle[2])^2)
-			table.insert(Shapes, Circle)
+			Arc[1] = (Polygon[5] + Polygon[7])/2
+			Arc[2] = (Polygon[6] + Polygon[8])/2
+			Arc[3] = math.sqrt((Polygon[5] - Arc[1])^2 + (Polygon[6] - Arc[2])^2)
+			Arc[4] = math.atan2(Polygon[6] - Arc[2], Polygon[5] - Arc[1])
+			Arc[5] = Arc[4] + math.pi
+			
+			table.insert(Shapes, Arc)
 		end
 	end
 end
