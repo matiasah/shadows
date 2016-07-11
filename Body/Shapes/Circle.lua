@@ -32,9 +32,8 @@ function Circle:GetRadius()
 end
 
 function Circle:Draw()
-	local Heading = math.atan2(self.y, self.x) + math.rad(self.Body.Angle)
-	local Length = math.sqrt(self.x^2 + self.y^2)
-	return love.graphics.circle("fill", self.Body.x + math.cos(Heading) * Length, self.Body.y + math.sin(Heading) * Length, self.Radius)
+	local Heading = self.Heading + math.rad(self.Body.Angle)
+	return love.graphics.circle("fill", self.Body.x + math.cos(Heading) * self.Distance, self.Body.y + math.sin(Heading) * self.Distance, self.Radius)
 end
 
 function Circle:SetPosition(x, y)
