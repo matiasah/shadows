@@ -9,6 +9,14 @@ function Shadows.CreatePolygon(Body, ...)
 	
 	Polygon.Body = Body
 	Polygon.Vertices = {...}
+	Polygon.Radius = 0
+	
+	for i = 1, #Polygon.Vertices, 2 do
+		local Radius = math.sqrt(Polygon.Vertices[i]^2 + Polygon.Vertices[i + 1]^2)
+		if Radius > Polygon.Radius then
+			Polygon.Radius = Radius
+		end
+	end
 	
 	Body:AddShape(Polygon)
 	
@@ -23,8 +31,24 @@ function Polygon:Draw()
 	love.graphics.polygon("fill", unpack(self:GetVertices()))
 end
 
+function Polygon:GetPosition()
+	return self.Body:GetPosition()
+end
+
+function Polygon:GetRadius()
+	return self.Radius
+end
+
 function Polygon:SetVertices(...)
 	self.Vertices = {...}
+	self.Radius = 0
+	
+	for i = 1, #self.Vertices, 2 do
+		local Radius = math.sqrt(self.Vertices[i]^2 + self.Vertices[i + 1]^2)
+		if Radius > self.Radius then
+			self.Radius = Radius
+		end
+	end
 end
 
 function Polygon:GetVertices()

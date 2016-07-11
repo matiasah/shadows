@@ -10,6 +10,10 @@ function Circle:GetPosition(Body)
 	return Body.Body:getWorldPoint(self:getPoint())
 end
 
+function Circle:GetRadius()
+	return self:getRadius()
+end
+
 function Circle:GenerateShadows(Body, Light)
 	local x, y = self:GetPosition(Body)
 	local Radius = self:getRadius()

@@ -5,6 +5,14 @@ function Polygon:Draw(Body)
 	love.graphics.polygon("fill", Body.Body:getWorldPoints(self:getPoints()))
 end
 
+function Polygon:GetPosition(Body)
+	return Body.Body:getPosition()
+end
+
+function Polygon:GetRadius()
+	return self:getRadius()
+end
+
 function Polygon:GetVertices(Body)
 	return {Body.Body:getWorldPoints(self:getPoints())}
 end
