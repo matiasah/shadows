@@ -1,8 +1,6 @@
 local Path = (...):gsub("%p", "/")
 local Shadows = {}
 
-Shadows.MaxLength = 999999999
-
 assert(love.filesystem.load(Path.."/Functions.lua"))(Shadows)
 assert(love.filesystem.load(Path.."/World.lua"))(Shadows)
 assert(love.filesystem.load(Path.."/Light.lua"))(Shadows)

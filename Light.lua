@@ -5,6 +5,7 @@ Light.__index = Light
 Light.x, Light.y, Light.z = 0, 0, 1
 Light.Angle, Light.Arc = 0, 360
 Light.Radius = 0
+Light.SizeRadius = 30
 
 Light.R, Light.G, Light.B, Light.A = 255, 255, 255, 255
 
@@ -70,7 +71,19 @@ function Light:Update()
 		love.graphics.setColor(0, 0, 0, 255)
 		
 		for _, Shadow in pairs(self:GenerateShadows()) do
-			love.graphics[Shadow.type]("fill", unpack(Shadow))
+			if Shadow.Soft then
+				Shadows.PenumbraShader:send("Source", Shadow[4])
+				Shadows.PenumbraShader:send("Goal", Shadow[5])
+				Shadows.PenumbraShader:send("vSource", {Shadow[1] - self.x + self.Radius, Shadow[2] - self.y + self.Radius})
+				
+				love.graphics.setShader(Shadows.PenumbraShader)
+				love.graphics.setBlendMode("subtract", "alphamultiply")
+				love.graphics[Shadow.type]("fill", unpack(Shadow))
+				love.graphics.setBlendMode("alpha", "alphamultiply")
+				love.graphics.setShader()
+			else
+				love.graphics[Shadow.type]("fill", unpack(Shadow))
+			end
 		end
 		
 		love.graphics.setColor(255, 255, 255, 255)

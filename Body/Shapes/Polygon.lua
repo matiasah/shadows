@@ -89,8 +89,9 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 		table.insert(VisibleEdge, (Normal[1] * Direction[1] + Normal[2] * Direction[2]) > 0)
 	end
 
+	local PenumbraAngle = math.atan(Light.SizeRadius / Light.Radius)
 	local VisibleEdges = #VisibleEdge
-	local Geometry = {}
+	local Geometry = {type = "polygon"}
 	local FirstVertex
 	
 	for Index = 1, VisibleEdges do
@@ -107,15 +108,29 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 				Vertices[Index * 2];
 			}
 			
-			local Length = Shadows.MaxLength
-			if Light.z > Body.z then
-				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
-			end
-			
 			local Direction = Shadows.Normalize {
 				Vertex[1] - Light.x;
 				Vertex[2] - Light.y;
 			}
+			
+			local Length = Light.Radius
+			if Light.z <= Body.z then
+				local Penumbra = {type = "arc"}
+				Penumbra[1] = Vertex[1]
+				Penumbra[2] = Vertex[2]
+				Penumbra[3] = Length
+				Penumbra[4] = math.atan2(Direction[2], Direction[1]) + PenumbraAngle
+				Penumbra[5] = Penumbra[4] - PenumbraAngle * 2
+				
+				Penumbra.Soft = true
+				table.insert(Shapes, Penumbra)
+				
+				Direction[1] = math.cos(Penumbra[5])
+				Direction[2] = math.sin(Penumbra[5])
+			else
+				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
+			end
+			
 			table.insert(Geometry, Vertex[1] + Direction[1] * Length)
 			table.insert(Geometry, Vertex[2] + Direction[2] * Length)
 			
@@ -166,18 +181,32 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 				Vertices[Index * 2];
 			}
 			
-			table.insert(Geometry, Vertex[1])
-			table.insert(Geometry, Vertex[2])
-			
-			local Length = Shadows.MaxLength
-			if Light.z > Body.z then
-				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
-			end
-			
 			local Direction = Shadows.Normalize {
 				Vertex[1] - Light.x;
 				Vertex[2] - Light.y;
 			}
+			
+			local Length = Light.Radius
+			if Light.z <= Body.z then
+				local Penumbra = {type = "arc"}
+				Penumbra[1] = Vertex[1]
+				Penumbra[2] = Vertex[2]
+				Penumbra[3] = Length
+				Penumbra[4] = math.atan2(Direction[2], Direction[1]) - PenumbraAngle
+				Penumbra[5] = Penumbra[4] + PenumbraAngle * 2
+				
+				Penumbra.Soft = true
+				table.insert(Shapes, Penumbra)
+				
+				Direction[1] = math.cos(Penumbra[5])
+				Direction[2] = math.sin(Penumbra[5])
+			else
+				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
+			end
+			
+			table.insert(Geometry, Vertex[1])
+			table.insert(Geometry, Vertex[2])
+			
 			table.insert(Geometry, Vertex[1] + Direction[1] * Length)
 			table.insert(Geometry, Vertex[2] + Direction[2] * Length)
 			break
@@ -197,7 +226,7 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 					Vertices[Index * 2];
 				}
 				
-				local Length = Shadows.MaxLength
+				local Length = Light.Radius
 				if Light.z > Body.z then
 					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 				end
@@ -206,6 +235,7 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 					Vertex[1] - Light.x;
 					Vertex[2] - Light.y;
 				}
+				
 				table.insert(Geometry, Vertex[1] + Direction[1] * Length)
 				table.insert(Geometry, Vertex[2] + Direction[2] * Length)
 			end
@@ -223,7 +253,7 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 					Vertices[Index * 2];
 				}
 				
-				local Length = Shadows.MaxLength
+				local Length = Light.Radius
 				if Light.z > Body.z then
 					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 				end
@@ -238,12 +268,14 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 		end
 	end
 	
-	if #Geometry > 0 then
+	if Light.z > Body.z then
 		-- Triangulation is necessary, otherwise rays will be intersecting
 		local Triangles = love.math.triangulate(Geometry)
 		for _, Shadow in pairs(Triangles) do
 			Shadow.type = "polygon"
 			table.insert(Shapes, Shadow)
 		end
+	elseif #Geometry > 0 then
+		table.insert(Shapes, Geometry)
 	end
 end

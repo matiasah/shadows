@@ -1,11 +1,31 @@
 local Shadows = ...
 
+Shadows.PenumbraShader = love.graphics.newShader [[
+	extern number twopi;
+	extern number Source;
+	extern number Goal;
+	extern vec2 vSource;
+	
+	vec4 effect(vec4 Color, Image Texture, vec2 tc, vec2 pc){
+		vec2 Direction = pc - vSource;
+		float Heading = atan(Direction.y, Direction.x);
+		
+		if (Heading - Source > twopi){
+			Heading = Heading - twopi;
+		}else if (Heading - Source < -twopi){
+			Heading = Heading + twopi;
+		}
+		float Alpha = abs(Source - Heading)/abs(Source - Goal);
+		
+		return vec4(Alpha, Alpha, Alpha, 1);
+	}
+]]; Shadows.PenumbraShader:send("twopi", math.pi * 2)
+
 Shadows.BlurShader = love.graphics.newShader [[
 	extern number radius = 1;
 	extern vec2 size;
 
-	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 pc)
-	{
+	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 pc){
 		color = vec4(0);
 		vec2 st;
 
@@ -44,7 +64,7 @@ Shadows.BloomShader = love.graphics.newShader [[
 
 -- https://love2d.org/forums/viewtopic.php?t=81014#p189754
 Shadows.AberrationShader = love.graphics.newShader([[
-	extern number aberration = 0.003;
+	extern number aberration = 0.002;
 
 	vec4 effect(vec4 col, Image texture, vec2 texturePos, vec2 screenPos){
 		vec2 coords = texturePos;
