@@ -25,7 +25,7 @@ function Circle:GenerateShadows(Shapes, Body, Light)
 	
 	local Length = Light.Radius
 	if Body.z < Light.z then
-		Length = Distance + Body.z / math.atan2(Light.z, BorderDistance)
+		Length = Body.z / math.atan2(Light.z, BorderDistance)
 	end
 	
 	local Polygon = {type = "polygon"}

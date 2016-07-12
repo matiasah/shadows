@@ -268,14 +268,16 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 		end
 	end
 	
-	if Light.z > Body.z then
-		-- Triangulation is necessary, otherwise rays will be intersecting
-		local Triangles = love.math.triangulate(Geometry)
-		for _, Shadow in pairs(Triangles) do
-			Shadow.type = "polygon"
-			table.insert(Shapes, Shadow)
+	if #Geometry > 0 then
+		if Light.z > Body.z then
+			-- Triangulation is necessary, otherwise rays will be intersecting
+			local Triangles = love.math.triangulate(Geometry)
+			for _, Shadow in pairs(Triangles) do
+				Shadow.type = "polygon"
+				table.insert(Shapes, Shadow)
+			end
+		else
+			table.insert(Shapes, Geometry)
 		end
-	elseif #Geometry > 0 then
-		table.insert(Shapes, Geometry)
 	end
 end
