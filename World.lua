@@ -26,6 +26,9 @@ function Shadows.CreateWorld(Width, Height)
 		Active = true
 	}
 	
+	World.Bloom.Shader:send("size", {World.Bloom.Canvas:getDimensions()})
+	World.Blur.Shader:send("size", {World.Blur.Canvas:getDimensions()})
+	World.Aberration.Shader:send("size", {World.Aberration.Canvas:getDimensions()})
 	
 	World.Rooms = {}
 	World.Bodies = {}
@@ -38,18 +41,32 @@ function Shadows.CreateWorld(Width, Height)
 end
 
 function World:ApplyFilters()
-	local PreviousCanvas = self.Canvas
-	for FilterName, Filter in pairs(self.Filter) do
-		if Filter.Active then
-			love.graphics.setShader(Filter.Shader)
-			love.graphics.setCanvas(Filter.Canvas)
-			love.graphics.draw(PreviousCanvas, 0, 0)
-			PreviousCanvas = Filter.Canvas
-		end
+	local Canvas = self.Canvas
+	
+	if self.Bloom.Active then
+		love.graphics.setShader(self.Bloom.Shader)
+		love.graphics.setCanvas(self.Bloom.Canvas)
+		love.graphics.draw(Canvas, 0, 0)
+		Canvas = self.Bloom.Canvas
+	end
+	
+	if self.Blur.Active then
+		love.graphics.setShader(self.Blur.Shader)
+		love.graphics.setCanvas(self.Blur.Canvas)
+		love.graphics.draw(Canvas, 0, 0)
+		Canvas = self.Blur.Canvas
+	end
+	
+	if self.Aberration.Active then
+		love.graphics.setShader(self.Aberration.Shader)
+		love.graphics.setCanvas(self.Aberration.Canvas)
+		love.graphics.draw(Canvas, 0, 0)
+		Canvas = self.Aberration.Canvas
 	end
 	
 	love.graphics.setShader()
 	love.graphics.setCanvas()
+	self.FinalFilter = Canvas
 end
 
 function World:SetPhysics(PhysicsWorld)
