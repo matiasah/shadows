@@ -10,17 +10,22 @@ function Shadows.CreateWorld(Width, Height)
 	World.Canvas = love.graphics.newCanvas(Width, Height)
 	World.BodyCanvas = love.graphics.newCanvas(Width, Height)
 	
-	World.Filter = {
-		Bloom = {Shader = Shadows.BloomShader, Active = true},
-		Blur = {Shader = Shadows.BlurShader, Active = true},
-		Aberration = {Shader = Shadows.AberrationShader, Active = true},
+	World.Bloom = {
+		Shader = Shadows.BloomShader,
+		Canvas = love.graphics.newCanvas(World.Canvas:getDimensions()),
+		Active = true,
+	}
+	World.Blur = {
+		Shader = Shadows.BlurShader,
+		Canvas = love.graphics.newCanvas(World.Canvas:getDimensions()),
+		Active = true
+	}
+	World.Aberration = {
+		Shader = Shadows.AberrationShader,
+		Canvas = love.graphics.newCanvas(World.Canvas:getDimensions()),
+		Active = true
 	}
 	
-	for FilterName, Filter in pairs(World.Filter) do
-		if Filter.Active then
-			Filter.Canvas = love.graphics.newCanvas(World.Canvas:getDimensions())
-		end
-	end
 	
 	World.Rooms = {}
 	World.Bodies = {}
@@ -45,22 +50,6 @@ function World:ApplyFilters()
 	
 	love.graphics.setShader()
 	love.graphics.setCanvas()
-	self.FinalFilter = PreviousCanvas
-end
-
-function World:SetFilter(Name, Active)
-	local Filter = self.Filter[Name]
-	if Filter then
-		if Active and not Filter.Active then
-			Filter.Active = true
-			Filter.Canvas = love.graphics.newCanvas(self.Canvas:getDimensions())
-			self.UpdateCanvas = true
-		elseif not Active and Filter.Active then
-			Filter.Active = nil
-			Filter.Canvas = nil
-			self.UpdateCanvas = true
-		end
-	end
 end
 
 function World:SetPhysics(PhysicsWorld)
