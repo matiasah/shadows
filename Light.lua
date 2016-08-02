@@ -5,7 +5,7 @@ Light.__index = Light
 Light.x, Light.y, Light.z = 0, 0, 1
 Light.Angle, Light.Arc = 0, 360
 Light.Radius = 0
-Light.SizeRadius = 30
+Light.SizeRadius = 60
 
 Light.R, Light.G, Light.B, Light.A = 255, 255, 255, 255
 

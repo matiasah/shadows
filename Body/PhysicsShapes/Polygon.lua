@@ -72,13 +72,10 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 				Penumbra[2] = Vertex[2]
 				Penumbra[3] = Length
 				Penumbra[4] = math.atan2(Direction[2], Direction[1]) + PenumbraAngle
-				Penumbra[5] = Penumbra[4] - PenumbraAngle * 2
+				Penumbra[5] = Penumbra[4] - PenumbraAngle
 				
 				Penumbra.Soft = true
 				table.insert(Shapes, Penumbra)
-				
-				Direction[1] = math.cos(Penumbra[5])
-				Direction[2] = math.sin(Penumbra[5])
 			else
 				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 			end
@@ -145,13 +142,10 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 				Penumbra[2] = Vertex[2]
 				Penumbra[3] = Length
 				Penumbra[4] = math.atan2(Direction[2], Direction[1]) - PenumbraAngle
-				Penumbra[5] = Penumbra[4] + PenumbraAngle * 2
+				Penumbra[5] = Penumbra[4] + PenumbraAngle
 				
 				Penumbra.Soft = true
 				table.insert(Shapes, Penumbra)
-				
-				Direction[1] = math.cos(Penumbra[5])
-				Direction[2] = math.sin(Penumbra[5])
 			else
 				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 			end
@@ -221,15 +215,11 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 	end
 	
 	if #Geometry > 0 then
-		if Light.z > Body.z then
-			-- Triangulation is necessary, otherwise rays will be intersecting
-			local Triangles = love.math.triangulate(Geometry)
-			for _, Shadow in pairs(Triangles) do
-				Shadow.type = "polygon"
-				table.insert(Shapes, Shadow)
-			end
-		else
-			table.insert(Shapes, Geometry)
+		-- Triangulation is necessary, otherwise rays will be intersecting
+		local Triangles = love.math.triangulate(Geometry)
+		for _, Shadow in pairs(Triangles) do
+			Shadow.type = "polygon"
+			table.insert(Shapes, Shadow)
 		end
 	end
 end

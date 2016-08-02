@@ -23,7 +23,7 @@ function Shadows.CreateWorld(Width, Height)
 	World.Aberration = {
 		Shader = Shadows.AberrationShader,
 		Canvas = love.graphics.newCanvas(World.Canvas:getDimensions()),
-		Active = true
+		--Active = true
 	}
 	
 	World.Bloom.Shader:send("size", {World.Bloom.Canvas:getDimensions()})

@@ -83,7 +83,7 @@ function Circle:GenerateShadows(Shapes, Body, Light)
 			Penumbra[2] = Polygon[2]
 			Penumbra[3] = Length
 			Penumbra[4] = Heading + Offset + PenumbraAngle
-			Penumbra[5] = Heading + Offset - PenumbraAngle
+			Penumbra[5] = Heading + Offset
 			table.insert(Shapes, Penumbra)
 			
 			local Penumbra = {type = "arc", Soft = true}
@@ -94,10 +94,8 @@ function Circle:GenerateShadows(Shapes, Body, Light)
 			if Penumbra[4] > math.pi then
 				Penumbra[4] = Penumbra[4] - math.pi * 2
 			end
-			Penumbra[5] = Penumbra[4] + PenumbraAngle * 2
+			Penumbra[5] = Penumbra[4] + PenumbraAngle
 			table.insert(Shapes, Penumbra)
-			
-			Offset = Offset - PenumbraAngle
 		end
 
 		table.insert(Polygon, Polygon[3] + math.cos(Heading - Offset) * Length)
