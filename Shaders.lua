@@ -1,6 +1,6 @@
 local Shadows = ...
 
-Shadows.PenumbraShader = love.graphics.newShader [[
+Shadows.PenumbraShader = love.graphics.newShader[[
 	extern number twopi;
 	extern number Source;
 	extern number Goal;
@@ -21,10 +21,10 @@ Shadows.PenumbraShader = love.graphics.newShader [[
 	}
 ]]; Shadows.PenumbraShader:send("twopi", math.pi * 2)
 
-Shadows.BlurShader = love.graphics.newShader [[
-	extern number radius = 1;
+Shadows.BlurShader = love.graphics.newShader[[
+	extern number radius;
 	extern vec2 size;
-
+  
 	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 pc){
 		color = vec4(0);
 		vec2 st;
@@ -38,19 +38,20 @@ Shadows.BlurShader = love.graphics.newShader [[
 		}
 		return color / ((2.0 * radius + 1.0) * (2.0 * radius + 1.0));
 	}
-]]
+]]; Shadows.BlurShader:send("size", {love.graphics.getDimensions()})
+  ; Shadows.BlurShader:send("radius", 1)
 
 Shadows.BloomShader = love.graphics.newShader [[
 	extern vec2 size;
-	extern int samples = 1; // pixels per axis; higher = bigger glow, worse performance
-	extern float quality = 4; // lower = smaller glow, better quality
+	extern int samples; // pixels per axis; higher = bigger glow, worse performance
+	extern float quality; // lower = smaller glow, better quality
 
 	vec4 effect(vec4 colour, Image tex, vec2 tc, vec2 sc){
 		vec4 source = Texel(tex, tc);
 		vec4 sum = vec4(0);
-		vec2 sizeFactor = vec2(1) / size * quality;
+    vec2 sizeFactor = vec2(1) / size * quality;
 		int diff = (samples - 1) / 2;
-	  
+		  
 		for (int x = -diff; x <= diff; x++){
 			for (int y = -diff; y <= diff; y++)
 			{
@@ -58,38 +59,41 @@ Shadows.BloomShader = love.graphics.newShader [[
 				sum += Texel(tex, tc + offset);
 			}
 		}
-		return ((sum / (samples * samples)) + source) * colour;
+    float samplesSq = float(samples * samples);
+		return ((sum / samplesSq) + source) * colour;
 	}
-]]
+]]; Shadows.BloomShader:send("size", {love.graphics.getDimensions()})
+  ; Shadows.BloomShader:send("quality", 4)
+  ; Shadows.BloomShader:sendInt("samples", 1)
 
 -- https://love2d.org/forums/viewtopic.php?t=81014#p189754
-Shadows.AberrationShader = love.graphics.newShader([[
-	extern vec2 size;
-	extern number aberration = 3;
+Shadows.AberrationShader = love.graphics.newShader[[
+  extern vec2 size;
+	extern number aberration;
 
 	vec4 effect(vec4 col, Image texture, vec2 texturePos, vec2 screenPos){
 		vec2 coords = texturePos;
 		vec2 offset = vec2(aberration, 0) / size;
 
-		vec4 red = texture2D(texture , coords - offset);
+		vec4 red = texture2D(texture, coords - offset);
 		vec4 green = texture2D(texture, coords);
 		vec4 blue = texture2D(texture, coords + offset);
 
-		vec4 finalColor = vec4(red.r, green.g, blue.b, 1.0f);
-		return finalColor;
+		return vec4(red.r, green.g, blue.b, 1E0); //final color with alpha of 1
 	}
-]])
+]]; Shadows.AberrationShader:send("aberration", 3)
 
-Shadows.LightShader = love.graphics.newShader [[
+Shadows.LightShader = love.graphics.newShader[[
 	extern vec3 Center;
 	extern vec3 LightColor;
 	extern float LightRadius;
 
 	vec4 effect(vec4 Color, Image Texture, vec2 TextureCords, vec2 PixelCords){
-		float Distance = length(vec3(PixelCords, 0.0) - Center);
+		float Distance = length(vec3(PixelCords, 0E0) - Center);
 		if (Distance <= LightRadius) {
-			return vec4(LightColor, 1 - (Distance / LightRadius));
+			return vec4(LightColor, 1E0 - ((Distance / LightRadius)) );
 		}
-		return vec4(0, 0, 0, 0);
+		return vec4(0E0, 0E0, 0E0, 0E0);
 	}
 ]]
+
