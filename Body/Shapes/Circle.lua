@@ -55,7 +55,7 @@ function Circle:GetPosition()
 	return self.Body.x, self.Body.y
 end
 
-function Circle:GenerateShadows(Shapes, Body, Light)
+function Circle:GenerateShadows(Shapes, Body, UsePenumbra, Light)
 	local x, y = self:GetPosition()
 	local Radius = self:GetRadius()
 
@@ -76,26 +76,30 @@ function Circle:GenerateShadows(Shapes, Body, Light)
 		table.insert(Polygon, Light.x + math.cos(Heading - Offset) * BorderDistance)
 		table.insert(Polygon, Light.y + math.sin(Heading - Offset) * BorderDistance)
 		
-		if Light.z <= Body.z then
-			local PenumbraAngle = math.atan(Light.SizeRadius / Light.Radius)
-			local Penumbra = {type = "arc", Soft = true}
-			Penumbra[1] = Polygon[1]
-			Penumbra[2] = Polygon[2]
-			Penumbra[3] = Length
-			Penumbra[4] = Heading + Offset + PenumbraAngle
-			Penumbra[5] = Heading + Offset
-			table.insert(Shapes, Penumbra)
-			
-			local Penumbra = {type = "arc", Soft = true}
-			Penumbra[1] = Polygon[3]
-			Penumbra[2] = Polygon[4]
-			Penumbra[3] = Length
-			Penumbra[4] = Heading - Offset - PenumbraAngle
-			if Penumbra[4] > math.pi then
-				Penumbra[4] = Penumbra[4] - math.pi * 2
+		if UsePenumbra then
+		
+			if Light.z <= Body.z then
+				local PenumbraAngle = math.atan(Light.SizeRadius / Light.Radius)
+				local Penumbra = {type = "arc", Soft = true}
+				Penumbra[1] = Polygon[1]
+				Penumbra[2] = Polygon[2]
+				Penumbra[3] = Length
+				Penumbra[4] = Heading + Offset + PenumbraAngle
+				Penumbra[5] = Heading + Offset
+				table.insert(Shapes, Penumbra)
+				
+				local Penumbra = {type = "arc", Soft = true}
+				Penumbra[1] = Polygon[3]
+				Penumbra[2] = Polygon[4]
+				Penumbra[3] = Length
+				Penumbra[4] = Heading - Offset - PenumbraAngle
+				if Penumbra[4] > math.pi then
+					Penumbra[4] = Penumbra[4] - math.pi * 2
+				end
+				Penumbra[5] = Penumbra[4] + PenumbraAngle
+				table.insert(Shapes, Penumbra)
 			end
-			Penumbra[5] = Penumbra[4] + PenumbraAngle
-			table.insert(Shapes, Penumbra)
+			
 		end
 
 		table.insert(Polygon, Polygon[3] + math.cos(Heading - Offset) * Length)
@@ -104,13 +108,18 @@ function Circle:GenerateShadows(Shapes, Body, Light)
 		table.insert(Polygon, Polygon[2] + math.sin(Heading + Offset) * Length)
 		table.insert(Shapes, Polygon)
 		
-		if Light.z > Body.z then
-			local Circle = {type = "circle"}
-			Circle[1] = Light.x + math.cos(Heading) * (Length + Distance)
-			Circle[2] = Light.y + math.sin(Heading) * (Length + Distance)
-			Circle[3] = math.sqrt((Polygon[5] - Circle[1])^2 + (Polygon[6] - Circle[2])^2)
+		if UsePenumbra then
+		
+			if Light.z > Body.z then
+				local Circle = {type = "circle"}
+				Circle[1] = Light.x + math.cos(Heading) * (Length + Distance)
+				Circle[2] = Light.y + math.sin(Heading) * (Length + Distance)
+				Circle[3] = math.sqrt((Polygon[5] - Circle[1])^2 + (Polygon[6] - Circle[2])^2)
+				
+				table.insert(Shapes, Circle)
+			end
 			
-			table.insert(Shapes, Circle)
 		end
+		
 	end
 end

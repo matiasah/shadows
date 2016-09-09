@@ -14,7 +14,7 @@ function Circle:GetRadius()
 	return self:getRadius()
 end
 
-function Circle:GenerateShadows(Shapes, Body, Light)
+function Circle:GenerateShadows(Shapes, Body, UsePenumbra, Light)
 	local x, y = self:GetPosition(Body)
 	local Radius = self:getRadius()
 
@@ -35,26 +35,30 @@ function Circle:GenerateShadows(Shapes, Body, Light)
 		table.insert(Polygon, Light.x + math.cos(Heading - Offset) * BorderDistance)
 		table.insert(Polygon, Light.y + math.sin(Heading - Offset) * BorderDistance)
 		
-		if Light.z <= Body.z then
-			local PenumbraAngle = math.atan(Light.SizeRadius / Light.Radius)
-			local Penumbra = {type = "arc", Soft = true}
-			Penumbra[1] = Polygon[1]
-			Penumbra[2] = Polygon[2]
-			Penumbra[3] = Length
-			Penumbra[4] = Heading + Offset + PenumbraAngle
-			Penumbra[5] = Heading + Offset
-			table.insert(Shapes, Penumbra)
-			
-			local Penumbra = {type = "arc", Soft = true}
-			Penumbra[1] = Polygon[3]
-			Penumbra[2] = Polygon[4]
-			Penumbra[3] = Length
-			Penumbra[4] = Heading - Offset - PenumbraAngle
-			if Penumbra[4] > math.pi then
-				Penumbra[4] = Penumbra[4] - math.pi * 2
+		if UsePenumbra then
+		
+			if Light.z <= Body.z then
+				local PenumbraAngle = math.atan(Light.SizeRadius / Light.Radius)
+				local Penumbra = {type = "arc", Soft = true}
+				Penumbra[1] = Polygon[1]
+				Penumbra[2] = Polygon[2]
+				Penumbra[3] = Length
+				Penumbra[4] = Heading + Offset + PenumbraAngle
+				Penumbra[5] = Heading + Offset
+				table.insert(Shapes, Penumbra)
+				
+				local Penumbra = {type = "arc", Soft = true}
+				Penumbra[1] = Polygon[3]
+				Penumbra[2] = Polygon[4]
+				Penumbra[3] = Length
+				Penumbra[4] = Heading - Offset - PenumbraAngle
+				if Penumbra[4] > math.pi then
+					Penumbra[4] = Penumbra[4] - math.pi * 2
+				end
+				Penumbra[5] = Penumbra[4] + PenumbraAngle
+				table.insert(Shapes, Penumbra)
 			end
-			Penumbra[5] = Penumbra[4] + PenumbraAngle
-			table.insert(Shapes, Penumbra)
+			
 		end
 
 		table.insert(Polygon, Polygon[3] + math.cos(Heading - Offset) * Length)
@@ -71,5 +75,6 @@ function Circle:GenerateShadows(Shapes, Body, Light)
 			
 			table.insert(Shapes, Circle)
 		end
+		
 	end
 end

@@ -44,7 +44,7 @@ function Light:GenerateShadows()
 					local Radius = self.Radius + Shape:GetRadius(Body)
 					local x, y = Shape:GetPosition(Body)
 					if (x - self.x)^2 + (y - self.y)^2 < Radius * Radius then
-						Shape:GenerateShadows(Shapes, Body, self)
+						Shape:GenerateShadows(Shapes, Body, self.World.UsePenumbra, self)
 					end
 				end
 			end
@@ -53,7 +53,7 @@ function Light:GenerateShadows()
 				local Radius = self.Radius + Shape:GetRadius()
 				local x, y = Shape:GetPosition()
 				if (x - self.x)^2 + (y - self.y)^2 < Radius * Radius then
-					Shape:GenerateShadows(Shapes, Body, self)
+					Shape:GenerateShadows(Shapes, Body, self.World.UsePenumbra, self)
 				end
 			end
 		end
@@ -113,12 +113,16 @@ function Light:Update()
 			love.graphics.setShader()
 		end
 		
+		--Shadows.PenumbraBlur:send("Size", {self.ShadowCanvas:getDimensions()})
+		--love.graphics.setShader(Shadows.PenumbraBlur)
+		
 		love.graphics.setBlendMode("multiply", "premultiplied")
 		love.graphics.draw(self.ShadowCanvas, 0, 0)
 		
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		love.graphics.origin()
 		love.graphics.setCanvas()
+		love.graphics.setShader()
 		
 		self.Changed = nil
 		self.World.UpdateCanvas = true

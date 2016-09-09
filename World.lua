@@ -1,6 +1,7 @@
 local Shadows = ...
 local World = {}
 
+World.UsePenumbra = true
 World.__index = World
 World.R, World.G, World.B, World.A = 0, 0, 0, 255
 

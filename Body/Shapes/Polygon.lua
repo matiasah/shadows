@@ -65,7 +65,7 @@ function Polygon:GetVertices()
 	return Vertices
 end
 
-function Polygon:GenerateShadows(Shapes, Body, Light)
+function Polygon:GenerateShadows(Shapes, Body, UsePenumbra, Light)
 	local Vertices = self:GetVertices()
 	local VerticesLength = #Vertices
 	local VisibleEdge = {}
@@ -114,18 +114,23 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 			}
 			
 			local Length = Light.Radius
-			if Light.z <= Body.z then
-				local Penumbra = {type = "arc"}
-				Penumbra[1] = Vertex[1]
-				Penumbra[2] = Vertex[2]
-				Penumbra[3] = Length
-				Penumbra[4] = math.atan2(Direction[2], Direction[1]) + PenumbraAngle
-				Penumbra[5] = Penumbra[4] - PenumbraAngle
+			
+			if UsePenumbra then
 				
-				Penumbra.Soft = true
-				table.insert(Shapes, Penumbra)
-			else
-				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
+				if Light.z <= Body.z then
+					local Penumbra = {type = "arc"}
+					Penumbra[1] = Vertex[1]
+					Penumbra[2] = Vertex[2]
+					Penumbra[3] = Length
+					Penumbra[4] = math.atan2(Direction[2], Direction[1]) + PenumbraAngle
+					Penumbra[5] = Penumbra[4] - PenumbraAngle
+					
+					Penumbra.Soft = true
+					table.insert(Shapes, Penumbra)
+				else
+					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
+				end
+				
 			end
 			
 			table.insert(Geometry, Vertex[1] + Direction[1] * Length)
@@ -184,18 +189,23 @@ function Polygon:GenerateShadows(Shapes, Body, Light)
 			}
 			
 			local Length = Light.Radius
-			if Light.z <= Body.z then
-				local Penumbra = {type = "arc"}
-				Penumbra[1] = Vertex[1]
-				Penumbra[2] = Vertex[2]
-				Penumbra[3] = Length
-				Penumbra[4] = math.atan2(Direction[2], Direction[1]) - PenumbraAngle
-				Penumbra[5] = Penumbra[4] + PenumbraAngle
+			
+			if UsePenumbra then
+			
+				if Light.z <= Body.z then
+					local Penumbra = {type = "arc"}
+					Penumbra[1] = Vertex[1]
+					Penumbra[2] = Vertex[2]
+					Penumbra[3] = Length
+					Penumbra[4] = math.atan2(Direction[2], Direction[1]) - PenumbraAngle
+					Penumbra[5] = Penumbra[4] + PenumbraAngle
+					
+					Penumbra.Soft = true
+					table.insert(Shapes, Penumbra)
+				else
+					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
+				end
 				
-				Penumbra.Soft = true
-				table.insert(Shapes, Penumbra)
-			else
-				Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
 			end
 			
 			table.insert(Geometry, Vertex[1])
