@@ -17,10 +17,13 @@ function Polygon:GetVertices(Body)
 	return {Body.Body:getWorldPoints(self:getPoints())}
 end
 
-function Polygon:GenerateShadows(Shapes, Body, UsePenumbra, Light)
+function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	local Vertices = self:GetVertices(Body)
 	local VerticesLength = #Vertices
 	local VisibleEdge = {}
+	
+	local Lx = Light.x + DeltaX
+	local Ly = Light.y + DeltaY
 	
 	for Index = 1, VerticesLength, 2 do
 		local NextIndex = Index + 2
@@ -34,8 +37,8 @@ function Polygon:GenerateShadows(Shapes, Body, UsePenumbra, Light)
 		}
 		
 		local Direction = Shadows.Normalize {
-			Vertices[Index] - Light.x;
-			Vertices[Index + 1] - Light.y;
+			Vertices[Index] - Lx;
+			Vertices[Index + 1] - Ly;
 		}
 		
 		table.insert(VisibleEdge, (Normal[1] * Direction[1] + Normal[2] * Direction[2]) > 0)
@@ -60,30 +63,16 @@ function Polygon:GenerateShadows(Shapes, Body, UsePenumbra, Light)
 				Vertices[Index * 2];
 			}
 			
-			local Direction = Shadows.Normalize {
-				Vertex[1] - Light.x;
-				Vertex[2] - Light.y;
-			}
-			
 			local Length = Light.Radius
 			
-			if UsePenumbra then
-				
-				if Light.z <= Body.z then
-					local Penumbra = {type = "arc"}
-					Penumbra[1] = Vertex[1]
-					Penumbra[2] = Vertex[2]
-					Penumbra[3] = Length
-					Penumbra[4] = math.atan2(Direction[2], Direction[1]) + PenumbraAngle
-					Penumbra[5] = Penumbra[4] - PenumbraAngle
-					
-					Penumbra.Soft = true
-					table.insert(Shapes, Penumbra)
-				else
-					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
-				end
-				
+			if Light.z > Body.z then
+				Length = Body.z / math.atan2(Light.z, math.sqrt((Lx - Vertex[1])^2 + (Ly - Vertex[2])^2))
 			end
+			
+			local Direction = Shadows.Normalize {
+				Vertex[1] - Lx;
+				Vertex[2] - Ly;
+			}
 			
 			table.insert(Geometry, Vertex[1] + Direction[1] * Length)
 			table.insert(Geometry, Vertex[2] + Direction[2] * Length)
@@ -135,30 +124,16 @@ function Polygon:GenerateShadows(Shapes, Body, UsePenumbra, Light)
 				Vertices[Index * 2];
 			}
 			
-			local Direction = Shadows.Normalize {
-				Vertex[1] - Light.x;
-				Vertex[2] - Light.y;
-			}
-			
 			local Length = Light.Radius
 			
-			if UsePenumbra then
-				
-				if Light.z <= Body.z then
-					local Penumbra = {type = "arc"}
-					Penumbra[1] = Vertex[1]
-					Penumbra[2] = Vertex[2]
-					Penumbra[3] = Length
-					Penumbra[4] = math.atan2(Direction[2], Direction[1]) - PenumbraAngle
-					Penumbra[5] = Penumbra[4] + PenumbraAngle
-					
-					Penumbra.Soft = true
-					table.insert(Shapes, Penumbra)
-				else
-					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
-				end
-				
+			if Light.z > Body.z then
+				Length = Body.z / math.atan2(Light.z, math.sqrt((Lx - Vertex[1])^2 + (Ly - Vertex[2])^2))
 			end
+			
+			local Direction = Shadows.Normalize {
+				Vertex[1] - Lx;
+				Vertex[2] - Ly;
+			}
 			
 			table.insert(Geometry, Vertex[1])
 			table.insert(Geometry, Vertex[2])
@@ -183,13 +158,14 @@ function Polygon:GenerateShadows(Shapes, Body, UsePenumbra, Light)
 				}
 				
 				local Length = Light.Radius
+				
 				if Light.z > Body.z then
-					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
+					Length = Body.z / math.atan2(Light.z, math.sqrt((Lx - Vertex[1])^2 + (Ly - Vertex[2])^2))
 				end
 				
 				local Direction = Shadows.Normalize {
-					Vertex[1] - Light.x;
-					Vertex[2] - Light.y;
+					Vertex[1] - Lx;
+					Vertex[2] - Ly;
 				}
 				
 				table.insert(Geometry, Vertex[1] + Direction[1] * Length)
@@ -210,13 +186,14 @@ function Polygon:GenerateShadows(Shapes, Body, UsePenumbra, Light)
 				}
 				
 				local Length = Light.Radius
+				
 				if Light.z > Body.z then
-					Length = Body.z / math.atan2(Light.z, math.sqrt((Light.x - Vertex[1])^2 + (Light.y - Vertex[2])^2))
+					Length = Body.z / math.atan2(Light.z, math.sqrt((Lx - Vertex[1])^2 + (Ly - Vertex[2])^2))
 				end
 				
 				local Direction = Shadows.Normalize {
-					Vertex[1] - Light.x;
-					Vertex[2] - Light.y;
+					Vertex[1] - Lx;
+					Vertex[2] - Ly;
 				}
 				table.insert(Geometry, Vertex[1] + Direction[1] * Length)
 				table.insert(Geometry, Vertex[2] + Direction[2] * Length)

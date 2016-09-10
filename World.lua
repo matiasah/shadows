@@ -1,7 +1,7 @@
 local Shadows = ...
 local World = {}
 
-World.UsePenumbra = true
+World.Samples = 20
 World.__index = World
 World.R, World.G, World.B, World.A = 0, 0, 0, 255
 
@@ -27,9 +27,9 @@ function Shadows.CreateWorld(Width, Height)
 		--Active = true
 	}
 	
-	World.Bloom.Shader:send("size", {World.Bloom.Canvas:getDimensions()})
-	World.Blur.Shader:send("size", {World.Blur.Canvas:getDimensions()})
-	World.Aberration.Shader:send("size", {World.Aberration.Canvas:getDimensions()})
+	World.Bloom.Shader:send("Size", {World.Bloom.Canvas:getDimensions()})
+	World.Blur.Shader:send("Size", {World.Blur.Canvas:getDimensions()})
+	World.Aberration.Shader:send("Size", {World.Aberration.Canvas:getDimensions()})
 	
 	World.Rooms = {}
 	World.Bodies = {}
