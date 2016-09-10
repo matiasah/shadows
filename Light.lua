@@ -5,7 +5,7 @@ Light.__index = Light
 Light.x, Light.y, Light.z = 0, 0, 1
 Light.Angle, Light.Arc = 0, 360
 Light.Radius = 0
-Light.SizeRadius = 60
+Light.SizeRadius = 100
 
 Light.R, Light.G, Light.B, Light.A = 255, 255, 255, 255
 
@@ -117,7 +117,7 @@ function Light:Update()
 			local Angle = math.rad(self.Angle) - math.pi/2
 			
 			love.graphics.setShader(Shadows.LightShader)
-			love.graphics.setBlendMode("alpha", "alphamultiply")
+			love.graphics.setBlendMode("alpha", "premultiplied")
 			
 			love.graphics.setColor(self.R, self.G, self.B, self.A)
 			love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
