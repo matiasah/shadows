@@ -110,7 +110,7 @@ function Light:Update()
 			
 		else
 			
-			Shadows.LightShader:send("LightRadius", self.Radius)
+			Shadows.LightShader:send("Radius", self.Radius)
 			Shadows.LightShader:send("Center", {self.Radius, self.Radius, self.z})
 			
 			local Arc = math.rad(self.Arc/2)
@@ -125,9 +125,6 @@ function Light:Update()
 			love.graphics.setShader()
 			
 		end
-		
-		--Shadows.PenumbraBlur:send("Size", {self.ShadowCanvas:getDimensions()})
-		--love.graphics.setShader(Shadows.PenumbraBlur)
 		
 		love.graphics.setBlendMode("multiply", "premultiplied")
 		love.graphics.draw(self.ShadowCanvas, 0, 0)

@@ -1,31 +1,5 @@
 local Shadows = ...
 
--- Failed attempt to make a FOV blur shader
-Shadows.PenumbraBlur = love.graphics.newShader [[
-	extern vec2 Size;
-	
-	vec4 effect( vec4 vColor, Image texture, vec2 tc, vec2 screen_coords ) {
-		
-		number Distance = length(0.5 - tc);
-		number Radius = Distance;
-		
-		vec4 Sum = vec4(0);
-		
-		for (number x = -Radius; x <= Radius; x++) {
-		
-			for (number y = -Radius; y <= Radius; y++) {
-			
-				Sum += Texel(texture, tc.st + vec2(x, y) / Size);
-			}
-			
-		}
-		
-		number N = Radius * 2.0 + 1.0;
-		
-		return Sum / ( N * N);
-	}
-]]
-
 Shadows.PenumbraShader = love.graphics.newShader[[
 	extern number twopi;
 	extern number Source;
@@ -110,16 +84,16 @@ Shadows.AberrationShader = love.graphics.newShader[[
 ]]; Shadows.AberrationShader:send("aberration", 3)
 
 Shadows.LightShader = love.graphics.newShader [[
-	extern float LightRadius;
+	extern float Radius;
 	extern vec3 Center;
 
 	vec4 effect(vec4 Color, Image Texture, vec2 tc, vec2 pc) {
 		
 		float Distance = length(vec3(pc, 0E0) - Center);
 		
-		if (Distance <= LightRadius) {
+		if (Distance <= Radius) {
 		
-			float Mult = 1E0 - ( Distance / LightRadius );
+			float Mult = 1E0 - ( Distance / Radius );
 			
 			Color.r = Color.r * Mult;
 			Color.g = Color.g * Mult;
