@@ -1,21 +1,23 @@
 local Shadows = ...
 
 Shadows.BlurShader = love.graphics.newShader[[
-	extern number Radius;
 	extern vec2 Size;
+	extern float Quality;
+	extern float Radius;
   
 	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 pc){
-		color = vec4(0);
+		vec4 Sum = vec4(0);
+		vec2 SizeFactor = Quality / Size;
 
 		for (float x = -Radius; x <= Radius; x++) {
 			for (float y = -Radius; y <= Radius; y++) {
-				color += Texel(tex, tc + vec2(x, y) / Size);
+				Sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
 			}
 		}
 		
-		return color / ((2.0 * Radius + 1.0) * (2.0 * Radius + 1.0));
+		return Sum / ((2.0 * Radius + 1.0) * (2.0 * Radius + 1.0));
 	}
-]]; Shadows.BlurShader:send("Size", {love.graphics.getDimensions()})
+]]; Shadows.BlurShader:send("Quality", 1)
   ; Shadows.BlurShader:send("Radius", 2)
 
 Shadows.BloomShader = love.graphics.newShader [[
@@ -23,25 +25,21 @@ Shadows.BloomShader = love.graphics.newShader [[
 	extern int Samples; // pixels per axis; higher = bigger glow, worse performance
 	extern float Quality; // lower = smaller glow, better quality
 
-	vec4 effect(vec4 colour, Image tex, vec2 tc, vec2 sc){
+	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 sc){
 		vec4 source = Texel(tex, tc);
 		vec4 sum = vec4(0);
-		vec2 SizeFactor = vec2(1) / Size * Quality;
+		vec2 SizeFactor = Quality / Size;
 		int diff = (Samples - 1) / 2;
 		
 		for (int x = -diff; x <= diff; x++){
-			for (int y = -diff; y <= diff; y++)
-			{
-				vec2 offset = vec2(x, y) * SizeFactor;
-				sum += Texel(tex, tc + offset);
+			for (int y = -diff; y <= diff; y++) {
+				sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
 			}
 		}
 		
-		float SamplesSq = float(Samples * Samples);
-		return ((sum / SamplesSq) + source) * colour;
+		return (sum / ( Samples * Samples ) + source) * color;
 	}
-]]; Shadows.BloomShader:send("Size", {love.graphics.getDimensions()})
-  ; Shadows.BloomShader:send("Quality", 4)
+]]; Shadows.BloomShader:send("Quality", 4)
   ; Shadows.BloomShader:sendInt("Samples", 1)
 
 -- https://love2d.org/forums/viewtopic.php?t=81014#p189754

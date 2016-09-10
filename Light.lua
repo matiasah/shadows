@@ -55,7 +55,7 @@ function Light:GenerateShadows()
 					local dx, dy = x - self.x, y - self.y
 					if dx * dx + dy * dy < Radius * Radius then
 						
-						local SampleMax = self.World.Samples / 2
+						local SampleMax = (self.Samples or self.World.Samples) / 2
 						local Inv = 1 / SampleMax
 						
 						for i = -SampleMax, SampleMax do
@@ -82,7 +82,7 @@ function Light:GenerateShadows()
 					local Heading = math.atan2(dy, dx) - math.pi / 2
 					local Left = {math.cos(Heading), math.sin(Heading)}
 					
-					local SampleMax = self.World.Samples / 2
+					local SampleMax = (self.Samples or self.World.Samples) / 2
 					local Inv = 1 / SampleMax
 					
 					for i = -SampleMax, SampleMax do
@@ -191,18 +191,24 @@ end
 function Light:SetPosition(x, y, z)
 	
 	if x ~= self.x then
+		
 		self.x = x
 		self.Changed = true
+		
 	end
 	
 	if y ~= self.y then
+		
 		self.y = y
 		self.Changed = true
+		
 	end
 	
 	if z and z ~= self.z then
+		
 		self.z = z
 		self.Changed = true
+		
 	end
 	
 	return self

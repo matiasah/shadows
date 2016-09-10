@@ -208,5 +208,7 @@ function World:update()
 		self:ApplyFilters()
 		self.UpdateCanvas = nil
 	end
+	
 	love.graphics.setCanvas()
+	
 end
