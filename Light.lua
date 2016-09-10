@@ -64,6 +64,7 @@ end
 function Light:Update()
 	if self.Changed or self.World.Changed then
 		love.graphics.setCanvas(self.ShadowCanvas)
+		
 		love.graphics.translate(self.Radius - self.x, self.Radius - self.y)
 		love.graphics.clear(255, 255, 255, 255)
 		
@@ -71,7 +72,9 @@ function Light:Update()
 		love.graphics.setColor(0, 0, 0, 255)
 		
 		for _, Shadow in pairs(self:GenerateShadows()) do
+			
 			if Shadow.Soft then
+				
 				Shadows.PenumbraShader:send("Source", Shadow[4])
 				Shadows.PenumbraShader:send("Goal", Shadow[5])
 				Shadows.PenumbraShader:send("vSource", {Shadow[1] - self.x + self.Radius, Shadow[2] - self.y + self.Radius})
@@ -79,11 +82,16 @@ function Light:Update()
 				love.graphics.setShader(Shadows.PenumbraShader)
 				love.graphics.setBlendMode("subtract", "alphamultiply")
 				love.graphics[Shadow.type]("fill", unpack(Shadow))
+				
 				love.graphics.setBlendMode("alpha", "alphamultiply")
 				love.graphics.setShader()
+				
 			else
+				
 				love.graphics[Shadow.type]("fill", unpack(Shadow))
+				
 			end
+			
 		end
 		
 		love.graphics.setColor(255, 255, 255, 255)
@@ -95,10 +103,13 @@ function Light:Update()
 		love.graphics.origin()
 		
 		if self.Image then
+			
 			love.graphics.setBlendMode("lighten", "premultiplied")
 			love.graphics.setColor(self.R, self.G, self.B, self.A)
 			love.graphics.draw(self.Image, self.Radius, self.Radius)
+			
 		else
+			
 			Shadows.LightShader:send("LightColor", {self.R/255, self.G/255, self.B/255})
 			Shadows.LightShader:send("LightRadius", self.Radius)
 			Shadows.LightShader:send("Center", {self.Radius, self.Radius, self.z})
@@ -111,10 +122,11 @@ function Light:Update()
 			love.graphics.setColor(255, 255, 255, self.A)
 			love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
 			love.graphics.setShader()
+			
 		end
 		
-		--Shadows.PenumbraBlur:send("Size", {self.ShadowCanvas:getDimensions()})
-		--love.graphics.setShader(Shadows.PenumbraBlur)
+		Shadows.PenumbraBlur:send("Size", {self.ShadowCanvas:getDimensions()})
+		love.graphics.setShader(Shadows.PenumbraBlur)
 		
 		love.graphics.setBlendMode("multiply", "premultiplied")
 		love.graphics.draw(self.ShadowCanvas, 0, 0)

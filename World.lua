@@ -1,7 +1,7 @@
 local Shadows = ...
 local World = {}
 
-World.UsePenumbra = true
+World.UsePenumbra = false
 World.__index = World
 World.R, World.G, World.B, World.A = 0, 0, 0, 255
 
@@ -14,12 +14,12 @@ function Shadows.CreateWorld(Width, Height)
 	World.Bloom = {
 		Shader = Shadows.BloomShader,
 		Canvas = love.graphics.newCanvas(World.Canvas:getDimensions()),
-		Active = true,
+		--Active = true,
 	}
 	World.Blur = {
 		Shader = Shadows.BlurShader,
 		Canvas = love.graphics.newCanvas(World.Canvas:getDimensions()),
-		Active = true
+		--Active = true
 	}
 	World.Aberration = {
 		Shader = Shadows.AberrationShader,
