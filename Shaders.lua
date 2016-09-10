@@ -110,14 +110,12 @@ Shadows.AberrationShader = love.graphics.newShader[[
 ]]; Shadows.AberrationShader:send("aberration", 3)
 
 Shadows.LightShader = love.graphics.newShader[[
-	extern vec3 Center;
-	extern vec3 LightColor;
 	extern float LightRadius;
 
-	vec4 effect(vec4 Color, Image Texture, vec2 TextureCords, vec2 PixelCords){
-		float Distance = length(vec3(PixelCords, 0E0) - Center);
+	vec4 effect(vec4 Color, Image Texture, vec2 TextureCords, vec2 PixelCords) {
+		float Distance = length(0.5 - TextureCords);
 		if (Distance <= LightRadius) {
-			return vec4(LightColor, 1E0 - ((Distance / LightRadius)) );
+			return Color * vec4(1E0, 1E0, 1E0, 1E0 - ( Distance / LightRadius ) );
 		}
 		return vec4(0E0, 0E0, 0E0, 0E0);
 	}

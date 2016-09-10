@@ -110,16 +110,14 @@ function Light:Update()
 			
 		else
 			
-			Shadows.LightShader:send("LightColor", {self.R/255, self.G/255, self.B/255})
 			Shadows.LightShader:send("LightRadius", self.Radius)
-			Shadows.LightShader:send("Center", {self.Radius, self.Radius, self.z})
 			
 			local Arc = math.rad(self.Arc/2)
 			local Angle = math.rad(self.Angle) - math.pi/2
 			
 			love.graphics.setShader(Shadows.LightShader)
 			love.graphics.setBlendMode("alpha")
-			love.graphics.setColor(255, 255, 255, self.A)
+			love.graphics.setColor(self.R, self.G, self.B, self.A)
 			love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
 			love.graphics.setShader()
 			
