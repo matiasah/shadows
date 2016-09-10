@@ -94,7 +94,7 @@ Shadows.BloomShader = love.graphics.newShader [[
 
 -- https://love2d.org/forums/viewtopic.php?t=81014#p189754
 Shadows.AberrationShader = love.graphics.newShader[[
-  extern vec2 size;
+	extern vec2 size;
 	extern number aberration;
 
 	vec4 effect(vec4 col, Image texture, vec2 texturePos, vec2 screenPos){
@@ -109,16 +109,23 @@ Shadows.AberrationShader = love.graphics.newShader[[
 	}
 ]]; Shadows.AberrationShader:send("aberration", 3)
 
-Shadows.LightShader = love.graphics.newShader[[
+Shadows.LightShader = love.graphics.newShader [[
 	extern float LightRadius;
+	extern vec3 Center;
 
-	vec4 effect(vec4 Color, Image Texture, vec2 TextureCords, vec2 PixelCords) {
+	vec4 effect(vec4 Color, Image Texture, vec2 tc, vec2 pc) {
 		
-		float Distance = length(0.5 - TextureCords);
+		float Distance = length(vec3(pc, 0E0) - Center);
 		
 		if (Distance <= LightRadius) {
 		
-			return Color * vec4(1E0, 1E0, 1E0, 1E0 - ( Distance / LightRadius ) );
+			float Mult = 1E0 - ( Distance / LightRadius );
+			
+			Color.r = Color.r * Mult;
+			Color.g = Color.g * Mult;
+			Color.b = Color.b * Mult;
+		
+			return Color;
 			
 		}
 		
