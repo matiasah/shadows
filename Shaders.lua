@@ -113,10 +113,15 @@ Shadows.LightShader = love.graphics.newShader[[
 	extern float LightRadius;
 
 	vec4 effect(vec4 Color, Image Texture, vec2 TextureCords, vec2 PixelCords) {
+		
 		float Distance = length(0.5 - TextureCords);
+		
 		if (Distance <= LightRadius) {
+		
 			return Color * vec4(1E0, 1E0, 1E0, 1E0 - ( Distance / LightRadius ) );
+			
 		}
+		
 		return vec4(0E0, 0E0, 0E0, 0E0);
 	}
 ]]

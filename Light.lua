@@ -95,7 +95,7 @@ function Light:Update()
 		end
 		
 		love.graphics.setColor(255, 255, 255, 255)
-		love.graphics.setBlendMode("add")
+		love.graphics.setBlendMode("add", "alphamultiply")
 		love.graphics.draw(self.World.BodyCanvas, 0, 0)
 		
 		love.graphics.setCanvas(self.Canvas)
@@ -123,8 +123,8 @@ function Light:Update()
 			
 		end
 		
-		Shadows.PenumbraBlur:send("Size", {self.ShadowCanvas:getDimensions()})
-		love.graphics.setShader(Shadows.PenumbraBlur)
+		--Shadows.PenumbraBlur:send("Size", {self.ShadowCanvas:getDimensions()})
+		--love.graphics.setShader(Shadows.PenumbraBlur)
 		
 		love.graphics.setBlendMode("multiply", "premultiplied")
 		love.graphics.draw(self.ShadowCanvas, 0, 0)
