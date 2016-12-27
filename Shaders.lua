@@ -37,7 +37,7 @@ Shadows.BloomShader = love.graphics.newShader [[
 			}
 		}
 		
-		return (sum / ( Samples * Samples ) + source) * color;
+		return (sum / (float( Samples * Samples )) + source) * color;
 	}
 ]]; Shadows.BloomShader:send("Quality", 4)
   ; Shadows.BloomShader:sendInt("Samples", 1)
