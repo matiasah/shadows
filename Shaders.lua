@@ -32,22 +32,30 @@ Shadows.BloomShader = love.graphics.newShader [[
 	extern int Samples; // pixels per axis; higher = bigger glow, worse performance
 	extern float Quality; // lower = smaller glow, better quality
 
-	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 sc){
+	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 sc) {
+	
 		vec4 source = Texel(tex, tc);
 		vec4 sum = vec4(0);
 		vec2 SizeFactor = Quality / Size;
+		
 		int diff = (Samples - 1) / 2;
+		int samp = 0;
 		
 		for (int x = -diff; x <= diff; x++){
+		
 			for (int y = -diff; y <= diff; y++) {
+			
 				sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
+				samp++;
+				
 			}
+			
 		}
 		
-		return (sum / (float( Samples * Samples )) + source) * color;
+		return (sum / (float( samp )) + source) * color;
 	}
-]]; Shadows.BloomShader:send("Quality", 4)
-  ; Shadows.BloomShader:sendInt("Samples", 1)
+]]; Shadows.BloomShader:send("Quality", 2)
+  ; Shadows.BloomShader:sendInt("Samples", 10)
 
 -- https://love2d.org/forums/viewtopic.php?t=81014#p189754
 Shadows.AberrationShader = love.graphics.newShader[[
@@ -64,7 +72,7 @@ Shadows.AberrationShader = love.graphics.newShader[[
 
 		return vec4(red.r, green.g, blue.b, 1E0); //final color with alpha of 1
 	}
-]]; Shadows.AberrationShader:send("Aberration", 3)
+]]; Shadows.AberrationShader:send("Aberration", 2)
 
 Shadows.LightShader = love.graphics.newShader [[
 	extern float Radius;

@@ -17,20 +17,7 @@ function Shadows.CreatePolygon(Body, ...)
 	local Polygon = setmetatable({}, Polygon)
 	
 	Polygon.Body = Body
-	Polygon.Vertices = {...}
-	Polygon.Radius = 0
-	
-	for i = 1, #Polygon.Vertices, 2 do
-		
-		local Radius = sqrt(Polygon.Vertices[i]^2 + Polygon.Vertices[i + 1]^2)
-		
-		if Radius > Polygon.Radius then
-			
-			Polygon.Radius = Radius
-			
-		end
-		
-	end
+	Polygon:SetVertices(...)
 	
 	Body:AddShape(Polygon)
 	
@@ -68,7 +55,8 @@ function Polygon:SetVertices(...)
 	
 	for i = 1, #self.Vertices, 2 do
 		
-		local Radius = sqrt(self.Vertices[i]^2 + self.Vertices[i + 1]^2)
+		local x, y = self.Vertices[i], self.Vertices[i + 1]
+		local Radius = sqrt( x * x + y * y )
 		
 		if Radius > self.Radius then
 			
@@ -86,11 +74,10 @@ function Polygon:GetVertices()
 	
 	for i = 1, #self.Vertices, 2 do
 		
-		local vx, vy = self.Vertices[i], self.Vertices[i + 1]
-		local Length = sqrt(vx * vx + vy * vy)
-		local Heading = atan2(vy, vx)
+		local x, y = self.Vertices[i], self.Vertices[i + 1]
+		local Length = sqrt(x * x + y * y)
+		local Heading = atan2(y, x) + rad(self.Body.Angle)
 		
-		Heading = Heading + rad(self.Body.Angle)
 		insert(Vertices, self.Body.x + cos(Heading) * Length)
 		insert(Vertices, self.Body.y + sin(Heading) * Length)
 		

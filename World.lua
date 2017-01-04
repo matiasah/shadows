@@ -15,25 +15,25 @@ function Shadows.CreateWorld()
 	
 	World.Bloom = {
 		Shader = Shadows.BloomShader,
-		Canvas = love.graphics.newCanvas(World.Canvas:getDimensions()),
+		Canvas = love.graphics.newCanvas(Width, Height),
 		Active = true,
 	}
 	
 	World.Blur = {
 		Shader = Shadows.BlurShader,
-		Canvas = love.graphics.newCanvas(World.Canvas:getDimensions()),
+		Canvas = love.graphics.newCanvas(Width, Height),
 		Active = true
 	}
 	
 	World.Aberration = {
 		Shader = Shadows.AberrationShader,
-		Canvas = love.graphics.newCanvas(World.Canvas:getDimensions()),
-		--Active = true
+		Canvas = love.graphics.newCanvas(Width, Height),
+		Active = true
 	}
 	
-	World.Bloom.Shader:send("Size", {World.Bloom.Canvas:getDimensions()})
-	World.Blur.Shader:send("Size", {World.Blur.Canvas:getDimensions()})
-	World.Aberration.Shader:send("Size", {World.Aberration.Canvas:getDimensions()})
+	World.Bloom.Shader:send("Size", {Width, Height})
+	World.Blur.Shader:send("Size", {Width, Height})
+	World.Aberration.Shader:send("Size", {Width, Height})
 	
 	World.Rooms = {}
 	World.Bodies = {}
@@ -150,6 +150,7 @@ end
 function World:draw()
 	
 	love.graphics.setBlendMode("darken", "premultiplied")
+	love.graphics.setColor(255, 255, 255, 255)
 	love.graphics.draw(self.FinalFilter, 0, 0)
 	love.graphics.setBlendMode("alpha", "alphamultiply")
 	
