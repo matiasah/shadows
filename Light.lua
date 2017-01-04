@@ -16,6 +16,7 @@ function Shadows.CreateLight(World, Radius)
 	Light.Radius = Radius
 	Light.Canvas = love.graphics.newCanvas(Light.Radius * 2, Light.Radius * 2)
 	Light.ShadowCanvas = love.graphics.newCanvas(Light.Radius * 2, Light.Radius * 2)
+	Light.Shadows = {}
 	
 	World:AddLight(Light)
 	
@@ -31,6 +32,7 @@ function Shadows.CreateStar(World, Radius)
 	Light.Radius = Radius
 	Light.Canvas = love.graphics.newCanvas(Light.Radius * 2, Light.Radius * 2)
 	Light.ShadowCanvas = love.graphics.newCanvas(Light.Radius * 2, Light.Radius * 2)
+	Light.Shadows = {}
 	
 	World:AddStar(Light)
 	
@@ -39,28 +41,28 @@ function Shadows.CreateStar(World, Radius)
 end
 
 function Light:GenerateShadows()
-	local Shapes = {}
 	
 	for _, Body in pairs(self.World.Bodies) do
 		
-		if Body.Body then
+		if self.Moved or Body.Moved or not self.Shadows[ Body.ID ] then
+		
+			local Shapes = {}
 			
-			for _, Fixture in pairs(Body.Body:getFixtureList()) do
+			if Body.Body then
 				
-				local Shape = Fixture:getShape()
-				if Shape.GenerateShadows then
+				for _, Fixture in pairs(Body.Body:getFixtureList()) do
 					
-					local Radius = self.Radius + Shape:GetRadius(Body)
-					local x, y = Shape:GetPosition(Body)
-					local dx, dy = x - self.x, y - self.y
-					if dx * dx + dy * dy < Radius * Radius then
+					local Shape = Fixture:getShape()
+					
+					if Shape.GenerateShadows then
 						
-						local SampleMax = (self.Samples or self.World.Samples) / 2
-						local Inv = 1 / SampleMax
+						local Radius = self.Radius + Shape:GetRadius(Body)
+						local x, y = Shape:GetPosition(Body)
+						local dx, dy = x - self.x, y - self.y
 						
-						for i = -SampleMax, SampleMax do
+						if dx * dx + dy * dy < Radius * Radius then
 							
-							Shape:GenerateShadows(Shapes, Body, Left[1] * i * self.SizeRadius * Inv, Left[2] * i * self.SizeRadius * Inv, self)
+							Shape:GenerateShadows(Shapes, Body, 0, 0, self)
 							
 						end
 						
@@ -68,32 +70,25 @@ function Light:GenerateShadows()
 					
 				end
 				
-			end
-			
-		else
-			
-			for _, Shape in pairs(Body.Shapes) do
+			else
 				
-				local Radius = self.Radius + Shape:GetRadius()
-				local x, y = Shape:GetPosition()
-				local dx, dy = x - self.x, y - self.y
-				if dx * dx + dy * dy < Radius * Radius then
+				for _, Shape in pairs(Body.Shapes) do
 					
-					local Heading = math.atan2(dy, dx) - math.pi / 2
-					local Left = {math.cos(Heading), math.sin(Heading)}
+					local Radius = self.Radius + Shape:GetRadius()
+					local x, y = Shape:GetPosition()
+					local dx, dy = x - self.x, y - self.y
 					
-					local SampleMax = (self.Samples or self.World.Samples) / 2
-					local Inv = 1 / SampleMax
-					
-					for i = -SampleMax, SampleMax do
+					if dx * dx + dy * dy < Radius * Radius then
 						
-						Shape:GenerateShadows(Shapes, Body, Left[1] * i * self.SizeRadius * Inv, Left[2] * i * self.SizeRadius * Inv, self)
+						Shape:GenerateShadows(Shapes, Body, 0, 0, self)
 						
 					end
 					
 				end
 				
 			end
+			
+			self.Shadows[ Body.ID ] = Shapes
 			
 		end
 		
@@ -111,14 +106,19 @@ function Light:Update()
 		love.graphics.translate(self.Radius - self.x, self.Radius - self.y)
 		love.graphics.clear(255, 255, 255, 255)
 		
-		local SampleColor = 255 / self.World.Samples + 1
-		
 		love.graphics.setBlendMode("subtract", "alphamultiply")
-		love.graphics.setColor(SampleColor, SampleColor, SampleColor, 255)
+		love.graphics.setColor(255, 255, 255, 255)
 		
-		for _, Shadow in pairs(self:GenerateShadows()) do
+		self:GenerateShadows()
+		self.Moved = nil
+		
+		for _, Shapes in pairs(self.Shadows) do
 			
-			love.graphics[Shadow.type]("fill", unpack(Shadow))
+			for _, Shadow in pairs(Shapes) do
+				
+				love.graphics[Shadow.type]("fill", unpack(Shadow))
+				
+			end
 			
 		end
 		
@@ -194,6 +194,7 @@ function Light:SetPosition(x, y, z)
 		
 		self.x = x
 		self.Changed = true
+		self.Moved = true
 		
 	end
 	
@@ -201,6 +202,7 @@ function Light:SetPosition(x, y, z)
 		
 		self.y = y
 		self.Changed = true
+		self.Moved = true
 		
 	end
 	
@@ -208,6 +210,7 @@ function Light:SetPosition(x, y, z)
 		
 		self.z = z
 		self.Changed = true
+		self.Moved = true
 		
 	end
 	

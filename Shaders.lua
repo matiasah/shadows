@@ -5,17 +5,24 @@ Shadows.BlurShader = love.graphics.newShader[[
 	extern float Quality;
 	extern float Radius;
   
-	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 pc){
+	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 pc) {
+	
 		vec4 Sum = vec4(0);
 		vec2 SizeFactor = Quality / Size;
 
 		for (float x = -Radius; x <= Radius; x++) {
+		
 			for (float y = -Radius; y <= Radius; y++) {
+			
 				Sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
+				
 			}
+			
 		}
 		
-		return Sum / ((2.0 * Radius + 1.0) * (2.0 * Radius + 1.0));
+		float Delta = 2.0 * Radius + 1.0;
+		
+		return Sum / ( Delta * Delta );
 	}
 ]]; Shadows.BlurShader:send("Quality", 1)
   ; Shadows.BlurShader:send("Radius", 2)
