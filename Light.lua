@@ -12,10 +12,11 @@ Light.R, Light.G, Light.B, Light.A = 255, 255, 255, 255
 function Shadows.CreateLight(World, Radius)
 	
 	local Light = setmetatable({}, Light)
+	local Width, Height = World.Canvas:getDimensions()
 	
 	Light.Radius = Radius
-	Light.Canvas = love.graphics.newCanvas(Light.Radius * 2, Light.Radius * 2)
-	Light.ShadowCanvas = love.graphics.newCanvas(Light.Radius * 2, Light.Radius * 2)
+	Light.Canvas = love.graphics.newCanvas( Width, Height )
+	Light.ShadowCanvas = love.graphics.newCanvas( Width, Height )
 	Light.Shadows = {}
 	
 	World:AddLight(Light)
@@ -27,11 +28,12 @@ end
 function Shadows.CreateStar(World, Radius)
 	
 	local Light = setmetatable({}, Light)
+	local Width, Height = World.Canvas:getDimensions()
 	
 	Light.Star = true
 	Light.Radius = Radius
-	Light.Canvas = love.graphics.newCanvas(Light.Radius * 2, Light.Radius * 2)
-	Light.ShadowCanvas = love.graphics.newCanvas(Light.Radius * 2, Light.Radius * 2)
+	Light.Canvas = love.graphics.newCanvas( Width, Height )
+	Light.ShadowCanvas = love.graphics.newCanvas( Width, Height )
 	Light.Shadows = {}
 	
 	World:AddStar(Light)
@@ -102,9 +104,9 @@ function Light:Update()
 	if self.Changed or self.World.Changed then
 		
 		love.graphics.setCanvas(self.ShadowCanvas)
-		
-		love.graphics.translate(self.Radius - self.x, self.Radius - self.y)
 		love.graphics.clear(255, 255, 255, 255)
+		
+		love.graphics.translate(-self.World.x, -self.World.y)
 		
 		love.graphics.setBlendMode("subtract", "alphamultiply")
 		love.graphics.setColor(255, 255, 255, 255)
@@ -124,11 +126,17 @@ function Light:Update()
 		
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add")
-		love.graphics.draw(self.World.BodyCanvas, 0, 0)
+		
+		for Index, Body in pairs(self.World.Bodies) do
+			
+			Body:Draw()
+			
+		end
 		
 		love.graphics.setCanvas(self.Canvas)
 		love.graphics.clear()
 		love.graphics.origin()
+		love.graphics.translate(self.x - self.World.x - self.Radius, self.y - self.World.y - self.Radius)
 		
 		if self.Image then
 			
@@ -139,7 +147,7 @@ function Light:Update()
 		else
 			
 			Shadows.LightShader:send("Radius", self.Radius)
-			Shadows.LightShader:send("Center", {self.Radius, self.Radius, self.z})
+			Shadows.LightShader:send("Center", {self.x - self.World.x, self.y - self.World.y, self.z})
 			
 			local Arc = math.rad(self.Arc / 2)
 			local Angle = math.rad(self.Angle) - math.pi/2
@@ -154,7 +162,8 @@ function Light:Update()
 			
 		end
 		
-		love.graphics.setBlendMode("multiply", "premultiplied")
+		love.graphics.origin()
+		love.graphics.setBlendMode("multiply", "alphamultiply")
 		love.graphics.draw(self.ShadowCanvas, 0, 0)
 		
 		love.graphics.setBlendMode("alpha", "alphamultiply")
@@ -270,8 +279,6 @@ function Light:SetImage(Image)
 		
 		self.Image = Image
 		self.Radius = math.sqrt( Image:getWidth() ^ 2 + Image:getHeight() ^ 2 ) / 2
-		self.Canvas = love.graphics.newCanvas(self.Radius * 2, self.Radius * 2)
-		self.ShadowCanvas = love.graphics.newCanvas(self.Radius * 2, self.Radius * 2)
 		self.Changed = true
 		
 	end
@@ -289,8 +296,6 @@ function Light:SetRadius(Radius)
 	if Radius ~= self.Radius then
 		
 		self.Radius = Radius
-		self.Canvas = love.graphics.newCanvas(self.Radius * 2, self.Radius * 2)
-		self.ShadowCanvas = love.graphics.newCanvas(self.Radius * 2, self.Radius * 2)
 		self.Changed = true
 		
 	end
@@ -306,9 +311,15 @@ end
 function Light:Remove()
 	
 	if self.Star then
+		
 		self.World.Stars[self.ID] = nil
+		
 	else
+		
 		self.World.Lights[self.ID] = nil
+		
 	end
+	
+	self.World.Changed = true
 	
 end

@@ -26,6 +26,20 @@ function Body:Remove()
 	
 	self.World.Shapes[self.ID] = nil
 	
+	for _, Light in pairs(self.World.Lights) do
+		
+		Light.Shadows[ self.ID ] = nil
+		
+	end
+	
+	for _, Light in pairs(self.World.Stars) do
+		
+		Light.Shadows[ self.ID ] = nil
+		
+	end
+	
+	self.World.Changed = true
+	
 end
 
 function Body:Draw()

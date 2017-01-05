@@ -14,6 +14,7 @@ Polygon.__index = Polygon
 Polygon.Angle = 0
 
 function Shadows.CreatePolygon(Body, ...)
+	
 	local Polygon = setmetatable({}, Polygon)
 	
 	Polygon.Body = Body
@@ -22,11 +23,14 @@ function Shadows.CreatePolygon(Body, ...)
 	Body:AddShape(Polygon)
 	
 	return Polygon
+	
 end
 
 function Polygon:Remove()
 	
 	self.Body.Shapes[self.ID] = nil
+	self.Body.Moved = true
+	self.Body.World.Changed = true
 	
 end
 

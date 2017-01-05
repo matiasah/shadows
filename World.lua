@@ -11,7 +11,6 @@ function Shadows.CreateWorld()
 	local Width, Height = love.graphics.getDimensions()
 	
 	World.Canvas = love.graphics.newCanvas(Width, Height)
-	World.BodyCanvas = love.graphics.newCanvas(Width, Height)
 	
 	World.Bloom = {
 		Shader = Shadows.BloomShader,
@@ -247,22 +246,6 @@ function World:update()
 		end
 		
 	end
-
-	if self.Changed then
-		
-		love.graphics.setCanvas(self.BodyCanvas)
-		love.graphics.clear(0, 0, 0, 255)
-		love.graphics.origin()
-		
-		love.graphics.setColor(255, 255, 255, 255)
-		
-		for Index, Body in pairs(self.Bodies) do
-			
-			Body:Draw()
-			
-		end
-		
-	end
 	
 	for Index, Light in pairs(self.Lights) do
 		
@@ -283,14 +266,14 @@ function World:update()
 		love.graphics.setCanvas(self.Canvas)
 		love.graphics.clear(self.R, self.G, self.B, self.A)
 		
-		love.graphics.translate(-self.x, -self.y)
+		love.graphics.translate(0, 0)
 		
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		
 		for _, Light in pairs(self.Stars) do
 			
-			love.graphics.draw(Light.Canvas, Light.x - Light.Radius, Light.y - Light.Radius)
+			love.graphics.draw(Light.Canvas, 0, 0)
 			
 		end
 		
@@ -307,7 +290,7 @@ function World:update()
 		
 		for _, Light in pairs(self.Lights) do
 			
-			love.graphics.draw(Light.Canvas, Light.x - Light.Radius, Light.y - Light.Radius)
+			love.graphics.draw(Light.Canvas, 0, 0)
 			
 		end
 		

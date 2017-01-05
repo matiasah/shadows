@@ -30,6 +30,8 @@ end
 function Circle:Remove()
 	
 	self.Body.Shapes[self.ID] = nil
+	self.Body.Moved = true
+	self.Body.World.Changed = true
 	
 end
 

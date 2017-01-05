@@ -52,10 +52,10 @@ Shadows.BloomShader = love.graphics.newShader [[
 			
 		}
 		
-		return (sum / (float( samp )) + source) * color;
+		return (sum / (float( Samples * Samples )) + source) * color;
 	}
-]]; Shadows.BloomShader:send("Quality", 2)
-  ; Shadows.BloomShader:sendInt("Samples", 10)
+]]; Shadows.BloomShader:send("Quality", 5)
+  ; Shadows.BloomShader:sendInt("Samples", 2)
 
 -- https://love2d.org/forums/viewtopic.php?t=81014#p189754
 Shadows.AberrationShader = love.graphics.newShader[[
