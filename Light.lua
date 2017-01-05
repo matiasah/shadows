@@ -9,6 +9,17 @@ Light.SizeRadius = 10
 
 Light.R, Light.G, Light.B, Light.A = 255, 255, 255, 255
 
+local setCanvas = love.graphics.setCanvas
+local clear = love.graphics.clear
+local origin = love.graphics.origin
+local translate = love.graphics.translate
+local setBlendMode = love.graphics.setBlendMode
+local setColor = love.graphics.setColor
+local setShader = love.graphics.setShader
+local arc = love.graphics.arc
+local draw = love.graphics.draw
+local halfPi = math.pi * 0.5
+
 function Shadows.CreateLight(World, Radius)
 	
 	local Light = setmetatable({}, Light)
@@ -103,13 +114,13 @@ function Light:Update()
 	
 	if self.Changed or self.World.Changed then
 		
-		love.graphics.setCanvas(self.ShadowCanvas)
-		love.graphics.clear(255, 255, 255, 255)
+		setCanvas(self.ShadowCanvas)
+		clear(255, 255, 255, 255)
 		
-		love.graphics.translate(-self.World.x, -self.World.y)
+		translate(-self.World.x, -self.World.y)
 		
-		love.graphics.setBlendMode("subtract", "alphamultiply")
-		love.graphics.setColor(255, 255, 255, 255)
+		setBlendMode("subtract", "alphamultiply")
+		setColor(255, 255, 255, 255)
 		
 		self:GenerateShadows()
 		self.Moved = nil
@@ -124,8 +135,8 @@ function Light:Update()
 			
 		end
 		
-		love.graphics.setColor(255, 255, 255, 255)
-		love.graphics.setBlendMode("add")
+		setColor(255, 255, 255, 255)
+		setBlendMode("add")
 		
 		for Index, Body in pairs(self.World.Bodies) do
 			
@@ -133,16 +144,16 @@ function Light:Update()
 			
 		end
 		
-		love.graphics.setCanvas(self.Canvas)
-		love.graphics.clear()
-		love.graphics.origin()
-		love.graphics.translate(self.x - self.World.x - self.Radius, self.y - self.World.y - self.Radius)
+		setCanvas(self.Canvas)
+		clear()
+		origin()
+		translate(self.x - self.World.x - self.Radius, self.y - self.World.y - self.Radius)
 		
 		if self.Image then
 			
-			love.graphics.setBlendMode("lighten", "premultiplied")
-			love.graphics.setColor(self.R, self.G, self.B, self.A)
-			love.graphics.draw(self.Image, self.Radius, self.Radius)
+			setBlendMode("lighten", "premultiplied")
+			setColor(self.R, self.G, self.B, self.A)
+			draw(self.Image, self.Radius, self.Radius)
 			
 		else
 			
@@ -150,26 +161,26 @@ function Light:Update()
 			Shadows.LightShader:send("Center", {self.x - self.World.x, self.y - self.World.y, self.z})
 			
 			local Arc = math.rad(self.Arc / 2)
-			local Angle = math.rad(self.Angle) - math.pi/2
+			local Angle = math.rad(self.Angle) - halfPi
 			
-			love.graphics.setShader(Shadows.LightShader)
-			love.graphics.setBlendMode("alpha", "premultiplied")
+			setShader(Shadows.LightShader)
+			setBlendMode("alpha", "premultiplied")
 			
-			love.graphics.setColor(self.R, self.G, self.B, self.A)
-			love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
+			setColor(self.R, self.G, self.B, self.A)
+			arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
 			
-			love.graphics.setShader()
+			setShader()
 			
 		end
 		
-		love.graphics.origin()
-		love.graphics.setBlendMode("multiply", "alphamultiply")
-		love.graphics.draw(self.ShadowCanvas, 0, 0)
+		origin()
+		setBlendMode("multiply", "alphamultiply")
+		draw(self.ShadowCanvas, 0, 0)
 		
-		love.graphics.setBlendMode("alpha", "alphamultiply")
-		love.graphics.origin()
-		love.graphics.setCanvas()
-		love.graphics.setShader()
+		setBlendMode("alpha", "alphamultiply")
+		origin()
+		setCanvas()
+		setShader()
 		
 		self.Changed = nil
 		self.World.UpdateCanvas = true
@@ -277,8 +288,10 @@ function Light:SetImage(Image)
 	
 	if Image ~= self.Image then
 		
+		local Width, Height = Image:getDimensions()
+		
 		self.Image = Image
-		self.Radius = math.sqrt( Image:getWidth() ^ 2 + Image:getHeight() ^ 2 ) / 2
+		self.Radius = math.sqrt( Width * Width + Height * Height ) * 0.5
 		self.Changed = true
 		
 	end
