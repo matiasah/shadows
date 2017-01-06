@@ -8,12 +8,13 @@ assert(love.filesystem.load(Path.."/PhysicsShapes/Circle.lua"))(Shadows)
 assert(love.filesystem.load(Path.."/PhysicsShapes/Polygon.lua"))(Shadows)
 
 Body.__index = Body
-Body.x, Body.y, Body.z = 0, 0, 1
-Body.Angle = 0
 
 function Shadows.CreateBody(World, ID)
 	
 	local Body = setmetatable({}, Body)
+	
+	Body.Transform = Shadows.Transform:new()
+	Body.Transform:SetLocalPosition(0, 0, 1)
 	
 	Body.Shapes = {}
 	World:AddBody(Body, ID)
@@ -74,21 +75,8 @@ function Body:Update()
 	
 	if self.Body then
 		
-		local x, y = self.Body:getPosition()
-		
-		if x ~= self.x or y ~= self.y then
+		if self.Transform:SetPosition( self.Body:getPosition() ) or self.Transform:SetRotation( math.deg( self.Body:getAngle() ) ) then
 			
-			self.x = x
-			self.y = y
-			self.World.Changed = true
-			self.Moved = true
-			
-		end
-		
-		local Angle = math.deg(self.Body:getAngle())
-		if Angle ~= self.Angle then
-			
-			self.Angle = Angle
 			self.World.Changed = true
 			
 		end
@@ -124,10 +112,7 @@ end
 
 function Body:SetAngle(Angle)
 	
-	if Angle ~= self.Angle then
-		self.Angle = Angle
-		self.World.Changed = true
-	end
+	self.Transform:SetRotation( Angle )
 	
 	return self
 	
@@ -135,37 +120,21 @@ end
 
 function Body:GetAngle()
 	
-	return self.Angle
+	return self.Transform:GetRotation()
+	
+end
+
+function Body:GetRadianAngle()
+	
+	return self.Transform.Radians
 	
 end
 
 function Body:SetPosition(x, y, z)
 	
-	if not self.Body then
+	if self.Transform:SetPosition(x, y, z) then
 		
-		if x ~= self.x then
-			
-			self.x = x
-			self.World.Changed = true
-			self.Moved = true
-			
-		end
-		
-		if y ~= self.y then
-			
-			self.y = y
-			self.World.Changed = true
-			self.Moved = true
-			
-		end
-		
-	end
-	
-	if z and z ~= self.z then
-		
-		self.z = z
 		self.World.Changed = true
-		self.Moved = true
 		
 	end
 	
@@ -175,14 +144,12 @@ end
 
 function Body:GetPosition()
 	
-	if self.Body then
-		
-		local x, y = self.Body:getPosition()
-		
-		return x, y, self.z
-		
-	end
+	return self.Transform:GetPosition()
 	
-	return self.x, self.y, self.z
+end
+
+function Body:GetPositionVector()
+	
+	return self.Transform:GetPositionVector()
 	
 end

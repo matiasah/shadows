@@ -132,6 +132,8 @@ function Transform:SetLocalRotation(Angle)
 		
 		self:Change()
 		
+		return true
+		
 	end
 	
 end
@@ -152,7 +154,7 @@ function Transform:SetRotation(Angle)
 		
 	end
 	
-	self:SetLocalRotation(Angle)
+	return self:SetLocalRotation(Angle)
 	
 end
 
@@ -197,7 +199,11 @@ function Transform:SetLocalPosition(x, y, z)
 		self.x, self.y = x, y
 		self:Change()
 		
+		return true
+		
 	end
+	
+	return false
 	
 end
 
@@ -217,7 +223,7 @@ function Transform:SetPosition(x, y, z)
 		
 	end
 	
-	self:SetLocalPosition(x, y, z)
+	return self:SetLocalPosition(x, y, z)
 	
 end
 
@@ -231,6 +237,21 @@ function Transform:GetPosition()
 	end
 	
 	return self.x, self.y, self.z
+	
+end
+
+-- @description: Gets the position of a transform as a vector
+function Transform:GetPositionVector()
+	
+	if self.Parent then
+		
+		local x, y, z = self.Parent:ToWorld(self.x, self.y, self.z)
+		
+		return {x = x, y = y, z = z}
+		
+	end
+	
+	return {x = self.x, y = self.y, z = self.z}
 	
 end
 

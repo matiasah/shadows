@@ -44,6 +44,7 @@ function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	local VisibleEdge = {}
 	
 	local Lx, Ly, Lz = Light:GetPosition()
+	local Bx, By, Bz = Body:GetPosition()
 	
 	Lx = Lx + DeltaX
 	Ly = Ly + DeltaY
@@ -103,12 +104,12 @@ function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 			
 			local Length = Light.Radius
 			
-			if Lz > Body.z then
+			if Lz > Bz then
 				
 				local dx = Lx - Vertex[1]
 				local dy = Ly - Vertex[2]
 				
-				Length = Body.z / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+				Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
 				
 			end
 			
@@ -198,12 +199,12 @@ function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 			
 			local Length = Light.Radius
 			
-			if Lz > Body.z then
+			if Lz > Bz then
 				
 				local dx = Lx - Vertex[1]
 				local dy = Ly - Vertex[2]
 				
-				Length = Body.z / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+				Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
 				
 			end
 			
@@ -249,12 +250,12 @@ function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 				
 				local Length = Light.Radius
 				
-				if Lz > Body.z then
+				if Lz > Bz then
 					
 					local dx = Lx - Vertex[1]
 					local dy = Ly - Vertex[2]
 					
-					Length = Body.z / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+					Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
 					
 				end
 				
@@ -293,12 +294,12 @@ function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 				
 				local Length = Light.Radius
 				
-				if Lz > Body.z then
+				if Lz > Bz then
 					
 					local dx = Lx - Vertex[1]
 					local dy = Ly - Vertex[2]
 					
-					Length = Body.z / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+					Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
 					
 				end
 				

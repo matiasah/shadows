@@ -16,10 +16,12 @@ function Shadows.CreateCircle(Body, x, y, Radius)
 	
 	local Circle = setmetatable({}, Circle)
 	
+	Circle.Transform = Shadows.Transform:new()
+	Circle.Transform:SetParent(Body.Transform)
+	Circle.Transform:SetLocalPosition(x, y)
+	
 	Circle.Body = Body
 	Circle.Radius = Radius
-	Circle.Heading = atan2(y, x)
-	Circle.Distance = sqrt(x^2 + y^2)
 	
 	Body:AddShape(Circle)
 	
@@ -32,6 +34,8 @@ function Circle:Remove()
 	self.Body.Shapes[self.ID] = nil
 	self.Body.Moved = true
 	self.Body.World.Changed = true
+	
+	self.Transform:SetParent(nil)
 	
 end
 
@@ -54,24 +58,16 @@ end
 
 function Circle:Draw()
 	
-	local Heading = self.Heading + math.rad(self.Body.Angle)
+	local x, y = self.Transform:GetPosition()
 	
-	return love.graphics.circle("fill", self.Body.x + cos(Heading) * self.Distance, self.Body.y + sin(Heading) * self.Distance, self.Radius)
+	return love.graphics.circle("fill", x, y, self.Radius)
 	
 end
 
 function Circle:SetPosition(x, y)
 	
-	if self.x ~= x then
+	if self.Transform:SetLocalPosition(x, y) then
 		
-		self.x = x
-		self.Body.World.Changed = true
-		
-	end
-	
-	if self.y ~= y then
-		
-		self.y = y
 		self.Body.World.Changed = true
 		
 	end
@@ -80,14 +76,7 @@ end
 
 function Circle:GetPosition()
 	
-	if self.Distance ~= 0 then
-		
-		local Heading = self.Heading + math.rad(self.Body.Angle)
-		return self.Body.x + cos(Heading) * self.Distance, self.Body.y + sin(Heading) * self.Distance
-		
-	end
-	
-	return self.Body.x, self.Body.y
+	return self.Transform:GetPosition()
 	
 end
 
@@ -97,6 +86,7 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	local Radius = self:GetRadius()
 	
 	local Lx, Ly, Lz = Light:GetPosition()
+	local Bx, By, Bz = Body:GetPosition()
 	
 	Lx = Lx + DeltaX
 	Ly = Ly + DeltaY
@@ -104,19 +94,19 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	local dx = x - Lx
 	local dy = y - Ly
 
-	local Distance = math.sqrt( dx * dx + dy * dy )
+	local Distance = sqrt( dx * dx + dy * dy )
 	
 	if Distance > Radius then
 		
 		local Heading = atan2(Lx - x, y - Ly) + halfPi
 		local Offset = atan(Radius / Distance)
-		local BorderDistance = Distance * math.cos(Offset)
+		local BorderDistance = Distance * cos(Offset)
 		
 		local Length = Light.Radius
 		
-		if Body.z < Lz then
+		if Bz < Lz then
 			
-			Length = Body.z / atan2(Lz, BorderDistance)
+			Length = Bz / atan2(Lz, BorderDistance)
 			
 		end
 		
@@ -132,7 +122,7 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 		insert(Polygon, Polygon[2] + sin(Heading + Offset) * Length)
 		insert(Shapes, Polygon)
 		
-		if Lz > Body.z then
+		if Lz > Bz then
 			
 			local Circle = {type = "circle"}
 			
@@ -142,7 +132,7 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 			local dx = Polygon[5] - Circle[1]
 			local dy = Polygon[6] - Circle[2]
 			
-			Circle[3] = math.sqrt( dx * dx + dy * dy )
+			Circle[3] = sqrt( dx * dx + dy * dy )
 			
 			insert(Shapes, Circle)
 			

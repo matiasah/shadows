@@ -20,7 +20,7 @@ end
 
 function Circle:GetPosition(Body)
 	
-	return Body.Body:getWorldPoint(self:getPoint())
+	return Body.Body:getWorldPoint( self:getPoint() )
 	
 end
 
@@ -36,6 +36,7 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	local Radius = self:getRadius()
 	
 	local Lx, Ly, Lz = Light:GetPosition()
+	local Bx, By, Bz = Body:GetPosition()
 	
 	Lx = Lx + DeltaX
 	Ly = Ly + DeltaY
@@ -43,19 +44,19 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	local dx = x - Lx
 	local dy = y - Ly
 
-	local Distance = math.sqrt( dx * dx + dy * dy )
+	local Distance = sqrt( dx * dx + dy * dy )
 	
 	if Distance > Radius then
 		
 		local Heading = atan2(Lx - x, y - Ly) + halfPi
 		local Offset = atan(Radius / Distance)
-		local BorderDistance = Distance * math.cos(Offset)
+		local BorderDistance = Distance * cos(Offset)
 		
 		local Length = Light.Radius
 		
-		if Body.z < Lz then
+		if Bz < Lz then
 			
-			Length = Body.z / atan2(Lz, BorderDistance)
+			Length = Bz / atan2(Lz, BorderDistance)
 			
 		end
 		
@@ -71,7 +72,7 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 		insert(Polygon, Polygon[2] + sin(Heading + Offset) * Length)
 		insert(Shapes, Polygon)
 		
-		if Lz > Body.z then
+		if Lz > Bz then
 			
 			local Circle = {type = "circle"}
 			
@@ -81,7 +82,7 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 			local dx = Polygon[5] - Circle[1]
 			local dy = Polygon[6] - Circle[2]
 			
-			Circle[3] = math.sqrt( dx * dx + dy * dy )
+			Circle[3] = sqrt( dx * dx + dy * dy )
 			
 			insert(Shapes, Circle)
 			
