@@ -35,8 +35,10 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	local x, y = self:GetPosition(Body)
 	local Radius = self:getRadius()
 	
-	local Lx = Light.x + DeltaX
-	local Ly = Light.y + DeltaY
+	local Lx, Ly, Lz = Light:GetPosition()
+	
+	Lx = Lx + DeltaX
+	Ly = Ly + DeltaY
 	
 	local dx = x - Lx
 	local dy = y - Ly
@@ -51,9 +53,9 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 		
 		local Length = Light.Radius
 		
-		if Body.z < Light.z then
+		if Body.z < Lz then
 			
-			Length = Body.z / atan2(Light.z, BorderDistance)
+			Length = Body.z / atan2(Lz, BorderDistance)
 			
 		end
 		
@@ -69,7 +71,7 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 		insert(Polygon, Polygon[2] + sin(Heading + Offset) * Length)
 		insert(Shapes, Polygon)
 		
-		if Light.z > Body.z then
+		if Lz > Body.z then
 			
 			local Circle = {type = "circle"}
 			

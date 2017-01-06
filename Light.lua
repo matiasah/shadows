@@ -2,7 +2,6 @@ local Shadows = ...
 local Light = {}
 
 Light.__index = Light
-Light.x, Light.y, Light.z = 0, 0, 1
 Light.Angle, Light.Arc = 0, 360
 Light.Radius = 0
 Light.SizeRadius = 10
@@ -25,6 +24,9 @@ function Shadows.CreateLight(World, Radius)
 	local Light = setmetatable({}, Light)
 	local Width, Height = World.Canvas:getDimensions()
 	
+	Light.Transform = Shadows.Transform:new()
+	Light.Transform:SetLocalPosition(0, 0, 1)
+	
 	Light.Radius = Radius
 	Light.Canvas = love.graphics.newCanvas( Width, Height )
 	Light.ShadowCanvas = love.graphics.newCanvas( Width, Height )
@@ -41,6 +43,9 @@ function Shadows.CreateStar(World, Radius)
 	local Light = setmetatable({}, Light)
 	local Width, Height = World.Canvas:getDimensions()
 	
+	Light.Transform = Shadows.Transform:new()
+	Light.Transform:SetLocalPosition(0, 0, 1)
+	
 	Light.Star = true
 	Light.Radius = Radius
 	Light.Canvas = love.graphics.newCanvas( Width, Height )
@@ -55,9 +60,11 @@ end
 
 function Light:GenerateShadows()
 	
+	local x, y, z = self.Transform:GetPosition()
+	
 	for _, Body in pairs(self.World.Bodies) do
 		
-		if self.Moved or Body.Moved or not self.Shadows[ Body.ID ] then
+		if self.Transform.HasChanged or Body.Moved or not self.Shadows[ Body.ID ] then
 		
 			local Shapes = {}
 			
@@ -70,8 +77,8 @@ function Light:GenerateShadows()
 					if Shape.GenerateShadows then
 						
 						local Radius = self.Radius + Shape:GetRadius(Body)
-						local x, y = Shape:GetPosition(Body)
-						local dx, dy = x - self.x, y - self.y
+						local ShapeX, ShapeY = Shape:GetPosition(Body)
+						local dx, dy = ShapeX - x, ShapeY - y
 						
 						if dx * dx + dy * dy < Radius * Radius then
 							
@@ -88,8 +95,8 @@ function Light:GenerateShadows()
 				for _, Shape in pairs(Body.Shapes) do
 					
 					local Radius = self.Radius + Shape:GetRadius()
-					local x, y = Shape:GetPosition()
-					local dx, dy = x - self.x, y - self.y
+					local ShapeX, ShapeY = Shape:GetPosition()
+					local dx, dy = ShapeX - x, ShapeY - y
 					
 					if dx * dx + dy * dy < Radius * Radius then
 						
@@ -112,7 +119,9 @@ end
 
 function Light:Update()
 	
-	if self.Changed or self.World.Changed then
+	if self.Changed or self.World.Changed or self.Transform.HasChanged then
+		
+		local x, y, z = self.Transform:GetPosition()
 		
 		setCanvas(self.ShadowCanvas)
 		clear(255, 255, 255, 255)
@@ -124,6 +133,12 @@ function Light:Update()
 		
 		self:GenerateShadows()
 		self.Moved = nil
+		
+		if self.Transform.HasChanged then
+			
+			self.Transform.HasChanged = nil
+			
+		end
 		
 		for _, Shapes in pairs(self.Shadows) do
 			
@@ -147,7 +162,7 @@ function Light:Update()
 		setCanvas(self.Canvas)
 		clear()
 		origin()
-		translate(self.x - self.World.x - self.Radius, self.y - self.World.y - self.Radius)
+		translate(x - self.World.x - self.Radius, y - self.World.y - self.Radius)
 		
 		if self.Image then
 			
@@ -158,7 +173,7 @@ function Light:Update()
 		else
 			
 			Shadows.LightShader:send("Radius", self.Radius)
-			Shadows.LightShader:send("Center", {self.x - self.World.x, self.y - self.World.y, self.z})
+			Shadows.LightShader:send("Center", {x - self.World.x, y - self.World.y, self.z})
 			
 			local Arc = math.rad(self.Arc / 2)
 			local Angle = math.rad(self.Angle) - halfPi
@@ -210,27 +225,12 @@ end
 
 function Light:SetPosition(x, y, z)
 	
-	if x ~= self.x then
-		
-		self.x = x
-		self.Changed = true
-		self.Moved = true
-		
-	end
+	local tx, ty, tz = self.Transform:GetPosition()
 	
-	if y ~= self.y then
+	if x ~= tx or y ~= ty or z ~= tz then
 		
-		self.y = y
+		self.Transform:SetLocalPosition(x, y, z)
 		self.Changed = true
-		self.Moved = true
-		
-	end
-	
-	if z and z ~= self.z then
-		
-		self.z = z
-		self.Changed = true
-		self.Moved = true
 		
 	end
 	
@@ -240,7 +240,7 @@ end
 
 function Light:GetPosition()
 	
-	return self.x, self.y, self.z
+	return self.Transform:GetPosition()
 	
 end
 

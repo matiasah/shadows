@@ -263,6 +263,8 @@ function World:update()
 	
 	if self.UpdateCanvas then
 		
+		self.UpdateCanvas = nil
+		
 		love.graphics.setCanvas(self.Canvas)
 		love.graphics.clear(self.R, self.G, self.B, self.A)
 		
@@ -296,7 +298,6 @@ function World:update()
 		
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		self:ApplyFilters()
-		self.UpdateCanvas = nil
 		
 		for Index, Body in pairs(self.Bodies) do
 			

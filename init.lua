@@ -8,4 +8,6 @@ assert(love.filesystem.load(Path.."/Body/init.lua"))(Path.."/Body", Shadows)
 assert(love.filesystem.load(Path.."/Room/init.lua"))(Path.."/Room", Shadows)
 assert(love.filesystem.load(Path.."/Shaders.lua"))(Shadows)
 
+Shadows.Transform = assert(love.filesystem.load(Path.."/Transform.lua"))(Shadows)
+
 return Shadows
