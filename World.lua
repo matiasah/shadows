@@ -27,7 +27,7 @@ function Shadows.CreateWorld()
 	World.Aberration = {
 		Shader = Shadows.AberrationShader,
 		Canvas = love.graphics.newCanvas(Width, Height),
-		Active = true
+		--Active = true
 	}
 	
 	World.Bloom.Shader:send("Size", {Width, Height})
@@ -148,7 +148,7 @@ end
 
 function World:draw()
 	
-	love.graphics.setBlendMode("darken", "premultiplied")
+	love.graphics.setBlendMode("multiply", "alphamultiply")
 	love.graphics.setColor(255, 255, 255, 255)
 	love.graphics.draw(self.FinalFilter, 0, 0)
 	love.graphics.setBlendMode("alpha", "alphamultiply")
@@ -237,7 +237,7 @@ function World:update()
 		
 		if Body.Body and Body.Body:isDestroyed() then
 			
-			self.Bodies[Index] = nil
+			Body:Remove()
 			
 		else
 			
@@ -259,7 +259,7 @@ function World:update()
 		
 	end
 	
-	self.Changed = nil
+	self.Changed = false
 	
 	if self.UpdateCanvas then
 		

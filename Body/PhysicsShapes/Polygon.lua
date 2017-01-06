@@ -17,7 +17,19 @@ end
 
 function Polygon:GetPosition(Body)
 	
-	return Body.Body:getPosition()
+	local Points = { self:getPoints() }
+	local x, y = 0, 0
+	
+	for i = 1, #Points, 2 do
+		
+		x = x + Points[i]
+		y = y + Points[i + 1]
+		
+	end
+	
+	local InvCount = 1 / #Points * 0.5
+	
+	return Body.Body:getWorldPoint( x * InvCount, y * InvCount )
 	
 end
 
