@@ -2,7 +2,7 @@ local Shadows = ...
 local Light = {}
 
 Light.__index = Light
-Light.Angle, Light.Arc = 0, 360
+Light.Arc = 360
 Light.Radius = 0
 Light.SizeRadius = 10
 
@@ -176,7 +176,7 @@ function Light:Update()
 			Shadows.LightShader:send("Center", {x - self.World.x, y - self.World.y, self.z})
 			
 			local Arc = math.rad(self.Arc / 2)
-			local Angle = math.rad(self.Angle) - halfPi
+			local Angle = self.Transform.Radians - halfPi
 			
 			setShader(Shadows.LightShader)
 			setBlendMode("alpha", "premultiplied")
@@ -206,12 +206,7 @@ end
 
 function Light:SetAngle(Angle)
 	
-	if type(Angle) == "number" and Angle ~= self.Angle then
-		
-		self.Angle = Angle
-		self.Changed = true
-		
-	end
+	self.Transform:SetRotation(Angle)
 	
 	return self
 	
@@ -219,7 +214,7 @@ end
 
 function Light:GetAngle()
 	
-	return self.Angle
+	return self.Transform:GetRotation()
 	
 end
 
