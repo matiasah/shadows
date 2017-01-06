@@ -186,7 +186,7 @@ end
 -- @description: Sets the local position of a transform
 function Transform:SetLocalPosition(x, y, z)
 	
-	if x ~= self.x or y ~= self.y or z ~= self.z then
+	if x ~= self.x or y ~= self.y or ( z and z ~= self.z ) then
 		
 		if z then
 			

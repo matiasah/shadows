@@ -136,7 +136,7 @@ function Light:Update()
 		
 		if self.Transform.HasChanged then
 			
-			self.Transform.HasChanged = nil
+			self.Transform.HasChanged = false
 			
 		end
 		
@@ -220,14 +220,7 @@ end
 
 function Light:SetPosition(x, y, z)
 	
-	local tx, ty, tz = self.Transform:GetPosition()
-	
-	if x ~= tx or y ~= ty or z ~= tz then
-		
-		self.Transform:SetLocalPosition(x, y, z)
-		self.Changed = true
-		
-	end
+	self.Transform:SetLocalPosition(x, y, z)
 	
 	return self
 	
