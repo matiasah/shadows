@@ -7,12 +7,12 @@ Transform.x, Transform.y, Transform.z = 0, 0, 0
 -- @description: Creates a new transformation
 function Transform:new()
 	
-	local Transform = setmetatable({}, Transform)
+	local self = setmetatable({}, Transform)
 	
 	self.Children = {}
 	self:SetLocalRotation(0)
 	
-	return Transform
+	return self
 	
 end
 
