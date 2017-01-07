@@ -13,6 +13,7 @@ local rad = math.rad
 function Polygon:Draw(Body)
 	
 	love.graphics.polygon("fill", Body.Body:getWorldPoints( self:getPoints() ) )
+	
 end
 
 function Polygon:GetPosition(Body)
