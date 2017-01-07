@@ -47,7 +47,7 @@ function Body:Draw()
 	
 	if self.Body then
 		
-		for _, Fixture in pairs(self.Body:getFixtureList()) do
+		for _, Fixture in pairs( self.Body:getFixtureList() ) do
 			
 			local Shape = Fixture:getShape()
 			

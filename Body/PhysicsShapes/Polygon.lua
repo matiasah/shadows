@@ -17,13 +17,43 @@ end
 
 function Polygon:GetPosition(Body)
 	
-	return Body.Body:getPosition()
+	local Points = { self:getPoints() }
+	local x, y = 0, 0
+	
+	for i = 1, #Points, 2 do
+		
+		x = x + Points[i]
+		y = y + Points[i + 1]
+		
+	end
+	
+	local InvCount = 1 / #Points * 0.5
+	local WorldX, WorldY = Body.Body:getWorldPoint( x * InvCount, y * InvCount )
+	
+	return WorldX, WorldY, Points
 	
 end
 
-function Polygon:GetRadius()
+function Polygon:GetRadius(Body)
 	
-	return self:getRadius()
+	local x, y, Points = self:GetPosition(Body)
+	local Radius = 0
+	
+	for i = 1, #Points, 2 do
+		
+		local dx = Points[i] - x
+		local dy = Points[i + 1] - y
+		local PointRadius = sqrt( dx * dx + dy * dy )
+		
+		if PointRadius > Radius then
+			
+			Radius = PointRadius
+			
+		end
+		
+	end
+	
+	return Radius
 	
 end
 

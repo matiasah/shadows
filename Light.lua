@@ -173,7 +173,7 @@ function Light:Update()
 		else
 			
 			Shadows.LightShader:send("Radius", self.Radius)
-			Shadows.LightShader:send("Center", {x - self.World.x, y - self.World.y, self.z})
+			Shadows.LightShader:send("Center", {x - self.World.x, y - self.World.y, z})
 			
 			local Arc = math.rad(self.Arc / 2)
 			local Angle = self.Transform.Radians - halfPi
