@@ -279,13 +279,16 @@ function World:update()
 			
 		end
 		
-		love.graphics.setBlendMode("darken", "premultiplied")
+		--love.graphics.setBlendMode("darken", "premultiplied")
+		love.graphics.setShader(Shadows.DarkenShader)
 		
 		for _, Room in pairs(self.Rooms) do
 			
 			Room:Draw()
 			
 		end
+		
+		love.graphics.setShader()
 		
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")

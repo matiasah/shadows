@@ -2,60 +2,74 @@ local Shadows = ...
 
 Shadows.BlurShader = love.graphics.newShader[[
 	extern vec2 Size;
-	extern float Quality;
-	extern float Radius;
-  
-	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 pc) {
+	#define Quality 1.0
+	#define Radius 2.0
 	
-		vec4 Sum = vec4(0);
-		vec2 SizeFactor = Quality / Size;
-
-		for (float x = -Radius; x <= Radius; x++) {
+	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 pc) {
 		
-			for (float y = -Radius; y <= Radius; y++) {
+		vec4 Sum = vec4(0);
+		vec2 SizeFactor = vec2(Quality / Size);
+		
+		for (float x = -Radius; x <= Radius; x++) {
 			
-				Sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
+           for (float y = -Radius; y <= Radius; y++) {
 				
-			}
-			
+				Sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
+              
+           }
+		
 		}
 		
 		float Delta = 2.0 * Radius + 1.0;
 		
-		return Sum / ( Delta * Delta );
+		return Sum / vec4( Delta * Delta );
 	}
-]]; Shadows.BlurShader:send("Quality", 1)
-  ; Shadows.BlurShader:send("Radius", 2)
+]]
 
 Shadows.BloomShader = love.graphics.newShader [[
 	extern vec2 Size;
-	extern int Samples; // pixels per axis; higher = bigger glow, worse performance
-	extern float Quality; // lower = smaller glow, better quality
+	#define Radius 1.0		// pixels per axis; higher = bigger glow, worse performance
+	#define Quality 5.0			// lower = smaller glow, better quality
 
 	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 sc) {
-	
-		vec4 source = Texel(tex, tc);
-		vec4 sum = vec4(0);
-		vec2 SizeFactor = Quality / Size;
 		
-		int diff = (Samples - 1) / 2;
-		int samp = 0;
+		vec4 Sum = vec4(0);
+		vec2 SizeFactor = vec2(Quality / Size);
 		
-		for (int x = -diff; x <= diff; x++){
+		float Samples = 0.0;
 		
-			for (int y = -diff; y <= diff; y++) {
+		for (float x = -Radius; x <= Radius; x++){
+		
+			for (float y = -Radius; y <= Radius; y++) {
 			
-				sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
-				samp++;
+				Sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
+				Samples++;
 				
 			}
 			
 		}
 		
-		return (sum / (float( Samples * Samples )) + source) * color;
+		return (Sum / Samples + Texel(tex, tc) ) * color;
 	}
-]]; Shadows.BloomShader:send("Quality", 5)
-  ; Shadows.BloomShader:sendInt("Samples", 2)
+]]
+
+Shadows.DarkenShader = love.graphics.newShader [[
+	
+	vec4 effect(vec4 src, Image tex, vec2 tc, vec2 sc) {
+		
+		vec4 res = vec4(0);
+		vec4 dst = Texel(tex, tc);
+		
+		res.r = min(src.r, dst.r);
+		res.g = min(src.g, dst.g);
+		res.b = min(src.b, dst.b);
+		res.a = min(src.a, dst.a);
+		
+		return res;
+		
+	}
+	
+]]
 
 -- https://love2d.org/forums/viewtopic.php?t=81014#p189754
 Shadows.AberrationShader = love.graphics.newShader[[
