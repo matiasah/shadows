@@ -28,17 +28,6 @@ function Room:Draw()
 	
 end
 
-function Room:Update()
-	
-	if self.Transform.HasChanged then
-		
-		self.Transform.HasChanged = nil
-		self.World.UpdateCanvas = true
-		
-	end
-	
-end
-
 function Room:SetRadius(Radius)
 	
 	if Radius ~= self.Radius then
