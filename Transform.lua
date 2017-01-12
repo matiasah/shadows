@@ -10,6 +10,9 @@ function Transform:new()
 	local self = setmetatable({}, Transform)
 	
 	self.Children = {}
+	self.Matrix = { {}, {} }
+	self.InverseMatrix = { {}, {} }
+	
 	self:SetLocalRotation(0)
 	
 	return self
@@ -83,19 +86,15 @@ function Transform:SetLocalRotation(Angle)
 		
 		if Angle == 0 then
 			
-			self.Matrix = {
-				
-				{1, 0},
-				{0, 1},
-				
-			}
+			self.Matrix[1][1] = 1
+			self.Matrix[1][2] = 0
+			self.Matrix[2][1] = 0
+			self.Matrix[2][2] = 1
 			
-			self.InverseMatrix = {
-				
-				{1, 0},
-				{0, 1},
-				
-			}
+			self.InverseMatrix[1][1] = 1
+			self.InverseMatrix[1][2] = 0
+			self.InverseMatrix[2][1] = 0
+			self.InverseMatrix[2][2] = 1
 			
 		else
 		
@@ -103,12 +102,11 @@ function Transform:SetLocalRotation(Angle)
 			local Sine = math.sin(self.Radians)
 			
 			-- The transformation matrix
-			self.Matrix = {
-				
-				{ Cosine, -Sine },
-				{ Sine, Cosine }
-				
-			}
+			
+			self.Matrix[1][1] = Cosine
+			self.Matrix[1][2] = -Sine
+			self.Matrix[2][1] = Sine
+			self.Matrix[2][2] = Cosine
 			
 			local a = self.Matrix[1][1]
 			local b = self.Matrix[1][2]
@@ -116,12 +114,10 @@ function Transform:SetLocalRotation(Angle)
 			local d = self.Matrix[2][2]
 			local Multiplier = 1 / ( a * d - b * c )
 			
-			self.InverseMatrix = {
-				
-				{d * Multiplier, -b * Multiplier},
-				{-c * Multiplier, a * Multiplier},
-				
-			}
+			self.InverseMatrix[1][1] = d * Multiplier
+			self.InverseMatrix[1][2] = -b * Multiplier
+			self.InverseMatrix[2][1] = -c * Multiplier
+			self.InverseMatrix[2][2] = a * Multiplier
 			
 		end
 		
@@ -259,7 +255,7 @@ function Transform:ToWorld(x, y, z)
 		
 	end
 	
-	return self.x + self.Matrix[1][1] * x + self.Matrix[1][2] * y, self.y + self.Matrix[2][1] * x + self.Matrix[2][2] * y, self.z + ( z or 0 )
+	return self.x + tonumber( self.Matrix[1][1] * x + self.Matrix[1][2] * y ), self.y + tonumber( self.Matrix[2][1] * x + self.Matrix[2][2] * y ), self.z + ( z or 0 )
 	
 end
 
@@ -272,8 +268,8 @@ function Transform:ToWorldPoints(Points)
 		
 		local x, y = Points[i], Points[i + 1]
 		
-		TransformedPoints[i] = self.x + self.Matrix[1][1] * x + self.Matrix[1][2] * y
-		TransformedPoints[i + 1] = self.y + self.Matrix[2][1] * x + self.Matrix[2][2] * y
+		TransformedPoints[i] = self.x + tonumber( self.Matrix[1][1] * x + self.Matrix[1][2] * y )
+		TransformedPoints[i + 1] = self.y + tonumber( self.Matrix[2][1] * x + self.Matrix[2][2] * y )
 		
 	end
 	
@@ -298,7 +294,7 @@ function Transform:ToLocal(x, y, z)
 	
 	x, y, z = x - self.x, y - self.y, z - self.z
 	
-	return self.InverseMatrix[1][1] * x + self.InverseMatrix[1][2] * y, self.InverseMatrix[2][1] * x + self.InverseMatrix[2][2] * y, z
+	return tonumber( self.InverseMatrix[1][1] * x + self.InverseMatrix[1][2] * y ), tonumber( self.InverseMatrix[2][1] * x + self.InverseMatrix[2][2] * y ), z
 	
 end
 

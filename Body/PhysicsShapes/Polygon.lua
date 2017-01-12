@@ -112,60 +112,44 @@ function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	local VisibleEdges = #VisibleEdge
 	local Geometry = {type = "polygon"}
 	
-	local FirstVertex
-	
-	for Index = 1, VisibleEdges do
+	if Shadows.PointInPolygon(Lx, Ly, Vertices) then
 		
-		local PrevIndex = Index - 1
-		
-		if PrevIndex <= 0 then
+		if Lz > Bz then
 			
-			PrevIndex = VisibleEdges + PrevIndex
-			
-		end
-		
-		if not VisibleEdge[PrevIndex] and VisibleEdge[Index] then
-			
-			FirstVertex = Index
-			
-			local Vertex = {
-				Vertices[Index * 2 - 1];
-				Vertices[Index * 2];
-			}
-			
-			local Length = Light.Radius
-			
-			if Lz > Bz then
+			for i = 1, #Vertices, 2 do
+				
+				local Vertex = {
+					
+					Vertices[i],
+					Vertices[i + 1],
+					
+				}
 				
 				local dx = Lx - Vertex[1]
 				local dy = Ly - Vertex[2]
+				local Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
 				
-				Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+				local Direction = Normalize {
+					
+					Vertex[1] - Lx,
+					Vertex[2] - Ly,
+					
+				}
+				
+				insert(Geometry, Vertex[1] + Direction[1] * Length)
+				insert(Geometry, Vertex[2] + Direction[2] * Length)
 				
 			end
 			
-			local Direction = Normalize {
-				
-				Vertex[1] - Lx,
-				Vertex[2] - Ly,
-				
-			}
-			
-			insert(Geometry, Vertex[1] + Direction[1] * Length)
-			insert(Geometry, Vertex[2] + Direction[2] * Length)
-			
-			insert(Geometry, Vertex[1])
-			insert(Geometry, Vertex[2])
-			
-			break
+			insert(Shapes, Geometry)
 			
 		end
 		
-	end
-	
-	if FirstVertex then
+	else
 		
-		for Index = FirstVertex, 1, -1 do
+		local FirstVertex
+		
+		for Index = 1, VisibleEdges do
 			
 			local PrevIndex = Index - 1
 			
@@ -175,16 +159,90 @@ function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 				
 			end
 			
-			if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
+			if not VisibleEdge[PrevIndex] and VisibleEdge[Index] then
 				
-				insert(Geometry, Vertices[Index * 2 - 1])
-				insert(Geometry, Vertices[Index * 2])
+				FirstVertex = Index
+				
+				local Vertex = {
+					Vertices[Index * 2 - 1];
+					Vertices[Index * 2];
+				}
+				
+				local Length = Light.Radius
+				
+				if Lz > Bz then
+					
+					local dx = Lx - Vertex[1]
+					local dy = Ly - Vertex[2]
+					
+					Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+					
+				end
+				
+				local Direction = Normalize {
+					
+					Vertex[1] - Lx,
+					Vertex[2] - Ly,
+					
+				}
+				
+				insert(Geometry, Vertex[1] + Direction[1] * Length)
+				insert(Geometry, Vertex[2] + Direction[2] * Length)
+				
+				insert(Geometry, Vertex[1])
+				insert(Geometry, Vertex[2])
+				
+				break
 				
 			end
 			
 		end
 		
-		for Index = VisibleEdges, FirstVertex, -1 do
+		if FirstVertex then
+			
+			for Index = FirstVertex, 1, -1 do
+				
+				local PrevIndex = Index - 1
+				
+				if PrevIndex <= 0 then
+					
+					PrevIndex = VisibleEdges + PrevIndex
+					
+				end
+				
+				if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
+					
+					insert(Geometry, Vertices[Index * 2 - 1])
+					insert(Geometry, Vertices[Index * 2])
+					
+				end
+				
+			end
+			
+			for Index = VisibleEdges, FirstVertex, -1 do
+				
+				local PrevIndex = Index - 1
+				
+				if PrevIndex <= 0 then
+					
+					PrevIndex = VisibleEdges + PrevIndex
+					
+				end
+				
+				if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
+					
+					insert(Geometry, Vertices[Index * 2 - 1])
+					insert(Geometry, Vertices[Index * 2])
+					
+				end
+				
+			end
+			
+		end
+		
+		local LastVertex
+		
+		for Index = 1, VisibleEdges do
 			
 			local PrevIndex = Index - 1
 			
@@ -194,83 +252,9 @@ function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 				
 			end
 			
-			if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
+			if not VisibleEdge[Index] and VisibleEdge[PrevIndex] then
 				
-				insert(Geometry, Vertices[Index * 2 - 1])
-				insert(Geometry, Vertices[Index * 2])
-				
-			end
-			
-		end
-		
-	end
-	
-	local LastVertex
-	
-	for Index = 1, VisibleEdges do
-		
-		local PrevIndex = Index - 1
-		
-		if PrevIndex <= 0 then
-			
-			PrevIndex = VisibleEdges + PrevIndex
-			
-		end
-		
-		if not VisibleEdge[Index] and VisibleEdge[PrevIndex] then
-			
-			LastVertex = Index
-			
-			local Vertex = {
-				
-				Vertices[Index * 2 - 1],
-				Vertices[Index * 2],
-				
-			}
-			
-			local Length = Light.Radius
-			
-			if Lz > Bz then
-				
-				local dx = Lx - Vertex[1]
-				local dy = Ly - Vertex[2]
-				
-				Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
-				
-			end
-			
-			local Direction = Normalize {
-				
-				Vertex[1] - Lx,
-				Vertex[2] - Ly,
-				
-			}
-			
-			insert(Geometry, Vertex[1])
-			insert(Geometry, Vertex[2])
-			
-			insert(Geometry, Vertex[1] + Direction[1] * Length)
-			insert(Geometry, Vertex[2] + Direction[2] * Length)
-			
-			break
-			
-		end
-		
-	end
-	
-	if LastVertex then
-		
-		for Index = LastVertex, VisibleEdges do
-			
-			local PrevIndex = Index - 1
-			
-			if PrevIndex <= 0 then
-				
-				PrevIndex = VisibleEdges + PrevIndex
-				
-			end
-			
-			if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
+				LastVertex = Index
 				
 				local Vertex = {
 					
@@ -297,68 +281,121 @@ function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 					
 				}
 				
+				insert(Geometry, Vertex[1])
+				insert(Geometry, Vertex[2])
+				
 				insert(Geometry, Vertex[1] + Direction[1] * Length)
 				insert(Geometry, Vertex[2] + Direction[2] * Length)
+				
+				break
 				
 			end
 			
 		end
 		
-		for Index = 1, LastVertex do
+		if LastVertex then
 			
-			local PrevIndex = Index - 1
-			
-			if PrevIndex <= 0 then
+			for Index = LastVertex, VisibleEdges do
 				
-				PrevIndex = VisibleEdges + PrevIndex
+				local PrevIndex = Index - 1
 				
-			end
-			
-			if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
-				
-				local Vertex = {
+				if PrevIndex <= 0 then
 					
-					Vertices[Index * 2 - 1],
-					Vertices[Index * 2],
-					
-				}
-				
-				local Length = Light.Radius
-				
-				if Lz > Bz then
-					
-					local dx = Lx - Vertex[1]
-					local dy = Ly - Vertex[2]
-					
-					Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+					PrevIndex = VisibleEdges + PrevIndex
 					
 				end
 				
-				local Direction = Normalize {
+				if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
 					
-					Vertex[1] - Lx,
-					Vertex[2] - Ly,
+					local Vertex = {
+						
+						Vertices[Index * 2 - 1],
+						Vertices[Index * 2],
+						
+					}
 					
-				}
+					local Length = Light.Radius
+					
+					if Lz > Bz then
+						
+						local dx = Lx - Vertex[1]
+						local dy = Ly - Vertex[2]
+						
+						Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+						
+					end
+					
+					local Direction = Normalize {
+						
+						Vertex[1] - Lx,
+						Vertex[2] - Ly,
+						
+					}
+					
+					insert(Geometry, Vertex[1] + Direction[1] * Length)
+					insert(Geometry, Vertex[2] + Direction[2] * Length)
+					
+				end
 				
-				insert(Geometry, Vertex[1] + Direction[1] * Length)
-				insert(Geometry, Vertex[2] + Direction[2] * Length)
+			end
+			
+			for Index = 1, LastVertex do
+				
+				local PrevIndex = Index - 1
+				
+				if PrevIndex <= 0 then
+					
+					PrevIndex = VisibleEdges + PrevIndex
+					
+				end
+				
+				if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
+					
+					local Vertex = {
+						
+						Vertices[Index * 2 - 1],
+						Vertices[Index * 2],
+						
+					}
+					
+					local Length = Light.Radius
+					
+					if Lz > Bz then
+						
+						local dx = Lx - Vertex[1]
+						local dy = Ly - Vertex[2]
+						
+						Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+						
+					end
+					
+					local Direction = Normalize {
+						
+						Vertex[1] - Lx,
+						Vertex[2] - Ly,
+						
+					}
+					
+					insert(Geometry, Vertex[1] + Direction[1] * Length)
+					insert(Geometry, Vertex[2] + Direction[2] * Length)
+					
+				end
 				
 			end
 			
 		end
 		
-	end
-	
-	if #Geometry > 0 then
-		
-		-- Triangulation is necessary, otherwise rays will be intersecting
-		local Triangles = love.math.triangulate(Geometry)
-		
-		for _, Shadow in pairs(Triangles) do
+		if #Geometry > 0 then
 			
-			Shadow.type = "polygon"
-			insert(Shapes, Shadow)
+			-- Triangulation is necessary, otherwise rays will be intersecting
+			local Triangles = love.math.triangulate(Geometry)
+			
+			for _, Shadow in pairs(Triangles) do
+				
+				Shadow.type = "polygon"
+				insert(Shapes, Shadow)
+				
+			end
 			
 		end
 		
