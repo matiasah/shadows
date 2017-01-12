@@ -260,11 +260,35 @@ function Transform:ToWorld(x, y, z)
 	
 	if self.Parent then
 		
-		return self.Parent:ToWorld( self.x + self.Matrix[1][1] * x + self.Matrix[1][2] * y, self.y + self.Matrix[2][1] * x + self.Matrix[2][2] * y, self.z + z )
+		return self.Parent:ToWorld( self.x + self.Matrix[1][1] * x + self.Matrix[1][2] * y, self.y + self.Matrix[2][1] * x + self.Matrix[2][2] * y, self.z + ( z or 0 ) )
 		
 	end
 	
-	return self.x + self.Matrix[1][1] * x + self.Matrix[1][2] * y, self.y + self.Matrix[2][1] * x + self.Matrix[2][2] * y, self.z + z
+	return self.x + self.Matrix[1][1] * x + self.Matrix[1][2] * y, self.y + self.Matrix[2][1] * x + self.Matrix[2][2] * y, self.z + ( z or 0 )
+	
+end
+
+-- @description: Transform multiple points to world coordinates (does not support 'z' coordinate)
+function Transform:ToWorldPoints(Points)
+	
+	local TransformedPoints = {}
+	
+	for i = 1, #Points, 2 do
+		
+		local x, y = Points[i], Points[i + 1]
+		
+		TransformedPoints[i] = self.x + self.Matrix[1][1] * x + self.Matrix[1][2] * y
+		TransformedPoints[i + 1] = self.y + self.Matrix[2][1] * x + self.Matrix[2][2] * y
+		
+	end
+	
+	if self.Parent then
+		
+		return self.Parent:ToWorldPoints(TransformedPoints)
+		
+	end
+	
+	return TransformedPoints
 	
 end
 

@@ -36,7 +36,7 @@ end
 
 function Polygon:Draw()
 	
-	love.graphics.polygon("fill", unpack( self:GetVertices() ) )
+	love.graphics.polygon("fill", self:GetVertices() )
 	
 end
 

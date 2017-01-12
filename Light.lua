@@ -58,9 +58,7 @@ function Shadows.CreateStar(World, Radius)
 	
 end
 
-function Light:GenerateShadows()
-	
-	local x, y, z = self.Transform:GetPosition()
+function Light:GenerateShadows(x, y)
 	
 	for _, Body in pairs(self.World.Bodies) do
 		
@@ -131,7 +129,7 @@ function Light:Update()
 		setBlendMode("subtract", "alphamultiply")
 		setColor(255, 255, 255, 255)
 		
-		self:GenerateShadows()
+		self:GenerateShadows(x, y)
 		self.Moved = nil
 		
 		if self.Transform.HasChanged then
@@ -155,7 +153,7 @@ function Light:Update()
 		
 		for Index, Body in pairs(self.World.Bodies) do
 			
-			Body:Draw()
+			Body:DrawRadius(x, y, self.Radius)
 			
 		end
 		

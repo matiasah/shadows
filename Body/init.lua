@@ -71,6 +71,50 @@ function Body:Draw()
 	
 end
 
+function Body:DrawRadius(x, y, DrawRadius)
+	
+	if self.Body then
+		
+		for _, Fixture in pairs( self.Body:getFixtureList() ) do
+			
+			local Shape = Fixture:getShape()
+			
+			if Shape.Draw then
+				
+				local Radius = DrawRadius + Shape:GetRadius(self)
+				local ShapeX, ShapeY = Shape:GetPosition(self)
+				local dx, dy = ShapeX - x, ShapeY - y
+				
+				if dx * dx + dy * dy < Radius * Radius then
+				
+					Shape:Draw(self)
+					
+				end
+				
+			end
+			
+		end
+		
+		return nil
+		
+	end
+	
+	for _, Shape in pairs(self.Shapes) do
+		
+		local Radius = DrawRadius + Shape:GetRadius()
+		local ShapeX, ShapeY = Shape:GetPosition()
+		local dx, dy = ShapeX - x, ShapeY - y
+		
+		if dx * dx + dy * dy < Radius * Radius then
+			
+			Shape:Draw()
+			
+		end
+		
+	end
+	
+end
+
 function Body:Update()
 	
 	if self.Body then

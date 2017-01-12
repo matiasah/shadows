@@ -259,6 +259,12 @@ function World:update()
 		
 	end
 	
+	for Index, Room in pairs(self.Rooms) do
+		
+		Room:Update()
+		
+	end
+	
 	self.Changed = false
 	
 	if self.UpdateCanvas then
@@ -279,13 +285,18 @@ function World:update()
 			
 		end
 		
-		love.graphics.setBlendMode("darken", "premultiplied")
+		love.graphics.setShader(Shadows.DarkenShader)
+		love.graphics.setBlendMode("alpha", "alphamultiply")
+		love.graphics.translate(-self.x, -self.y)
 		
 		for _, Room in pairs(self.Rooms) do
 			
 			Room:Draw()
 			
 		end
+		
+		love.graphics.setShader()
+		love.graphics.origin()
 		
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")
