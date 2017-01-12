@@ -285,9 +285,14 @@ function World:update()
 			
 		end
 		
+<<<<<<< HEAD
 		love.graphics.setShader(Shadows.DarkenShader)
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		love.graphics.translate(-self.x, -self.y)
+=======
+		--love.graphics.setBlendMode("darken", "premultiplied")
+		love.graphics.setShader(Shadows.DarkenShader)
+>>>>>>> origin/master
 		
 		for _, Room in pairs(self.Rooms) do
 			
@@ -296,7 +301,10 @@ function World:update()
 		end
 		
 		love.graphics.setShader()
+<<<<<<< HEAD
 		love.graphics.origin()
+=======
+>>>>>>> origin/master
 		
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")

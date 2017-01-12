@@ -50,6 +50,7 @@ Shadows.BloomShader = love.graphics.newShader [[
 		}
 		
 		return (Sum / Samples + Texel(tex, tc) ) * color;
+<<<<<<< HEAD
 	}
 ]]
 
@@ -60,6 +61,26 @@ Shadows.DarkenShader = love.graphics.newShader [[
 		return min(src, Texel(tex, tc) );
 		
 	}
+=======
+	}
+]]
+
+Shadows.DarkenShader = love.graphics.newShader [[
+	
+	vec4 effect(vec4 src, Image tex, vec2 tc, vec2 sc) {
+		
+		vec4 res = vec4(0);
+		vec4 dst = Texel(tex, tc);
+		
+		res.r = min(src.r, dst.r);
+		res.g = min(src.g, dst.g);
+		res.b = min(src.b, dst.b);
+		res.a = min(src.a, dst.a);
+		
+		return res;
+		
+	}
+>>>>>>> origin/master
 	
 ]]
 
