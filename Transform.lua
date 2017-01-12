@@ -105,26 +105,21 @@ function Transform:SetLocalRotation(Angle)
 			-- The transformation matrix
 			self.Matrix = {
 				
-				{ Cosine, Sine },
-				{ -Sine, Cosine },
+				{ Cosine, -Sine },
+				{ Sine, Cosine }
 				
 			}
 			
-			local Secant = 1 / Cosine
-			local Cosecant = 1 / Sine
+			local a = self.Matrix[1][1]
+			local b = self.Matrix[1][2]
+			local c = self.Matrix[2][1]
+			local d = self.Matrix[2][2]
+			local Multiplier = 1 / ( a * d - b * c )
 			
-			-- The inverse transformation matrix
 			self.InverseMatrix = {
 				
-				{
-					Secant + ( Secant / ( -Cosine * Cosecant - Sine * Secant ) ) * Sine * Secant,
-					Cosecant / ( -Cosine * Cosecant - Sine * Secant ) * Sine * Secant
-				},
-				
-				{
-					-Secant / (-Cosine * Cosecant - Sine * Secant),
-					-Cosecant / ( -Cosine * Cosecant - Sine * Secant )
-				},
+				{d * Multiplier, -b * Multiplier},
+				{-c * Multiplier, a * Multiplier},
 				
 			}
 			
@@ -297,7 +292,7 @@ function Transform:ToLocal(x, y, z)
 	
 	if self.Parent then
 		
-		x, y = self.Parent:ToLocal(x, y, z)
+		x, y, z = self.Parent:ToLocal(x, y, z)
 		
 	end
 	
