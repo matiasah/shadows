@@ -12,11 +12,11 @@ Shadows.BlurShader = love.graphics.newShader[[
 		
 		for (float x = -Radius; x <= Radius; x++) {
 			
-           for (float y = -Radius; y <= Radius; y++) {
+			for (float y = -Radius; y <= Radius; y++) {
 				
 				Sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
-              
-           }
+				
+			}
 		
 		}
 		
