@@ -1,5 +1,7 @@
 -- @author Starkkz
 
+local Transform
+
 Transform = {}
 Transform.__index = Transform
 Transform.x, Transform.y, Transform.z = 0, 0, 0

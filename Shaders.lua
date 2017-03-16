@@ -10,9 +10,9 @@ Shadows.BlurShader = love.graphics.newShader[[
 		vec4 Sum = vec4(0);
 		vec2 SizeFactor = vec2(Quality / Size);
 		
-		for (float x = -Radius; x <= Radius; x++) {
+		for (number x = -Radius; x <= Radius; x++) {
 			
-			for (float y = -Radius; y <= Radius; y++) {
+			for (number y = -Radius; y <= Radius; y++) {
 				
 				Sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
 				
@@ -20,13 +20,14 @@ Shadows.BlurShader = love.graphics.newShader[[
 		
 		}
 		
-		float Delta = 2.0 * Radius + 1.0;
+		number Delta = 2.0 * Radius + 1.0;
 		
 		return Sum / vec4( Delta * Delta );
 	}
 ]]
 
 Shadows.BloomShader = love.graphics.newShader [[
+	
 	extern vec2 Size;
 	#define Radius 1.0		// pixels per axis; higher = bigger glow, worse performance
 	#define Quality 5.0			// lower = smaller glow, better quality
@@ -36,11 +37,11 @@ Shadows.BloomShader = love.graphics.newShader [[
 		vec4 Sum = vec4(0);
 		vec2 SizeFactor = vec2(Quality / Size);
 		
-		float Samples = 0.0;
+		number Samples = 0.0;
 		
-		for (float x = -Radius; x <= Radius; x++){
+		for (number x = -Radius; x <= Radius; x++){
 		
-			for (float y = -Radius; y <= Radius; y++) {
+			for (number y = -Radius; y <= Radius; y++) {
 			
 				Sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
 				Samples++;
@@ -51,6 +52,7 @@ Shadows.BloomShader = love.graphics.newShader [[
 		
 		return (Sum / Samples + Texel(tex, tc) ) * color;
 	}
+	
 ]]
 
 Shadows.DarkenShader = love.graphics.newShader [[
@@ -81,16 +83,17 @@ Shadows.AberrationShader = love.graphics.newShader[[
 ]]; Shadows.AberrationShader:send("Aberration", 2)
 
 Shadows.LightShader = love.graphics.newShader [[
-	extern float Radius;
+	
+	extern number Radius;
 	extern vec3 Center;
 
 	vec4 effect(vec4 Color, Image Texture, vec2 tc, vec2 pc) {
 		
-		float Distance = length(vec3(pc, 0E0) - Center);
+		number Distance = length(vec3(pc, 0E0) - Center);
 		
 		if (Distance <= Radius) {
 		
-			float Mult = 1E0 - ( Distance / Radius );
+			number Mult = 1E0 - ( Distance / Radius );
 			
 			Color.r = Color.r * Mult;
 			Color.g = Color.g * Mult;
@@ -104,3 +107,78 @@ Shadows.LightShader = love.graphics.newShader [[
 	}
 ]]
 
+Shadows.RadialBlurShader = love.graphics.newShader [[
+	
+	extern vec2 Position;
+	extern vec2 Size;
+	extern number Radius;
+	
+	#define Quality 				1.6
+	
+	#define Pi						3.141592653589793238462643383279502884197169399375
+	#define StandardDeviation 	1
+	
+	#define BlurRadius			8
+	
+	number gauss(int x, int y, number deviation) {
+		
+		number deviationSquare = pow(deviation, 2);
+		number radius = pow(x, 2) + pow(y, 2);
+		number dividend = exp( -radius * 0.5 / deviationSquare );
+		number divider = 2 * Pi * deviationSquare;
+		
+		return dividend / divider;
+		
+	}
+	
+	vec4 effect(vec4 Color, Image Texture, vec2 textureCoord, vec2 pixelCoord) {
+		
+		number r = length(pixelCoord - Position) / Radius;
+		number Deviation = 1 + 12 * r * smoothstep(0, 1, r);
+		
+		vec2 SizeFactor = vec2(Quality / Size);
+		vec3 OutputColor = vec3(0.0, 0.0, 0.0);
+		
+		for (int x = -BlurRadius; x <= BlurRadius; x++) {
+			
+			for (int y = -BlurRadius; y <= BlurRadius; y++) {
+				
+				OutputColor += Texel( Texture, textureCoord + vec2(x, y) * SizeFactor ).rgb * gauss(x, y, Deviation);
+				
+			}
+			
+		}
+		
+		return vec4( OutputColor, 1E0 ) * Color;
+		
+	}
+	
+]]
+
+--[[
+http://flexmonkey.blogspot.cl/2016/04/creating-custom-variable-blur-filter-in.html
+
+kernel vec4 lumaVariableBlur(sampler image, sampler blurImage, float blurRadius) { 
+	vec3 blurPixel = sample(blurImage, samplerCoord(blurImage)).rgb; 
+	float blurAmount = dot(blurPixel, vec3(0.2126, 0.7152, 0.0722)); 
+
+	int radius = int(blurAmount * blurRadius); 
+
+	vec3 accumulator = vec3(0.0, 0.0, 0.0); 
+	float n = 0.0; 
+
+	for (int x = -radius; x <= radius; x++) { 
+		for (int y = -radius; y <= radius; y++) { 
+			vec2 workingSpaceCoordinate = destCoord() + vec2(x,y); 
+			vec2 imageSpaceCoordinate = samplerTransform(image, workingSpaceCoordinate); 
+			vec3 color = sample(image, imageSpaceCoordinate).rgb; 
+			
+			accumulator += color;
+			n += 1.0;
+		}     
+	} 
+	
+	accumulator /= n; 
+	return vec4(accumulator, 1.0); 
+} 
+]]

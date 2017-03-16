@@ -78,6 +78,6 @@ function Shadows.PointInPolygon(gx, gy, Vertices)
 		
 	end
 	
-	return (Intersections % 2) == 1
+	return math.floor(Intersections * 0.5) == Intersections * 0.5 and Intersections > 0
 	
 end

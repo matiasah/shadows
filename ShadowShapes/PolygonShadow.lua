@@ -1,5 +1,7 @@
 local Shadows = ...
-local Polygon = debug.getregistry()["PolygonShape"]
+
+PolygonShadow = {}
+PolygonShadow.__index = PolygonShadow
 
 local Normalize = Shadows.Normalize
 local insert = table.insert
@@ -10,67 +12,85 @@ local cos = math.cos
 local sin = math.sin
 local rad = math.rad
 
-function Polygon:Draw(Body)
+function PolygonShadow:new(Body, ...)
 	
-	love.graphics.polygon("fill", Body.Body:getWorldPoints( self:getPoints() ) )
+	local Vertices = {...}
+	local self = setmetatable({}, PolygonShadow)
 	
-end
-
-function Polygon:GetPosition(Body)
+	if Body and Vertices and #Vertices > 0 then
 	
-	local Points = { self:getPoints() }
-	local x, y = 0, 0
-	
-	for i = 1, #Points, 2 do
+		self.Transform = Shadows.Transform:new()
+		self.Transform:SetParent(Body.Transform)
 		
-		x = x + Points[i]
-		y = y + Points[i + 1]
+		self.Body = Body
+		self.World = Body.World
+		self:SetVertices(...)
+		
+		Body:AddShape(self)
 		
 	end
 	
-	local InvCount = 1 / #Points * 0.5
-	local WorldX, WorldY = Body.Body:getWorldPoint( x * InvCount, y * InvCount )
-	
-	return WorldX, WorldY, Points
+	return self
 	
 end
 
-function Polygon:GetRadius(Body)
+function PolygonShadow:Remove()
 	
-	local x, y, Points = self:GetPosition(Body)
-	local Radius = 0
+	self.Body.Shapes[self.ID] = nil
+	self.World.Changed = true
 	
-	for i = 1, #Points, 2 do
+	self.Transform:SetParent(nil)
+	
+end
+
+function PolygonShadow:Draw()
+	
+	love.graphics.polygon("fill", self:GetVertices() )
+	
+end
+
+function PolygonShadow:GetPosition()
+	
+	return self.Body:GetPosition()
+	
+end
+
+function PolygonShadow:GetRadius()
+	
+	return self.Radius
+	
+end
+
+function PolygonShadow:SetVertices(...)
+	
+	self.Vertices = {...}
+	self.Radius = 0
+	self.World.Changed = true
+	
+	for i = 1, #self.Vertices, 2 do
 		
-		local dx = Points[i] - x
-		local dy = Points[i + 1] - y
-		local PointRadius = sqrt( dx * dx + dy * dy )
+		local x, y = self.Vertices[i], self.Vertices[i + 1]
+		local Radius = sqrt( x * x + y * y )
 		
-		if PointRadius > Radius then
+		if Radius > self.Radius then
 			
-			Radius = PointRadius
+			self.Radius = Radius
 			
 		end
 		
 	end
 	
-	return Radius
+end
+
+function PolygonShadow:GetVertices()
+	
+	return self.Transform:ToWorldPoints( self.Vertices )
 	
 end
 
-function Polygon:GetVertices(Body)
+function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	
-	return {
-		
-		Body.Body:getWorldPoints( self:getPoints() )
-		
-	}
-	
-end
-
-function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
-	
-	local Vertices = self:GetVertices(Body)
+	local Vertices = self:GetVertices()
 	local VerticesLength = #Vertices
 	local VisibleEdge = {}
 	
@@ -402,3 +422,5 @@ function Polygon:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	end
 	
 end
+
+return PolygonShadow

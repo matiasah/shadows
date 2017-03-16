@@ -1,5 +1,7 @@
 local Shadows = ...
-local Circle = {}
+
+CircleShadow = {}
+CircleShadow.__index = CircleShadow
 
 local insert = table.insert
 
@@ -10,36 +12,37 @@ local sqrt = math.sqrt
 local sin = math.sin
 local cos = math.cos
 
-Circle.__index = Circle
-
-function Shadows.CreateCircle(Body, x, y, Radius)
+function CircleShadow:new(Body, x, y, Radius)
 	
-	local Circle = setmetatable({}, Circle)
+	local self = setmetatable({}, CircleShadow)
 	
-	Circle.Transform = Shadows.Transform:new()
-	Circle.Transform:SetParent(Body.Transform)
-	Circle.Transform:SetLocalPosition(x, y)
+	if Body and x and y and Radius then
 	
-	Circle.Body = Body
-	Circle.Radius = Radius
+		self.Transform = Shadows.Transform:new()
+		self.Transform:SetParent(Body.Transform)
+		self.Transform:SetLocalPosition(x, y)
+		
+		self.Body = Body
+		self.Radius = Radius
+		
+		Body:AddShape(self)
+		
+	end
 	
-	Body:AddShape(Circle)
-	
-	return Circle
+	return self
 	
 end
 
-function Circle:Remove()
+function CircleShadow:Remove()
 	
 	self.Body.Shapes[self.ID] = nil
-	self.Body.Moved = true
 	self.Body.World.Changed = true
 	
 	self.Transform:SetParent(nil)
 	
 end
 
-function Circle:SetRadius(Radius)
+function CircleShadow:SetRadius(Radius)
 	
 	if self.Radius ~= Radius then
 		
@@ -50,13 +53,13 @@ function Circle:SetRadius(Radius)
 	
 end
 
-function Circle:GetRadius()
+function CircleShadow:GetRadius()
 	
 	return self.Radius
 	
 end
 
-function Circle:Draw()
+function CircleShadow:Draw()
 	
 	local x, y = self.Transform:GetPosition()
 	
@@ -64,7 +67,7 @@ function Circle:Draw()
 	
 end
 
-function Circle:SetPosition(x, y)
+function CircleShadow:SetPosition(x, y)
 	
 	if self.Transform:SetLocalPosition(x, y) then
 		
@@ -74,13 +77,13 @@ function Circle:SetPosition(x, y)
 	
 end
 
-function Circle:GetPosition()
+function CircleShadow:GetPosition()
 	
 	return self.Transform:GetPosition()
 	
 end
 
-function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
+function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	
 	local x, y = self:GetPosition()
 	local Radius = self:GetRadius()
@@ -141,3 +144,5 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	end
 	
 end
+
+return CircleShadow

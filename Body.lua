@@ -1,31 +1,29 @@
-local Path, Shadows = ...
-local Body = {}
+local Shadows = ...
 
-assert(love.filesystem.load(Path.."/Shapes/Circle.lua"))(Shadows)
-assert(love.filesystem.load(Path.."/Shapes/Polygon.lua"))(Shadows)
-
-assert(love.filesystem.load(Path.."/PhysicsShapes/Circle.lua"))(Shadows)
-assert(love.filesystem.load(Path.."/PhysicsShapes/Polygon.lua"))(Shadows)
-
+Body = {}
 Body.__index = Body
 
-function Shadows.CreateBody(World, ID)
+function Body:new(World, ID)
 	
-	local Body = setmetatable({}, Body)
+	local self = setmetatable({}, Body)
 	
-	Body.Transform = Shadows.Transform:new()
-	Body.Transform:SetLocalPosition(0, 0, 1)
+	if World then
+		
+		self.Transform = Shadows.Transform:new()
+		self.Transform:SetLocalPosition(0, 0, 1)
+		
+		self.Shapes = {}
+		World:AddBody(self, ID)
+		
+	end
 	
-	Body.Shapes = {}
-	World:AddBody(Body, ID)
-	
-	return Body
+	return self
 	
 end
 
 function Body:Remove()
 	
-	self.World.Shapes[self.ID] = nil
+	self.World.Shapes[ self.ID ] = nil
 	
 	for _, Light in pairs(self.World.Lights) do
 		
@@ -197,3 +195,5 @@ function Body:GetPositionVector()
 	return self.Transform:GetPositionVector()
 	
 end
+
+return Body

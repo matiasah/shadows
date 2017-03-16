@@ -1,14 +1,15 @@
 local Path, Shadows = ...
-local Room = {}
 
-Shadows.Room = {Base = Room}
-
-assert(	love.filesystem.load(Path.."/Circle.lua")		)(Shadows)
-assert(	love.filesystem.load(Path.."/Polygon.lua")	)(Shadows)
-assert(	love.filesystem.load(Path.."/Rectangle.lua")	)(Shadows)
-
+Room = {}
 Room.__index = Room
+
 Room.R, Room.G, Room.B, Room.A = 0, 0, 0, 255
+
+function Room:new()
+	
+	return setmetatable({}, Room)
+	
+end
 
 function Room:SetColor(R, G, B, A)
 	
@@ -113,3 +114,5 @@ function Room:Remove()
 	self.World.UpdateCanvas = true
 	
 end
+
+return Room

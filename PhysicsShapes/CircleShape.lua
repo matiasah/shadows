@@ -1,5 +1,5 @@
 local Shadows = ...
-local Circle = debug.getregistry()["CircleShape"]
+local CircleShape = debug.getregistry()["CircleShape"]
 
 local insert = table.insert
 
@@ -10,7 +10,7 @@ local sqrt = math.sqrt
 local sin = math.sin
 local cos = math.cos
 
-function Circle:Draw(Body)
+function CircleShape:Draw(Body)
 	
 	local x, y = Body.Body:getWorldPoint( self:getPoint() )
 	
@@ -18,19 +18,19 @@ function Circle:Draw(Body)
 	
 end
 
-function Circle:GetPosition(Body)
+function CircleShape:GetPosition(Body)
 	
 	return Body.Body:getWorldPoint( self:getPoint() )
 	
 end
 
-function Circle:GetRadius()
+function CircleShape:GetRadius()
 	
 	return self:getRadius()
 	
 end
 
-function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
+function CircleShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	
 	local x, y = self:GetPosition(Body)
 	local Radius = self:getRadius()
@@ -91,3 +91,5 @@ function Circle:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	end
 	
 end
+
+return CircleShape
