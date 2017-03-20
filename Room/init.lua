@@ -112,6 +112,7 @@ function Room:Remove()
 	
 	self.World.Rooms[self.ID] = nil
 	self.World.UpdateCanvas = true
+	self.World = nil
 	
 end
 

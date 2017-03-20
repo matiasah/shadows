@@ -1,6 +1,7 @@
 local Shadows = ...
 
 Shadows.BlurShader = love.graphics.newShader[[
+	
 	extern vec2 Size;
 	#define Quality 1.0
 	#define Radius 2.0
@@ -23,12 +24,15 @@ Shadows.BlurShader = love.graphics.newShader[[
 		number Delta = 2.0 * Radius + 1.0;
 		
 		return Sum / vec4( Delta * Delta );
+		
 	}
+	
 ]]
 
 Shadows.BloomShader = love.graphics.newShader [[
 	
 	extern vec2 Size;
+	
 	#define Radius 1.0		// pixels per axis; higher = bigger glow, worse performance
 	#define Quality 5.0			// lower = smaller glow, better quality
 
@@ -67,19 +71,21 @@ Shadows.DarkenShader = love.graphics.newShader [[
 
 -- https://love2d.org/forums/viewtopic.php?t=81014#p189754
 Shadows.AberrationShader = love.graphics.newShader[[
+	
 	extern vec2 Size;
 	extern number Aberration;
 
 	vec4 effect(vec4 col, Image texture, vec2 texturePos, vec2 screenPos){
 		vec2 coords = texturePos;
 		vec2 offset = vec2(Aberration, 0) / Size;
-
+		
 		vec4 red = texture2D(texture, coords - offset);
 		vec4 green = texture2D(texture, coords);
 		vec4 blue = texture2D(texture, coords + offset);
-
+		
 		return vec4(red.r, green.g, blue.b, 1E0); //final color with alpha of 1
 	}
+	
 ]]; Shadows.AberrationShader:send("Aberration", 2)
 
 Shadows.LightShader = love.graphics.newShader [[
@@ -105,6 +111,7 @@ Shadows.LightShader = love.graphics.newShader [[
 		
 		return vec4(0E0, 0E0, 0E0, 0E0);
 	}
+	
 ]]
 
 Shadows.RadialBlurShader = love.graphics.newShader [[
@@ -116,6 +123,7 @@ Shadows.RadialBlurShader = love.graphics.newShader [[
 	#define Quality 				1.6
 	
 	#define Pi						3.141592653589793238462643383279502884197169399375
+	#define invPi					1 / Pi
 	#define StandardDeviation 	1
 	
 	#define BlurRadius			8
@@ -123,11 +131,9 @@ Shadows.RadialBlurShader = love.graphics.newShader [[
 	number gauss(int x, int y, number deviation) {
 		
 		number deviationSquare = pow(deviation, 2);
-		number radius = pow(x, 2) + pow(y, 2);
-		number dividend = exp( -radius * 0.5 / deviationSquare );
-		number divider = 2 * Pi * deviationSquare;
+		number invDeviationSquare = 0.5 / deviationSquare;
 		
-		return dividend / divider;
+		return exp( -( pow(x, 2) + pow(y, 2) ) * invDeviationSquare ) * invPi * invDeviationSquare;
 		
 	}
 	
@@ -137,48 +143,20 @@ Shadows.RadialBlurShader = love.graphics.newShader [[
 		number Deviation = 1 + 12 * r * smoothstep(0, 1, r);
 		
 		vec2 SizeFactor = vec2(Quality / Size);
-		vec3 OutputColor = vec3(0.0, 0.0, 0.0);
+		vec4 Gradient = vec4(0E0);
 		
 		for (int x = -BlurRadius; x <= BlurRadius; x++) {
 			
 			for (int y = -BlurRadius; y <= BlurRadius; y++) {
 				
-				OutputColor += Texel( Texture, textureCoord + vec2(x, y) * SizeFactor ).rgb * gauss(x, y, Deviation);
+				Gradient += Texel( Texture, textureCoord + vec2(x, y) * SizeFactor ) * gauss(x, y, Deviation);
 				
 			}
 			
 		}
 		
-		return vec4( OutputColor, 1E0 ) * Color;
+		return vec4( Gradient.rgb, 1E0 ) * Color;
 		
 	}
 	
-]]
-
---[[
-http://flexmonkey.blogspot.cl/2016/04/creating-custom-variable-blur-filter-in.html
-
-kernel vec4 lumaVariableBlur(sampler image, sampler blurImage, float blurRadius) { 
-	vec3 blurPixel = sample(blurImage, samplerCoord(blurImage)).rgb; 
-	float blurAmount = dot(blurPixel, vec3(0.2126, 0.7152, 0.0722)); 
-
-	int radius = int(blurAmount * blurRadius); 
-
-	vec3 accumulator = vec3(0.0, 0.0, 0.0); 
-	float n = 0.0; 
-
-	for (int x = -radius; x <= radius; x++) { 
-		for (int y = -radius; y <= radius; y++) { 
-			vec2 workingSpaceCoordinate = destCoord() + vec2(x,y); 
-			vec2 imageSpaceCoordinate = samplerTransform(image, workingSpaceCoordinate); 
-			vec3 color = sample(image, imageSpaceCoordinate).rgb; 
-			
-			accumulator += color;
-			n += 1.0;
-		}     
-	} 
-	
-	accumulator /= n; 
-	return vec4(accumulator, 1.0); 
-} 
 ]]

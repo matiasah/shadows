@@ -16,7 +16,7 @@ function LightWorld:new()
 	World.Bloom = {
 		Shader = Shadows.BloomShader,
 		Canvas = love.graphics.newCanvas(Width, Height),
-		Active = true,
+		--Active = true,
 	}
 	
 	World.Blur = {

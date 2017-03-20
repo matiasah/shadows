@@ -180,7 +180,6 @@ function Light:Update()
 		draw(self.ShadowCanvas, 0, 0)
 		
 		setBlendMode("alpha", "alphamultiply")
-		setCanvas()
 		
 		self.Changed = nil
 		self.World.UpdateCanvas = true
