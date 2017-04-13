@@ -11,9 +11,9 @@ Shadows.BlurShader = love.graphics.newShader[[
 		vec4 Sum = vec4(0);
 		vec2 SizeFactor = vec2(Quality / Size);
 		
-		for (number x = -Radius; x <= Radius; x++) {
+		for (float x = -Radius; x <= Radius; x++) {
 			
-			for (number y = -Radius; y <= Radius; y++) {
+			for (float y = -Radius; y <= Radius; y++) {
 				
 				Sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
 				
@@ -21,7 +21,7 @@ Shadows.BlurShader = love.graphics.newShader[[
 		
 		}
 		
-		number Delta = 2.0 * Radius + 1.0;
+		float Delta = 2.0 * Radius + 1.0;
 		
 		return Sum / vec4( Delta * Delta );
 		
@@ -41,11 +41,11 @@ Shadows.BloomShader = love.graphics.newShader [[
 		vec4 Sum = vec4(0);
 		vec2 SizeFactor = vec2(Quality / Size);
 		
-		number Samples = 0.0;
+		float Samples = 0.0;
 		
-		for (number x = -Radius; x <= Radius; x++){
+		for (float x = -Radius; x <= Radius; x++){
 		
-			for (number y = -Radius; y <= Radius; y++) {
+			for (float y = -Radius; y <= Radius; y++) {
 			
 				Sum += Texel(tex, tc + vec2(x, y) * SizeFactor);
 				Samples++;
@@ -73,7 +73,7 @@ Shadows.DarkenShader = love.graphics.newShader [[
 Shadows.AberrationShader = love.graphics.newShader[[
 	
 	extern vec2 Size;
-	extern number Aberration;
+	extern float Aberration;
 
 	vec4 effect(vec4 col, Image texture, vec2 texturePos, vec2 screenPos){
 		vec2 coords = texturePos;
@@ -90,26 +90,24 @@ Shadows.AberrationShader = love.graphics.newShader[[
 
 Shadows.LightShader = love.graphics.newShader [[
 	
-	extern number Radius;
+	extern float Radius;
 	extern vec3 Center;
 
 	vec4 effect(vec4 Color, Image Texture, vec2 tc, vec2 pc) {
 		
-		number Distance = length(vec3(pc, 0E0) - Center);
+		float Distance = length( vec3(pc, 0.0) - Center);
 		
 		if (Distance <= Radius) {
 		
-			number Mult = 1E0 - ( Distance / Radius );
+			float Mult = 1.0 - ( Distance / Radius );
 			
-			Color.r = Color.r * Mult;
-			Color.g = Color.g * Mult;
-			Color.b = Color.b * Mult;
+			Color.rgb = Color.rgb * Mult;
 		
 			return Color;
 			
 		}
 		
-		return vec4(0E0, 0E0, 0E0, 0E0);
+		return vec4(0.0, 0.0, 0.0, 0.0);
 	}
 	
 ]]
@@ -118,29 +116,29 @@ Shadows.RadialBlurShader = love.graphics.newShader [[
 	
 	extern vec2 Position;
 	extern vec2 Size;
-	extern number Radius;
+	extern float Radius;
 	
 	#define Quality 				1.6
 	
 	#define Pi						3.141592653589793238462643383279502884197169399375
-	#define invPi					1 / Pi
-	#define StandardDeviation 	1
+	#define invPi					1.0 / Pi
 	
 	#define BlurRadius			8
 	
-	number gauss(int x, int y, number deviation) {
+	float gauss(vec2 vec, float deviation) {
 		
-		number deviationSquare = pow(deviation, 2);
-		number invDeviationSquare = 0.5 / deviationSquare;
+		float deviationSquare = pow(deviation, 2.0);
+		float invDeviationSquare = 0.5 / deviationSquare;
+		float len = pow(vec.x, 2.0) + pow(vec.y, 2.0);
 		
-		return exp( -( pow(x, 2) + pow(y, 2) ) * invDeviationSquare ) * invPi * invDeviationSquare;
+		return exp( -len * invDeviationSquare ) * invPi * invDeviationSquare;
 		
 	}
 	
 	vec4 effect(vec4 Color, Image Texture, vec2 textureCoord, vec2 pixelCoord) {
 		
-		number r = length(pixelCoord - Position) / Radius;
-		number Deviation = 1 + 12 * r * smoothstep(0, 1, r);
+		float r = length(pixelCoord - Position) / Radius;
+		float Deviation = 1.0 + 12.0 * r * smoothstep(0.0, 1.0, r);
 		
 		vec2 SizeFactor = vec2(Quality / Size);
 		vec4 Gradient = vec4(0E0);
@@ -149,7 +147,9 @@ Shadows.RadialBlurShader = love.graphics.newShader [[
 			
 			for (int y = -BlurRadius; y <= BlurRadius; y++) {
 				
-				Gradient += Texel( Texture, textureCoord + vec2(x, y) * SizeFactor ) * gauss(x, y, Deviation);
+				vec2 vec = vec2(x, y);
+				
+				Gradient += Texel( Texture, textureCoord + vec * SizeFactor ) * gauss(vec, Deviation);
 				
 			}
 			
