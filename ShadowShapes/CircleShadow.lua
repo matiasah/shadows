@@ -1,6 +1,7 @@
 module("shadows.ShadowShapes.CircleShadow", package.seeall)
 
 Shadows = require("shadows")
+Transform = require("shadows.Transform")
 
 CircleShadow = {}
 CircleShadow.__index = CircleShadow
@@ -20,7 +21,7 @@ function CircleShadow:new(Body, x, y, Radius)
 	
 	if Body and x and y and Radius then
 	
-		self.Transform = Shadows.Transform:new()
+		self.Transform = Transform:new()
 		self.Transform:SetParent(Body.Transform)
 		self.Transform:SetLocalPosition(x, y)
 		

@@ -2,6 +2,7 @@ module("shadows.Room.CircleRoom", package.seeall)
 
 Room = require("shadows.Room")
 Shadows = require("shadows")
+Transform = require("shadows.Transform")
 
 CircleRoom = Room:new()
 CircleRoom.__index = CircleRoom
@@ -10,11 +11,11 @@ CircleRoom.Radius = 0
 
 function CircleRoom:new(World, x, y, Radius)
 	
-	local self = setmetatable({}, CircleRoom)
+	local self = setmetatable( {}, CircleRoom )
 	
 	if World and x and y and Radius then
 		
-		self.Transform = Shadows.Transform:new()
+		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(x, y)
 		
 		self.Radius = Radius

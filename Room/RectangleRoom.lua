@@ -2,6 +2,7 @@ module("shadows.Room.RectangleRoom", package.seeall)
 
 Shadows = require("shadows")
 Room = require("shadows.Room")
+Transform = require("shadows.Transform")
 
 RectangleRoom = Room:new()
 RectangleRoom.__index = RectangleRoom
@@ -10,11 +11,11 @@ RectangleRoom.Width, RectangleRoom.Height = 0, 0
 
 function RectangleRoom:new(World, x, y, Width, Height)
 	
-	local self = setmetatable({}, RectangleRoom)
+	local self = setmetatable( {}, RectangleRoom )
 	
 	if World and x and y and Width and Height then
 		
-		self.Transform = Shadows.Transform:new()
+		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(x, y)
 		
 		self.Width, self.Height = Width, Height

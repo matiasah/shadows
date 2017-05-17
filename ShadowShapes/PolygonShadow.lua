@@ -1,6 +1,7 @@
 module("shadows.ShadowShapes.PolygonShadow", package.seeall)
 
 Shadows = require("shadows")
+Transform = require("shadows.Transform")
 
 PolygonShadow = {}
 PolygonShadow.__index = PolygonShadow
@@ -21,7 +22,7 @@ function PolygonShadow:new(Body, ...)
 	
 	if Body and Vertices and #Vertices > 0 then
 	
-		self.Transform = Shadows.Transform:new()
+		self.Transform = Transform:new()
 		self.Transform:SetParent(Body.Transform)
 		
 		self.Body = Body

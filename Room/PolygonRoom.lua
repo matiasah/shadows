@@ -2,17 +2,18 @@ module("shadows.Room.PolygonRoom", package.seeall)
 
 Shadows = require("shadows")
 Room = require("shadows.Room")
+Transform = require("shadows.Transform")
 
 PolygonRoom = Room:new()
 PolygonRoom.__index = PolygonRoom
 
 function PolygonRoom:new(World, x, y, Vertices)
 	
-	local self = setmetatable({}, PolygonRoom)
+	local self = setmetatable( {}, PolygonRoom )
 	
 	if World and x and y and Vertices and #Vertices > 0 then
 		
-		self.Transform = Shadows.Transform:new()
+		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(x, y)
 		
 		self.Vertices = Vertices

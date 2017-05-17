@@ -9,7 +9,7 @@ Room.R, Room.G, Room.B, Room.A = 0, 0, 0, 255
 
 function Room:new()
 	
-	return setmetatable({}, Room)
+	return setmetatable( {}, Room )
 	
 end
 
