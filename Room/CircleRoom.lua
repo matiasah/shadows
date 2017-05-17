@@ -1,4 +1,7 @@
-local Shadows = ...
+module("shadows.Room.CircleRoom", package.seeall)
+
+Room = require("shadows.Room")
+Shadows = require("shadows")
 
 CircleRoom = Room:new()
 CircleRoom.__index = CircleRoom

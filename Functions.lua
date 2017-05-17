@@ -1,4 +1,6 @@
-local Shadows = ...
+module("shadows.Functions", package.seeall)
+
+Shadows = require("shadows")
 
 local sqrt = math.sqrt
 local min = math.min
