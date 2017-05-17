@@ -1,4 +1,6 @@
-local Path, Shadows = ...
+module("shadows.Room", package.seeall)
+
+Shadows = require("shadows")
 
 Room = {}
 Room.__index = Room

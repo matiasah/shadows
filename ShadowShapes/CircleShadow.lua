@@ -1,4 +1,6 @@
-local Shadows = ...
+module("shadows.ShadowShapes.CircleShadow", package.seeall)
+
+Shadows = require("shadows")
 
 CircleShadow = {}
 CircleShadow.__index = CircleShadow

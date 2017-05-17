@@ -1,5 +1,7 @@
-local Shadows = ...
-local PolygonShape = debug.getregistry()["PolygonShape"]
+module("shadows.PhysicsShapes.PolygonShape", package.seeall)
+
+Shadows = require("shadows")
+PolygonShape = debug.getregistry()["PolygonShape"]
 
 local Normalize = Shadows.Normalize
 local insert = table.insert

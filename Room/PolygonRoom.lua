@@ -1,4 +1,7 @@
-local Shadows = ...
+module("shadows.Room.PolygonRoom", package.seeall)
+
+Shadows = require("shadows")
+Room = require("shadows.Room")
 
 PolygonRoom = Room:new()
 PolygonRoom.__index = PolygonRoom

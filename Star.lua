@@ -1,4 +1,7 @@
-local Shadows = ...
+module("shadows.Star", package.seeall)
+
+Shadows = require("shadows")
+Light = require("shadows.Light")
 
 Star = Light:new()
 Star.__index = Star

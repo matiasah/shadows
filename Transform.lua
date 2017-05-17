@@ -1,6 +1,6 @@
 -- @author Starkkz
 
-local Transform
+module("shadows.Transform", package.seeall)
 
 Transform = {}
 Transform.__index = Transform

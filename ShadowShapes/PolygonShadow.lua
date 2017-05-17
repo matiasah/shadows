@@ -1,4 +1,6 @@
-local Shadows = ...
+module("shadows.ShadowShapes.PolygonShadow", package.seeall)
+
+Shadows = require("shadows")
 
 PolygonShadow = {}
 PolygonShadow.__index = PolygonShadow

@@ -1,6 +1,9 @@
-local Shadows = ...
+module("shadows.Room.RectangleRoom", package.seeall)
 
-RectangleRoom = setmetatable({}, Shadows.Room.Base)
+Shadows = require("shadows")
+Room = require("shadows.Room")
+
+RectangleRoom = Room:new()
 RectangleRoom.__index = RectangleRoom
 
 RectangleRoom.Width, RectangleRoom.Height = 0, 0

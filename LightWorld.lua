@@ -1,4 +1,7 @@
-local Shadows = ...
+module("shadows.LightWorld", package.seeall)
+
+Shadows = require("shadows")
+Body = require("shadows.Body")
 
 LightWorld = {}
 LightWorld.__index = LightWorld
@@ -224,13 +227,13 @@ function LightWorld:Update(dt)
 	
 	if self.Physics then
 		
-		for _, Body in pairs( self.Physics:getBodyList() ) do
+		for _, BodyObject in pairs( self.Physics:getBodyList() ) do
 			
 			-- The 'Body' userdata is interpreted as a 'ID' (a.k.a table index)
 			
-			if not self.Bodies[Body] then
+			if not self.Bodies[BodyObject] then
 				
-				Shadows.Body:new(self, Body).Body = Body
+				Body:new(self, BodyObject).Body = BodyObject
 				
 			end
 			

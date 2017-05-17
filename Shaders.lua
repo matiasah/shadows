@@ -1,4 +1,6 @@
-local Shadows = ...
+module("shadows.Shaders", package.seeall)
+
+Shadows = require("shadows")
 
 Shadows.BlurShader = love.graphics.newShader[[
 	
@@ -160,3 +162,5 @@ Shadows.RadialBlurShader = love.graphics.newShader [[
 	}
 	
 ]]
+
+return Shadows

@@ -1,5 +1,7 @@
-local Shadows = ...
-local CircleShape = debug.getregistry()["CircleShape"]
+module("shadows.PhysicsShapes.CircleShape", package.seeall)
+
+Shadows = require("shadows")
+CircleShape = debug.getregistry()["CircleShape"]
 
 local insert = table.insert
 

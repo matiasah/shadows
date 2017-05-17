@@ -1,4 +1,7 @@
-local Shadows = ...
+module("shadows.Light", package.seeall)
+
+Shadows = require("shadows")
+Transform = require("shadows.Transform")
 
 Light = {}
 Light.__index = Light
@@ -28,7 +31,7 @@ function Light:new(World, Radius)
 		
 		local Width, Height = World.Canvas:getDimensions()
 		
-		self.Transform = Shadows.Transform:new()
+		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(0, 0, 1)
 		
 		self.Radius = Radius

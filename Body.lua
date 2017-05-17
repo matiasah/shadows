@@ -1,4 +1,7 @@
-local Shadows = ...
+module("shadows.Body", package.seeall)
+
+Shadows = require("shadows")
+Transform = require("shadows.Transform")
 
 Body = {}
 Body.__index = Body
@@ -9,7 +12,7 @@ function Body:new(World, ID)
 	
 	if World then
 		
-		self.Transform = Shadows.Transform:new()
+		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(0, 0, 1)
 		
 		self.Shapes = {}
