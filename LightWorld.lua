@@ -7,7 +7,7 @@ LightWorld = {}
 LightWorld.__index = LightWorld
 
 LightWorld.R, LightWorld.G, LightWorld.B, LightWorld.A = 0, 0, 0, 255
-LightWorld.x, LightWorld.y = 0, 0
+LightWorld.x, LightWorld.y, LightWorld.z = 0, 0, 1
 
 function LightWorld:new()
 	
@@ -197,7 +197,7 @@ function LightWorld:GetColor()
 	
 end
 
-function LightWorld:SetPosition(x, y)
+function LightWorld:SetPosition(x, y, z)
 	
 	if x ~= self.x then
 		
@@ -212,6 +212,19 @@ function LightWorld:SetPosition(x, y)
 		self.y = y
 		self.UpdateCanvas = true
 		self.UpdateStars = true
+		
+	end
+	
+	if z then
+		
+		if z ~= self.z then
+			
+			self.z = z
+			self.UpdateZoom = true
+			self.UpdateCanvas = true
+			self.UpdateStars = true
+			
+		end
 		
 	end
 	
@@ -277,6 +290,7 @@ function LightWorld:Update(dt)
 	
 	if self.UpdateCanvas then
 		
+		self.UpdateZoom = nil
 		self.UpdateCanvas = nil
 		self.UpdateStars = nil
 		
@@ -286,6 +300,7 @@ function LightWorld:Update(dt)
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		love.graphics.origin()
+		love.graphics.scale(self.z, self.z)
 		
 		for _, Light in pairs(self.Stars) do
 			
@@ -308,6 +323,10 @@ function LightWorld:Update(dt)
 		love.graphics.setShader()
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")
+		
+		love.graphics.origin()
+		love.graphics.translate(-self.x, -self.y)
+		love.graphics.scale(self.z, self.z)
 		
 		for _, Light in pairs(self.Lights) do
 			

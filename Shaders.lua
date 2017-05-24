@@ -120,12 +120,12 @@ Shadows.RadialBlurShader = love.graphics.newShader [[
 	extern vec2 Size;
 	extern float Radius;
 	
-	#define Quality 				1.6
+	#define Quality 				1.3
 	
 	#define Pi						3.141592653589793238462643383279502884197169399375
 	#define invPi					1.0 / Pi
 	
-	#define BlurRadius			8
+	#define BlurRadius			5
 	
 	float gauss(vec2 vec, float deviation) {
 		
