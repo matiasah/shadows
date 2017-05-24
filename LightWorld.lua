@@ -232,7 +232,7 @@ end
 
 function LightWorld:GetPosition()
 	
-	return self.x, self.y
+	return self.x, self.y, self.z
 	
 end
 
