@@ -220,7 +220,6 @@ function LightWorld:SetPosition(x, y, z)
 		if z ~= self.z then
 			
 			self.z = z
-			self.UpdateZoom = true
 			self.UpdateCanvas = true
 			self.UpdateStars = true
 			
@@ -290,7 +289,6 @@ function LightWorld:Update(dt)
 	
 	if self.UpdateCanvas then
 		
-		self.UpdateZoom = nil
 		self.UpdateCanvas = nil
 		self.UpdateStars = nil
 		
