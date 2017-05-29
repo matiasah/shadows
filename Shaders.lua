@@ -185,4 +185,23 @@ Shadows.ShapeShader = love.graphics.newShader [[
 	
 ]]
 
+Shadows.NormalShader = love.graphics.newShader [[
+	
+	extern vec3 LightPos;
+	
+	vec4 effect(vec4 Color, Image Texture, vec2 textureCoord, vec2 pixelCoord) {
+		
+		vec4 NormalMap = Texel(Texture, textureCoord);
+		
+		vec3 LightDir = vec3( LightPos.xy - pixelCoord.xy, LightPos.z);
+		
+		vec3 N = normalize(NormalMap.rgb * 2.0 - 1.0);
+		vec3 L = normalize(LightDir);
+		
+		return Color * (1.0 - max(dot(N, L), 0.0));
+		
+	}
+	
+]]
+
 return Shadows

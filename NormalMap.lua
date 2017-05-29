@@ -14,6 +14,8 @@ function NormalMap:new(World, Texture)
 		self.Transform = Transform:new()
 		self.Texture = Texture
 		
+		World:AddNormalMap(self)
+		
 		return self
 		
 	end
@@ -26,6 +28,17 @@ function NormalMap:Draw()
 	local Rotation = self.Transform:GetRadians()
 	
 	love.graphics.draw(self.Texture, x, y, Rotation)
+	
+end
+
+function NormalMap:Update()
+	
+	if self.Transform.HasChanged then
+		
+		self.Transform.HasChanged = false
+		self.World.Changed = true
+		
+	end
 	
 end
 
