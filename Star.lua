@@ -86,6 +86,9 @@ function Star:Update()
 			
 		end
 		
+		-- Draw custom shadows
+		self.World:DrawShadows(self)
+		
 		-- Could possibly draw the normal maps here?
 		
 		-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
@@ -98,8 +101,13 @@ function Star:Update()
 			
 		end
 		
+		-- Draw the sprites so that shadows don't cover them
+		setShader(Shadows.ShapeShader)
+		self.World:DrawSprites(self)
+		
 		-- Now stop using the shadow canvas and generate the light
 		setCanvas(self.Canvas)
+		setShader()
 		clear()
 		origin()
 		translate(x - self.World.x - self.Radius, y - self.World.y - self.Radius)

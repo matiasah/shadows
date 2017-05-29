@@ -163,4 +163,26 @@ Shadows.RadialBlurShader = love.graphics.newShader [[
 	
 ]]
 
+Shadows.ShapeShader = love.graphics.newShader [[
+	
+	vec4 effect(vec4 Color, Image Texture, vec2 textureCoord, vec2 pixelCoord) {
+		
+		vec4 pixel = Texel(Texture, textureCoord);
+		
+		if ( pixel.a > 0 ) {
+			
+			if ( pixel.r > 0 || pixel.g > 0 || pixel.b > 0 ) {
+				
+				return Color;
+				
+			}
+			
+		}
+		
+		return vec4(0.0, 0.0, 0.0, 0.0);
+		
+	}
+	
+]]
+
 return Shadows

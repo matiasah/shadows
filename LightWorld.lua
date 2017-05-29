@@ -324,4 +324,18 @@ function LightWorld:Update(dt)
 	
 end
 
+function LightWorld:DrawShadows(Light)
+	-- Light object can be of type 'Light' or 'Star'
+end
+
+function LightWorld:DrawSprites(Light)
+	-- Light object can be of type 'Light' or 'Star'
+end
+
+function LightWorld:ForceUpdate()
+	
+	self.Changed = true
+	
+end
+
 return LightWorld
