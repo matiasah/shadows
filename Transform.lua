@@ -6,6 +6,8 @@ Transform = {}
 Transform.__index = Transform
 Transform.x, Transform.y, Transform.z = 0, 0, 0
 
+PI = math.pi
+
 -- @description: Creates a new transformation
 function Transform:new()
 	
@@ -138,6 +140,13 @@ function Transform:GetLocalRotation()
 	
 end
 
+-- @description: Gets the local rotation of a transform in radians
+function Transform:GetLocalRadians()
+	
+	return self.Radians
+	
+end
+
 -- @description: Sets the rotation of a transform
 function Transform:SetRotation(Angle)
 	
@@ -175,6 +184,33 @@ function Transform:GetRotation()
 	end
 	
 	return self.Rotation
+	
+end
+
+-- @description: Gets the rotation of a transform in radians
+function Transform:GetRadians()
+	
+	if self.Parent then
+		
+		local Rotation = self.Radians + self.Parent:GetRadians()
+		
+		while Rotation < -PI do
+			
+			Rotation = Rotation + PI * 2
+			
+		end
+		
+		while Rotation > PI do
+			
+			Rotation = Rotation - PI * 2
+			
+		end
+		
+		return Rotation
+		
+	end
+	
+	return self.Radians
 	
 end
 
