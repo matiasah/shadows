@@ -147,8 +147,8 @@ function Light:Update()
 		-- Draw custom shadows
 		self.World:DrawShadows(self)
 		
-		-- Draw normal maps here
-		Shadows.NormalShader:send("LightPos", {x, y, z})
+		-- Could possibly draw the normal maps here?
+		Shadows.NormalShader:send("LightPos", {self.Radius, self.Radius, z})
 		
 		setShader(Shadows.NormalShader)
 		for Index, NormalMap in pairs(self.World.NormalMaps) do

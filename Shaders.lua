@@ -198,7 +198,7 @@ Shadows.NormalShader = love.graphics.newShader [[
 		vec3 N = normalize(NormalMap.rgb * 2.0 - 1.0);
 		vec3 L = normalize(LightDir);
 		
-		return Color * (1.0 - max(dot(N, L), 0.0));
+		return Color * ( 1.0 - max(dot(N, L), 0.0) );
 		
 	}
 	
