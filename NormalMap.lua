@@ -91,8 +91,15 @@ function NormalMap:Remove()
 	
 	self.World.NormalMaps[self.ID] = nil
 	self.World.Changed = true
+	self.World = nil
 	
 	self.Transform:SetParent(nil)
+	
+end
+
+function NormalMap:GetTransform()
+	
+	return self.Transform
 	
 end
 

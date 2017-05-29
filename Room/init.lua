@@ -118,4 +118,10 @@ function Room:Remove()
 	
 end
 
+function Room:GetTransform()
+	
+	return self.Transform
+	
+end
+
 return Room

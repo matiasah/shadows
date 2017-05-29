@@ -336,8 +336,15 @@ function Light:Remove()
 	
 	self.World.Lights[self.ID] = nil
 	self.World.Changed = true
+	self.World = nil
 	
 	self.Transform:SetParent(nil)
+	
+end
+
+function Light:GetTransform()
+	
+	return self.Transform
 	
 end
 

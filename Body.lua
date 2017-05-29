@@ -24,26 +24,6 @@ function Body:new(World, ID)
 	
 end
 
-function Body:Remove()
-	
-	self.World.Shapes[ self.ID ] = nil
-	
-	for _, Light in pairs(self.World.Lights) do
-		
-		Light.Shadows[ self.ID ] = nil
-		
-	end
-	
-	for _, Light in pairs(self.World.Stars) do
-		
-		Light.Shadows[ self.ID ] = nil
-		
-	end
-	
-	self.World.Changed = true
-	
-end
-
 function Body:Draw()
 	
 	if self.Body then
@@ -128,6 +108,13 @@ function Body:Update()
 		
 	end
 	
+	if self.Transform.HasChanged then
+		
+		self.Transform.HasChanged = false
+		self.Moved = true
+		
+	end
+	
 end
 
 function Body:AddShape(Shape)
@@ -196,6 +183,32 @@ end
 function Body:GetPositionVector()
 	
 	return self.Transform:GetPositionVector()
+	
+end
+
+function Body:Remove()
+	
+	for _, Light in pairs(self.World.Lights) do
+		
+		Light.Shadows[ self.ID ] = nil
+		
+	end
+	
+	for _, Light in pairs(self.World.Stars) do
+		
+		Light.Shadows[ self.ID ] = nil
+		
+	end
+	
+	self.World.Bodies[ self.ID ] = nil
+	self.World.Changed = true
+	self.World = nil
+	
+end
+
+function Body:GetTransform()
+	
+	return self.Transform
 	
 end
 

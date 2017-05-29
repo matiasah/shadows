@@ -314,7 +314,7 @@ function LightWorld:Update(dt)
 		
 		for Index, Body in pairs(self.Bodies) do
 			
-			Body.Transform.Changed = nil
+			Body.Moved = false
 			
 		end
 		
