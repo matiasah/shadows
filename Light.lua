@@ -50,23 +50,23 @@ end
 function Light:GenerateShadows(x, y)
 	
 	for _, Body in pairs(self.World.Bodies) do
-		
+		-- If a body has been removed from the local reference, the light has moved, or the body has moved
 		if self.Transform.HasChanged or Body.Moved or not self.Shadows[ Body.ID ] then
-		
+			-- Insert the shadow shapes of a body into this table
 			local Shapes = {}
 			
 			if Body.Body then
-				
+				-- Get the physics shapes of the physics body
 				for _, Fixture in pairs(Body.Body:getFixtureList()) do
 					
 					local Shape = Fixture:getShape()
-					
+					-- It must be a type of shape that is supported by the engine
 					if Shape.GenerateShadows then
 						
 						local Radius = self.Radius + Shape:GetRadius(Body)
 						local ShapeX, ShapeY = Shape:GetPosition(Body)
 						local dx, dy = ShapeX - x, ShapeY - y
-						
+						-- Is the light in the draw range?
 						if dx * dx + dy * dy < Radius * Radius then
 							
 							Shape:GenerateShadows(Shapes, Body, 0, 0, self)
@@ -84,7 +84,7 @@ function Light:GenerateShadows(x, y)
 					local Radius = self.Radius + Shape:GetRadius()
 					local ShapeX, ShapeY = Shape:GetPosition()
 					local dx, dy = ShapeX - x, ShapeY - y
-					
+					-- Is the light in the draw range?
 					if dx * dx + dy * dy < Radius * Radius then
 						
 						Shape:GenerateShadows(Shapes, Body, 0, 0, self)
@@ -94,7 +94,7 @@ function Light:GenerateShadows(x, y)
 				end
 				
 			end
-			
+			-- Make a local reference to a body's shadow shapes
 			self.Shadows[ Body.ID ] = Shapes
 			
 		end
@@ -110,23 +110,30 @@ function Light:Update()
 		
 		local x, y, z = self.Transform:GetPosition()
 		
+		-- Generate new content for the shadow canvas
 		setCanvas(self.ShadowCanvas)
+		setShader()
 		clear(255, 255, 255, 255)
 		
+		-- Move all the objects so that their position local to the light are corrected
 		translate(self.Radius - x, self.Radius - y)
 		
+		-- Shadow shapes should subtract white color, so that you see black
 		setBlendMode("subtract", "alphamultiply")
 		setColor(255, 255, 255, 255)
 		
+		-- Produce the shadow shapes
 		self:GenerateShadows(x, y)
 		self.Moved = nil
 		
+		-- This needs to be put right after self:GenerateShadows, because it uses the self.Transform.HasChanged field
 		if self.Transform.HasChanged then
-			
+			-- If the light has moved, mark it as it hasn't so that it doesn't update until self.Transform.HasChanged is set to true
 			self.Transform.HasChanged = false
 			
 		end
 		
+		-- Draw the shadow shapes
 		for _, Shapes in pairs(self.Shadows) do
 			
 			for _, Shadow in pairs(Shapes) do
@@ -137,8 +144,11 @@ function Light:Update()
 			
 		end
 		
+		-- Could possibly draw the normal maps here?
+		
+		-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
 		setColor(255, 255, 255, 255)
-		setBlendMode("add")
+		setBlendMode("add", "alphamultiply")
 		
 		for Index, Body in pairs(self.World.Bodies) do
 			
@@ -146,44 +156,53 @@ function Light:Update()
 			
 		end
 		
+		-- Now stop using the shadow canvas and generate the light
 		setCanvas(self.Canvas)
 		clear()
 		origin()
 		
 		if self.Image then
-			
+			-- If there's a image to be used as light texture, use it
 			setBlendMode("lighten", "premultiplied")
 			setColor(self.R, self.G, self.B, self.A)
 			draw(self.Image, self.Radius, self.Radius)
 			
 		else
-			
+			-- Use a shader to generate the light
 			Shadows.LightShader:send("Radius", self.Radius)
 			Shadows.LightShader:send("Center", {self.Radius, self.Radius, z})
 			
+			-- Calculate the rotation of the light
 			local Arc = math.rad(self.Arc * 0.5)
-			local Angle = self.Transform.Radians - halfPi
+			local Angle = self.Transform:GetRadians(-halfPi)
 			
+			-- Set the light shader
 			setShader(Shadows.LightShader)
 			setBlendMode("alpha", "premultiplied")
 			
+			-- Filling it with a arc is more efficient than with a rectangle for this case
 			setColor(self.R, self.G, self.B, self.A)
 			arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
 			
+			-- Unset the shader
 			setShader()
 			
 		end
 		
+		-- Generate a radial blur (to make the light softer)
 		setShader(Shadows.RadialBlurShader)
 		Shadows.RadialBlurShader:send("Size", {self.Canvas:getDimensions()})
 		Shadows.RadialBlurShader:send("Position", {self.Radius, self.Radius})
 		Shadows.RadialBlurShader:send("Radius", self.Radius)
 		
+		-- Now apply the blur along with the shadow shapes over the light canvas
 		setBlendMode("multiply", "alphamultiply")
 		draw(self.ShadowCanvas, 0, 0)
 		
+		-- Reset the blending mode
 		setBlendMode("alpha", "alphamultiply")
 		
+		-- Tell the world it needs to update it's canvas
 		self.Changed = nil
 		self.World.UpdateCanvas = true
 		
@@ -193,7 +212,7 @@ end
 
 function Light:SetAngle(Angle)
 	
-	self.Transform:SetRotation(Angle)
+	self.Transform:SetLocalRotation(Angle)
 	
 	return self
 	

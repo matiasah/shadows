@@ -20,6 +20,7 @@ function LightWorld:new()
 	self.Bodies = {}
 	self.Lights = {}
 	self.Stars = {}
+	self.NormalMaps = {}
 	self.Changed = true
 	
 	return self
@@ -30,6 +31,12 @@ function LightWorld:Resize(Width, Height)
 	
 	self.Canvas = love.graphics.newCanvas(Width, Height)
 	self.UpdateCanvas = true
+	
+	for Index, Light in pairs(self.Stars) do
+		
+		Light:Resize(Width, Height)
+		
+	end
 	
 end
 
@@ -89,11 +96,27 @@ end
 
 function LightWorld:AddRoom(Room)
 	
+	local ID = #self.Rooms + 1
 	Room.World = self
+	Room.ID = Room
+	
 	self.UpdateCanvas = true
-	table.insert(self.Rooms, Room)
+	self.Rooms[ID] = Room
 	
 	return Room
+	
+end
+
+function LightWorld:AddNormalMap(NormalMap)
+	
+	local ID = #self.NormalMaps + 1
+	NormalMap.World = self
+	NormalMap.ID = ID
+	
+	self.Changed = true
+	self.NormalMaps[ID] = NormalMap
+	
+	return NormalMap
 	
 end
 
@@ -232,6 +255,12 @@ function LightWorld:Update(dt)
 		
 	end; love.graphics.setCanvas()
 	
+	for Index, NormalMap in pairs(self.NormalMaps) do
+		
+		NormalMap:Update()
+		
+	end
+	
 	self.Changed = false
 	
 	if self.UpdateCanvas then
@@ -242,20 +271,19 @@ function LightWorld:Update(dt)
 		love.graphics.setCanvas(self.Canvas)
 		love.graphics.clear(self.R, self.G, self.B, self.A)
 		
+		love.graphics.setShader()
 		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		love.graphics.origin()
-		love.graphics.scale(self.z, self.z)
 		
 		for _, Light in pairs(self.Stars) do
-			
-			local x, y = Light:GetPosition()
 			
 			love.graphics.draw(Light.Canvas, 0, 0)
 			
 		end
 		
 		love.graphics.translate(-self.x, -self.y)
+		love.graphics.scale(self.z, self.z)
 		love.graphics.setShader(Shadows.DarkenShader)
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		

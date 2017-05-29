@@ -28,6 +28,8 @@ package.preload["shadows.Room.RectangleRoom"]	=		assert(love.filesystem.load(Pat
 package.preload["shadows.Functions"]				=		assert(love.filesystem.load(Path.."/Functions.lua"))
 package.preload["shadows.Shaders"]					=		assert(love.filesystem.load(Path.."/Shaders.lua"))
 
+package.preload["shadows.NormalMap"]				=		assert(love.filesystem.load(Path.."/NormalMap.lua"))
+
 require("shadows.Shaders")
 require("shadows.Functions")
 

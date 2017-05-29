@@ -161,56 +161,56 @@ function Transform:SetRotation(Angle)
 end
 
 -- @description: Gets the rotation of a transform
-function Transform:GetRotation()
+function Transform:GetRotation(SumRotation)
+	
+	local Rotation = self.Rotation + (SumRotation or 0)
 	
 	if self.Parent then
 		
-		local Rotation = self.Rotation + self.Parent:GetRotation()
-		
-		while Rotation < -180 do
-			
-			Rotation = Rotation + 360
-			
-		end
-		
-		while Rotation > 180 do
-			
-			Rotation = Rotation - 360
-			
-		end
-		
-		return Rotation
+		Rotation = Rotation + self.Parent:GetRotation()
 		
 	end
 	
-	return self.Rotation
+	while Rotation < -180 do
+		
+		Rotation = Rotation + 360
+		
+	end
+	
+	while Rotation > 180 do
+		
+		Rotation = Rotation - 360
+		
+	end
+	
+	return Rotation
 	
 end
 
 -- @description: Gets the rotation of a transform in radians
-function Transform:GetRadians()
+function Transform:GetRadians(SumRadians)
+	
+	local Rotation = self.Radians + (SumRadians or 0)
 	
 	if self.Parent then
 		
-		local Rotation = self.Radians + self.Parent:GetRadians()
-		
-		while Rotation < -PI do
-			
-			Rotation = Rotation + PI * 2
-			
-		end
-		
-		while Rotation > PI do
-			
-			Rotation = Rotation - PI * 2
-			
-		end
-		
-		return Rotation
+		Rotation = Rotation + self.Parent:GetRadians()
 		
 	end
 	
-	return self.Radians
+	while Rotation < -PI do
+		
+		Rotation = Rotation + PI * 2
+		
+	end
+	
+	while Rotation > PI do
+		
+		Rotation = Rotation - PI * 2
+		
+	end
+	
+	return Rotation
 	
 end
 
