@@ -112,9 +112,16 @@ end
 
 function Room:Remove()
 	
-	self.World.Rooms[self.ID] = nil
-	self.World.UpdateCanvas = true
-	self.World = nil
+	if self.World then
+		
+		self.World.Rooms[self.ID] = nil
+		self.World.UpdateCanvas = true
+		self.World = nil
+		self.ID = nil
+		
+		self.Transform:SetParent(nil)
+		
+	end
 	
 end
 

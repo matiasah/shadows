@@ -12,6 +12,8 @@ function NormalMap:new(World, Texture)
 		local self = setmetatable( {}, NormalMap )
 		
 		self.Transform = Transform:new()
+		self.Transform.Object = self
+		
 		self.Texture = Texture
 		
 		World:AddNormalMap(self)
@@ -89,11 +91,16 @@ end
 
 function NormalMap:Remove()
 	
-	self.World.NormalMaps[self.ID] = nil
-	self.World.Changed = true
-	self.World = nil
-	
-	self.Transform:SetParent(nil)
+	if self.World then
+		
+		self.World.NormalMaps[self.ID] = nil
+		self.World.Changed = true
+		self.World = nil
+		self.ID = nil
+		
+		self.Transform:SetParent(nil)
+		
+	end
 	
 end
 

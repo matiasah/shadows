@@ -24,6 +24,7 @@ function CircleShadow:new(Body, x, y, Radius)
 		self.Transform = Transform:new()
 		self.Transform:SetParent(Body.Transform)
 		self.Transform:SetLocalPosition(x, y)
+		self.Transform.Object = self
 		
 		self.Body = Body
 		self.Radius = Radius
@@ -38,10 +39,16 @@ end
 
 function CircleShadow:Remove()
 	
-	self.Body.Shapes[self.ID] = nil
-	self.Body.World.Changed = true
-	
-	self.Transform:SetParent(nil)
+	if self.Body then
+		
+		self.Body.Shapes[self.ID] = nil
+		self.Body.World.Changed = true
+		self.Body = nil
+		self.ID = nil
+		
+		self.Transform:SetParent(nil)
+		
+	end
 	
 end
 

@@ -29,6 +29,7 @@ function Star:new(World, Radius)
 		
 		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(0, 0, 1)
+		self.Transform.Object = self
 		
 		self.Star = true
 		self.Blur = true

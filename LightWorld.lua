@@ -1,7 +1,8 @@
 module("shadows.LightWorld", package.seeall)
 
-Shadows		=		require("shadows")
-Body			=		require("shadows.Body")
+Shadows				=		require("shadows")
+Body					=		require("shadows.Body")
+BodyTransform		=		require("shadows.BodyTransform")
 
 LightWorld = {}
 LightWorld.__index = LightWorld
@@ -16,6 +17,7 @@ function LightWorld:new()
 	
 	self.Canvas = love.graphics.newCanvas(Width, Height)
 	
+	self.BodyTracks = {}
 	self.Rooms = {}
 	self.Bodies = {}
 	self.Lights = {}
@@ -117,6 +119,19 @@ function LightWorld:AddNormalMap(NormalMap)
 	self.NormalMaps[ID] = NormalMap
 	
 	return NormalMap
+	
+end
+
+function LightWorld:TrackBody(Body)
+	
+	local Transform = BodyTransform:new(Body)
+	local ID = #self.BodyTracks + 1
+	Transform.World = self
+	Transform.TransformID = ID
+	
+	self.BodyTracks[ID] = Transform
+	
+	return Transform
 	
 end
 
@@ -234,6 +249,12 @@ function LightWorld:Update(dt)
 			Body:Update()
 			
 		end
+		
+	end
+	
+	for Index, Transform in pairs(self.BodyTracks) do
+		
+		Transform:Update()
 		
 	end
 	

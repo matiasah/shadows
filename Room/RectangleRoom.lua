@@ -17,6 +17,7 @@ function RectangleRoom:new(World, x, y, Width, Height)
 		
 		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(x, y)
+		self.Transform.Object = self
 		
 		self.Width, self.Height = Width, Height
 		

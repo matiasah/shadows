@@ -33,6 +33,7 @@ function Light:new(World, Radius)
 		
 		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(0, 0, 1)
+		self.Transform.Object = self
 		
 		self.Radius = Radius
 		self.Canvas = love.graphics.newCanvas( Radius * 2, Radius * 2 )
@@ -334,11 +335,16 @@ end
 
 function Light:Remove()
 	
-	self.World.Lights[self.ID] = nil
-	self.World.Changed = true
-	self.World = nil
-	
-	self.Transform:SetParent(nil)
+	if self.World then
+		
+		self.World.Lights[self.ID] = nil
+		self.World.Changed = true
+		self.World = nil
+		self.ID = nil
+		
+		self.Transform:SetParent(nil)
+		
+	end
 	
 end
 

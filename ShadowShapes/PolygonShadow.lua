@@ -24,6 +24,7 @@ function PolygonShadow:new(Body, ...)
 	
 		self.Transform = Transform:new()
 		self.Transform:SetParent(Body.Transform)
+		self.Transform.Object = self
 		
 		self.Body = Body
 		self.World = Body.World
@@ -39,10 +40,16 @@ end
 
 function PolygonShadow:Remove()
 	
-	self.Body.Shapes[self.ID] = nil
-	self.World.Changed = true
-	
-	self.Transform:SetParent(nil)
+	if self.Body then
+		
+		self.Body.Shapes[self.ID] = nil
+		self.Body.World.Changed = true
+		self.Body = nil
+		self.ID = nil
+		
+		self.Transform:SetParent(nil)
+		
+	end
 	
 end
 

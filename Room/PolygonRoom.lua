@@ -15,6 +15,7 @@ function PolygonRoom:new(World, x, y, Vertices)
 		
 		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(x, y)
+		self.Transform.Object = self
 		
 		self.Vertices = Vertices
 		

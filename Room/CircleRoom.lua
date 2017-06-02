@@ -17,6 +17,7 @@ function CircleRoom:new(World, x, y, Radius)
 		
 		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(x, y)
+		self.Transform.Object = self
 		
 		self.Radius = Radius
 		
