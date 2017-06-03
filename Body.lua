@@ -144,6 +144,12 @@ function Body:SetPhysics(Body)
 	
 end
 
+function Body:GetPhysics()
+	
+	return self.Body
+	
+end
+
 function Body:SetAngle(Angle)
 	
 	self.Transform:SetRotation( Angle )

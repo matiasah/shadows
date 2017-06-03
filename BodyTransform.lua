@@ -3,6 +3,8 @@ module("shadows.BodyTransform", package.seeall)
 Transform = require("shadows.Transform")
 
 BodyTransform = setmetatable( {}, Transform )
+BodyTransform.__index = BodyTransform
+
 BodyTransform.DestroyAttachments = false
 BodyTransform.FollowPosition = true
 BodyTransform.FollowRotation = true
