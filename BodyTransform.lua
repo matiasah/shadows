@@ -4,6 +4,8 @@ Transform = require("shadows.Transform")
 
 BodyTransform = setmetatable( {}, Transform )
 BodyTransform.DestroyAttachments = false
+BodyTransform.FollowPosition = true
+BodyTransform.FollowRotation = true
 
 function BodyTransform:new(Body)
 	
@@ -35,7 +37,17 @@ function BodyTransform:Update()
 		
 		else
 			
-			self:SetLocalPosition( self.Body:getPosition() )
+			if self.FollowPosition then
+				
+				self:SetLocalPosition( self.Body:getPosition() )
+				
+			end
+			
+			if self.FollowRotation then
+				
+				self:SetLocalRotation( math.deg( self.Body:getAngle() ) )
+				
+			end
 			
 		end
 		
@@ -82,6 +94,30 @@ end
 function BodyTransform:GetDestroyAttachments()
 	
 	return self.DestroyAttachments
+	
+end
+
+function BodyTransform:SetFollowPosition(FollowPosition)
+	
+	self.FollowPosition = FollowPosition
+	
+end
+
+function BodyTransform:GetFollowPosition()
+	
+	return self.FollowPosition
+	
+end
+
+function BodyTransform:SetFollowRotation(FollowRotation)
+	
+	self.FollowRotation = FollowRotation
+	
+end
+
+function BodyTransform:GetFollowRotation()
+	
+	return self.FollowRotation
 	
 end
 
