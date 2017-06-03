@@ -23,7 +23,7 @@ function Transform:new()
 	
 end
 
--- @description: Assigns a transform as a parent of another transform
+-- @description: Assigns a transform as a parent of another transform (Makes the coordinates of a transform local to another)
 function Transform:SetParent(Parent)
 	
 	if self.Parent then
@@ -160,7 +160,7 @@ function Transform:SetRotation(Angle)
 	
 end
 
--- @description: Gets the rotation of a transform
+-- @description: Gets the rotation of a transform + SumRotation in degrees
 function Transform:GetRotation(SumRotation)
 	
 	local Rotation = self.Rotation + (SumRotation or 0)
@@ -187,7 +187,7 @@ function Transform:GetRotation(SumRotation)
 	
 end
 
--- @description: Gets the rotation of a transform in radians
+-- @description: Gets the rotation of a transform + SumRadians in radians
 function Transform:GetRadians(SumRadians)
 	
 	local Rotation = self.Radians + (SumRadians or 0)

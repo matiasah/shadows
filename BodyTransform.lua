@@ -12,7 +12,6 @@ function BodyTransform:new(Body)
 		local self = setmetatable( {}, BodyTransform )
 		
 		self.Body = Body
-		self.Attachments = {}
 		
 		self.Children = {}
 		self.Matrix = { {}, {} }
@@ -71,6 +70,18 @@ function BodyTransform:Remove()
 		self:SetParent(nil)
 		
 	end
+	
+end
+
+function BodyTransform:SetDestroyAttachments(DestroyAtachments)
+	
+	self.DestroyAttachments = DestroyAttachments
+	
+end
+
+function BodyTransform:GetDestroyAttachments()
+	
+	return self.DestroyAttachments
 	
 end
 
