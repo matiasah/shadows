@@ -37,6 +37,16 @@ function CircleShadow:new(Body, x, y, Radius)
 	
 end
 
+function CircleShadow:Update()
+	
+	if self.Transform.HasChanged then
+		
+		self.Body:GetTransform().HasChanged = true
+		
+	end
+	
+end
+
 function CircleShadow:Remove()
 	
 	if self.Body then

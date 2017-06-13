@@ -110,6 +110,12 @@ function Body:Update()
 		
 	end
 	
+	for Index, Shape in pairs(self.Shapes) do
+		
+		Shape:Update()
+		
+	end
+	
 	if self.Transform.HasChanged then
 		
 		self.Transform.HasChanged = false
@@ -136,7 +142,7 @@ function Body:SetPhysics(Body)
 	if Body:typeOf("Body") then
 		
 		self.Body = Body
-		self.Changed = true
+		self.World.Changed = true
 		
 	end
 	

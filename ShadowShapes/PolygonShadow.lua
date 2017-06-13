@@ -38,6 +38,16 @@ function PolygonShadow:new(Body, ...)
 	
 end
 
+function PolygonShadow:Update()
+	
+	if self.Transform.HasChanged then
+		
+		self.Body:GetTransform().HasChanged = true
+		
+	end
+	
+end
+
 function PolygonShadow:Remove()
 	
 	if self.Body then

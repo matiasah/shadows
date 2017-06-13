@@ -91,7 +91,7 @@ function Star:Update()
 		self.World:DrawShadows(self)
 		
 		-- Draw normal maps here
-		Shadows.NormalShader:send("LightPos", {x, y, z})
+		Shadows.NormalShader:send("LightPos", {x - self.World.x, y - self.World.y, z})
 		
 		setShader(Shadows.NormalShader)
 		for Index, NormalMap in pairs(self.World.NormalMaps) do
@@ -103,6 +103,7 @@ function Star:Update()
 		-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
 		setColor(255, 255, 255, 255)
 		setBlendMode("add", "alphamultiply")
+		setShader()
 		
 		for Index, Body in pairs(self.World.Bodies) do
 			
