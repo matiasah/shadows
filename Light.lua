@@ -103,6 +103,15 @@ function Light:GenerateShadows(x, y)
 	end
 	
 	return Shapes
+	
+end
+
+function Light:GetCanvasCenter()
+	
+	local x, y, z = self.Transform:GetPosition()
+	
+	return self.Radius, self.Radius, z
+	
 end
 
 function Light:Update()
@@ -139,24 +148,17 @@ function Light:Update()
 			
 			for _, Shadow in pairs(Shapes) do
 				
-				love.graphics[Shadow.type]("fill", unpack(Shadow))
+				setShader(Shadow.shader)
+				love.graphics[Shadow.type]( unpack(Shadow) )
 				
 			end
 			
 		end
 		
+		setShader()
+		
 		-- Draw custom shadows
 		self.World:DrawShadows(self)
-		
-		-- Could possibly draw the normal maps here?
-		Shadows.NormalShader:send("LightPos", {self.Radius, self.Radius, z})
-		
-		setShader(Shadows.NormalShader)
-		for Index, NormalMap in pairs(self.World.NormalMaps) do
-			
-			NormalMap:Draw()
-			
-		end
 		
 		-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
 		setColor(255, 255, 255, 255)

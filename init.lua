@@ -12,7 +12,7 @@ package.preload["shadows.Body"]			=		assert(love.filesystem.load(Path.."/Body.lu
 
 package.preload["shadows.ShadowShapes.CircleShadow"]	=	assert(love.filesystem.load(Path.."/ShadowShapes/CircleShadow.lua"))
 package.preload["shadows.ShadowShapes.PolygonShadow"]	=	assert(love.filesystem.load(Path.."/ShadowShapes/PolygonShadow.lua"))
-package.preload["shadows.ShadowShapes.TextureShadow"]	=	assert(love.filesystem.load(Path.."/ShadowShapes/TextureShadow.lua"))
+package.preload["shadows.ShadowShapes.NormalShadow"]	=	assert(love.filesystem.load(Path.."/ShadowShapes/NormalShadow.lua"))
 
 -- Integration for love.physics.*
 
@@ -28,8 +28,6 @@ package.preload["shadows.Room.RectangleRoom"]	=		assert(love.filesystem.load(Pat
 
 package.preload["shadows.Functions"]				=		assert(love.filesystem.load(Path.."/Functions.lua"))
 package.preload["shadows.Shaders"]					=		assert(love.filesystem.load(Path.."/Shaders.lua"))
-
-package.preload["shadows.NormalMap"]				=		assert(love.filesystem.load(Path.."/NormalMap.lua"))
 
 require("shadows.Shaders")
 require("shadows.Functions")

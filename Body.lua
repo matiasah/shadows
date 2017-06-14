@@ -1,7 +1,7 @@
 module("shadows.Body", package.seeall)
 
-Shadows = require("shadows")
-Transform = require("shadows.Transform")
+Shadows		=	require("shadows")
+Transform	=	require("shadows.Transform")
 
 Body = {}
 Body.__index = Body

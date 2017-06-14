@@ -150,11 +150,15 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 
 	local PenumbraAngle = math.atan(Light.SizeRadius / Light.Radius)
 	local VisibleEdges = #VisibleEdge
-	local Geometry = {type = "polygon"}
+	local Geometry = {}
 	
 	if Shadows.PointInPolygon(Lx, Ly, Vertices) then
 		
 		if Lz > Bz then
+			
+			Geometry.type = "polygon"
+			
+			insert(Geometry, "fill")
 			
 			for i = 1, #Vertices, 2 do
 				
@@ -433,6 +437,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 			for _, Shadow in pairs(Triangles) do
 				
 				Shadow.type = "polygon"
+				insert(Shadow, 1, "fill")
 				insert(Shapes, Shadow)
 				
 			end

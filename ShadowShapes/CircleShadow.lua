@@ -134,6 +134,7 @@ function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 		end
 		
 		local Polygon = {type = "polygon"}
+		insert(Polygon, "fill")
 		insert(Polygon, Lx + cos(Heading + Offset) * BorderDistance)
 		insert(Polygon, Ly + sin(Heading + Offset) * BorderDistance)
 		insert(Polygon, Lx + cos(Heading - Offset) * BorderDistance)
@@ -148,6 +149,8 @@ function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 		if Lz > Bz then
 			
 			local Circle = {type = "circle"}
+			
+			insert(Circle, "fill")
 			
 			Circle[1] = Lx + cos(Heading) * (Length + Distance)
 			Circle[2] = Ly + sin(Heading) * (Length + Distance)
