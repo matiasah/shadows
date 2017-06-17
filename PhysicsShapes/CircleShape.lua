@@ -22,7 +22,10 @@ end
 
 function CircleShape:GetPosition(Body)
 	
-	return Body.Body:getWorldPoint( self:getPoint() )
+	local x, y = Body.Body:getWorldPoint( self:getPoint() )
+	local n1, n2, z = Body:GetPosition()
+	
+	return n1, n2, z
 	
 end
 
@@ -32,7 +35,7 @@ function CircleShape:GetRadius()
 	
 end
 
-function CircleShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
+function CircleShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
 	
 	local x, y = self:GetPosition(Body)
 	local Radius = self:getRadius()
@@ -42,6 +45,7 @@ function CircleShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	
 	Lx = Lx + DeltaX
 	Ly = Ly + DeltaY
+	Lz = Lz + DeltaZ
 	
 	local dx = x - Lx
 	local dy = y - Ly
@@ -58,7 +62,7 @@ function CircleShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 		
 		if Bz < Lz then
 			
-			Length = Bz / atan2(Lz, BorderDistance)
+			Length = 1 / atan2(Lz / Bz, BorderDistance)
 			
 		end
 		

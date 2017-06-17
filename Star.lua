@@ -59,6 +59,8 @@ function Star:Update()
 	if self.Changed or self.World.Changed or self.Transform.HasChanged or self.World.UpdateStars then
 		
 		local x, y, z = self.Transform:GetPosition()
+		local MinAltitude = 0
+		local MinAltitudeLast
 		
 		-- Generate new content for the shadow canvas
 		setCanvas(self.ShadowCanvas)
@@ -69,12 +71,45 @@ function Star:Update()
 		translate(-self.World.x, -self.World.y)
 		setScale(self.World.z, self.World.z)
 		
-		-- Shadow shapes should subtract white color, so that you see black
-		setBlendMode("subtract", "alphamultiply")
-		setColor(255, 255, 255, 255)
+		while MinAltitude ~= MinAltitudeLast and MinAltitude and MinAltitude < z do
+			
+			local Layer = MinAltitude
+			
+			-- Shadow shapes should subtract white color, so that you see black
+			setBlendMode("subtract", "alphamultiply")
+			setColor(255, 255, 255, 255)
+			
+			-- Produce the shadow shapes
+			MinAltitudeLast = MinAltitude
+			Shapes, MinAltitude, MaxAltitude = self:GenerateShadows(x, y, z, Layer)
+			
+			-- Draw the shadow shapes
+			for _, Shadow in pairs(Shapes) do
+				
+				setShader(Shadow.shader)
+				love.graphics[Shadow.type]( unpack(Shadow) )
+				
+			end
+			
+			-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
+			setBlendMode("add", "alphamultiply")
+			setColor(255, 255, 255, 255)
+			setShader()
+			
+			for Index, Body in pairs(self.World.Bodies) do
+				
+				local Bx, By, Bz = Body:GetPosition()
+				
+				if Bz > Layer then
+					
+					Body:DrawRadius(x, y, self.Radius)
+					
+				end
+				
+			end
+			
+		end
 		
-		-- Produce the shadow shapes
-		self:GenerateShadows(x, y)
 		self.Moved = nil
 		
 		-- This needs to be put right after self:GenerateShadows, because it uses the self.Transform.HasChanged field
@@ -84,36 +119,15 @@ function Star:Update()
 			
 		end
 		
-		-- Draw the shadow shapes
-		for _, Shapes in pairs(self.Shadows) do
-			
-			for _, Shadow in pairs(Shapes) do
-				
-				setShader(Shadow.shader)
-				love.graphics[Shadow.type]( unpack(Shadow) )
-				
-			end
-			
-		end
-		
-		setShader()
-		
 		-- Draw custom shadows
-		self.World:DrawShadows(self)
-		
-		-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
+		setBlendMode("subtract", "alphamultiply")
 		setColor(255, 255, 255, 255)
-		setBlendMode("add", "alphamultiply")
-		setShader()
-		
-		for Index, Body in pairs(self.World.Bodies) do
-			
-			Body:DrawRadius(x, y, self.Radius)
-			
-		end
+		self.World:DrawShadows(self)
 		
 		-- Draw the sprites so that shadows don't cover them
 		setShader(Shadows.ShapeShader)
+		setBlendMode("add", "alphamultiply")
+		setColor(255, 255, 255, 255)
 		self.World:DrawSprites(self)
 		
 		-- Now stop using the shadow canvas and generate the light

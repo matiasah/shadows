@@ -91,31 +91,42 @@ function NormalShadow:GetRadius()
 	
 end
 
-function NormalShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
+function NormalShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
 	
-	Shadows.NormalShader:send("LightPos", { Light:GetCanvasCenter() })
+	local Lx, Ly, Lz = Light:GetCanvasCenter()
 	
-	local x, y = self.Transform:GetPosition()
-	local Rotation = self.Transform:GetRadians()
+	Lx = Lx + DeltaX
+	Ly = Ly + DeltaY
+	Lz = Lz + DeltaZ
 	
-	local ScaleX = self:GetWidth() / self.Texture:getWidth()
-	local ScaleY = self:GetHeight() / self.Texture:getHeight()
+	local x, y, z = self.Transform:GetPosition()
 	
-	local Shape = {
+	if Lz > z then
 		
-		self.Texture,
-		x,
-		y,
-		Rotation,
-		ScaleX,
-		SCaleY
+		Shadows.NormalShader:send("LightPos", { Lx, Ly, Lz })
 		
-	}
-	
-	Shape.type = "draw"
-	Shape.shader = Shadows.NormalShader
-	
-	table.insert(Shapes, Shape)
+		local Rotation = self.Transform:GetRadians()
+		
+		local ScaleX = self:GetWidth() / self.Texture:getWidth()
+		local ScaleY = self:GetHeight() / self.Texture:getHeight()
+		
+		local Shape = {
+			
+			self.Texture,
+			x,
+			y,
+			Rotation,
+			ScaleX,
+			SCaleY
+			
+		}
+		
+		Shape.type = "draw"
+		Shape.shader = Shadows.NormalShader
+		
+		table.insert(Shapes, Shape)
+		
+	end
 	
 end
 

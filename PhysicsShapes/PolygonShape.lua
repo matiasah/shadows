@@ -32,14 +32,15 @@ function PolygonShape:GetPosition(Body)
 	
 	local InvCount = 1 / #Points * 0.5
 	local WorldX, WorldY = Body.Body:getWorldPoint( x * InvCount, y * InvCount )
+	local n1, n2, WorldZ = Body:GetPosition()
 	
-	return WorldX, WorldY, Points
+	return WorldX, WorldY, WorldZ, Points
 	
 end
 
 function PolygonShape:GetRadius(Body)
 	
-	local x, y, Points = self:GetPosition(Body)
+	local x, y, z, Points = self:GetPosition(Body)
 	local Radius = 0
 	
 	for i = 1, #Points, 2 do
@@ -70,7 +71,7 @@ function PolygonShape:GetVertices(Body)
 	
 end
 
-function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
+function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
 	
 	local Vertices = self:GetVertices(Body)
 	local VerticesLength = #Vertices
@@ -81,6 +82,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	
 	Lx = Lx + DeltaX
 	Ly = Ly + DeltaY
+	Lz = Lz + DeltaZ
 	
 	for Index = 1, VerticesLength, 2 do
 		
@@ -133,7 +135,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 				
 				local dx = Lx - Vertex[1]
 				local dy = Ly - Vertex[2]
-				local Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+				local Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 				
 				local Direction = Normalize {
 					
@@ -181,7 +183,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 					local dx = Lx - Vertex[1]
 					local dy = Ly - Vertex[2]
 					
-					Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+					Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 					
 				end
 				
@@ -276,7 +278,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 					local dx = Lx - Vertex[1]
 					local dy = Ly - Vertex[2]
 					
-					Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+					Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 					
 				end
 				
@@ -327,7 +329,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 						local dx = Lx - Vertex[1]
 						local dy = Ly - Vertex[2]
 						
-						Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+						Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 						
 					end
 					
@@ -371,7 +373,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 						local dx = Lx - Vertex[1]
 						local dy = Ly - Vertex[2]
 						
-						Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+						Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 						
 					end
 					

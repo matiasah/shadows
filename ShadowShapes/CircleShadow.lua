@@ -103,16 +103,17 @@ function CircleShadow:GetPosition()
 	
 end
 
-function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
+function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
 	
-	local x, y = self:GetPosition()
+	local x, y, Bz = self:GetPosition()
 	local Radius = self:GetRadius()
 	
 	local Lx, Ly, Lz = Light:GetPosition()
-	local Bx, By, Bz = Body:GetPosition()
+	local Bx, By = Body:GetPosition()
 	
 	Lx = Lx + DeltaX
 	Ly = Ly + DeltaY
+	Lz = Lz + DeltaZ
 	
 	local dx = x - Lx
 	local dy = y - Ly
@@ -129,7 +130,7 @@ function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 		
 		if Bz < Lz then
 			
-			Length = Bz / atan2(Lz, BorderDistance)
+			Length = 1 / atan2(Lz / Bz, BorderDistance)
 			
 		end
 		

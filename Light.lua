@@ -48,13 +48,15 @@ function Light:new(World, Radius)
 	
 end
 
-function Light:GenerateShadows(x, y)
+function Light:GenerateShadows(x, y, z, Layer)
+	
+	local Shapes = {}
+	local newZ
 	
 	for _, Body in pairs(self.World.Bodies) do
 		-- If a body has been removed from the local reference, the light has moved, or the body has moved
-		if self.Transform.HasChanged or Body.Moved or not self.Shadows[ Body.ID ] then
+		if self.Transform.HasChanged or Body.Moved then
 			-- Insert the shadow shapes of a body into this table
-			local Shapes = {}
 			
 			if Body.Body then
 				-- Get the physics shapes of the physics body
@@ -65,12 +67,19 @@ function Light:GenerateShadows(x, y)
 					if Shape.GenerateShadows then
 						
 						local Radius = self.Radius + Shape:GetRadius(Body)
-						local ShapeX, ShapeY = Shape:GetPosition(Body)
-						local dx, dy = ShapeX - x, ShapeY - y
+						local ShapeX, ShapeY, ShapeZ = Shape:GetPosition(Body)
+						local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
 						-- Is the light in the draw range?
-						if dx * dx + dy * dy < Radius * Radius then
+						
+						if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < Radius * Radius then
 							
-							Shape:GenerateShadows(Shapes, Body, 0, 0, self)
+							Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
+							
+							if not newZ or ShapeZ < newZ then
+								
+								newZ = ShapeZ
+								
+							end
 							
 						end
 						
@@ -83,26 +92,30 @@ function Light:GenerateShadows(x, y)
 				for _, Shape in pairs(Body.Shapes) do
 					
 					local Radius = self.Radius + Shape:GetRadius()
-					local ShapeX, ShapeY = Shape:GetPosition()
-					local dx, dy = ShapeX - x, ShapeY - y
+					local ShapeX, ShapeY, ShapeZ = Shape:GetPosition()
+					local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
 					-- Is the light in the draw range?
-					if dx * dx + dy * dy < Radius * Radius then
+					if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < Radius * Radius then
 						
-						Shape:GenerateShadows(Shapes, Body, 0, 0, self)
+						Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
+						
+						if not newZ or ShapeZ < newZ then
+							
+							newZ = ShapeZ
+							
+						end
 						
 					end
 					
 				end
 				
 			end
-			-- Make a local reference to a body's shadow shapes
-			self.Shadows[ Body.ID ] = Shapes
 			
 		end
 		
 	end
 	
-	return Shapes
+	return Shapes, newZ
 	
 end
 
@@ -119,6 +132,8 @@ function Light:Update()
 	if self.Changed or self.World.Changed or self.Transform.HasChanged then
 		
 		local x, y, z = self.Transform:GetPosition()
+		local MinAltitude = 0
+		local MinAltitudeLast
 		
 		-- Generate new content for the shadow canvas
 		setCanvas(self.ShadowCanvas)
@@ -128,12 +143,45 @@ function Light:Update()
 		-- Move all the objects so that their position local to the light are corrected
 		translate(self.Radius - x, self.Radius - y)
 		
-		-- Shadow shapes should subtract white color, so that you see black
-		setBlendMode("subtract", "alphamultiply")
-		setColor(255, 255, 255, 255)
+		while MinAltitude ~= MinAltitudeLast and MinAltitude and MinAltitude < z do
+			
+			local Layer = MinAltitude
+			
+			-- Shadow shapes should subtract white color, so that you see black
+			setBlendMode("subtract", "alphamultiply")
+			setColor(255, 255, 255, 255)
+			
+			-- Produce the shadow shapes
+			MinAltitudeLast = MinAltitude
+			Shapes, MinAltitude, MaxAltitude = self:GenerateShadows(x, y, z, Layer)
+			
+			-- Draw the shadow shapes
+			for _, Shadow in pairs(Shapes) do
+				
+				setShader(Shadow.shader)
+				love.graphics[Shadow.type]( unpack(Shadow) )
+				
+			end
+			
+			-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
+			setBlendMode("add", "alphamultiply")
+			setColor(255, 255, 255, 255)
+			setShader()
+			
+			for Index, Body in pairs(self.World.Bodies) do
+				
+				local Bx, By, Bz = Body:GetPosition()
+				
+				if Bz > Layer then
+					
+					Body:DrawRadius(x, y, self.Radius)
+					
+				end
+				
+			end
+			
+		end
 		
-		-- Produce the shadow shapes
-		self:GenerateShadows(x, y)
 		self.Moved = nil
 		
 		-- This needs to be put right after self:GenerateShadows, because it uses the self.Transform.HasChanged field
@@ -143,36 +191,15 @@ function Light:Update()
 			
 		end
 		
-		-- Draw the shadow shapes
-		for _, Shapes in pairs(self.Shadows) do
-			
-			for _, Shadow in pairs(Shapes) do
-				
-				setShader(Shadow.shader)
-				love.graphics[Shadow.type]( unpack(Shadow) )
-				
-			end
-			
-		end
-		
-		setShader()
-		
 		-- Draw custom shadows
-		self.World:DrawShadows(self)
-		
-		-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
+		setBlendMode("subtract", "alphamultiply")
 		setColor(255, 255, 255, 255)
-		setBlendMode("add", "alphamultiply")
-		setShader()
-		
-		for Index, Body in pairs(self.World.Bodies) do
-			
-			Body:DrawRadius(x, y, self.Radius)
-			
-		end
+		self.World:DrawShadows(self)
 		
 		-- Draw the sprites so that shadows don't cover them
 		setShader(Shadows.ShapeShader)
+		setBlendMode("add", "alphamultiply")
+		setColor(255, 255, 255, 255)
 		self.World:DrawSprites(self)
 		
 		-- Now stop using the shadow canvas and generate the light

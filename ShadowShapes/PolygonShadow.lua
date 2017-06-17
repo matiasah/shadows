@@ -108,7 +108,7 @@ function PolygonShadow:GetVertices()
 	
 end
 
-function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
+function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
 	
 	local Vertices = self:GetVertices()
 	local VerticesLength = #Vertices
@@ -119,6 +119,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 	
 	Lx = Lx + DeltaX
 	Ly = Ly + DeltaY
+	Lz = Lz + DeltaZ
 	
 	for Index = 1, VerticesLength, 2 do
 		
@@ -171,7 +172,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 				
 				local dx = Lx - Vertex[1]
 				local dy = Ly - Vertex[2]
-				local Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+				local Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 				
 				local Direction = Normalize {
 					
@@ -219,7 +220,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 					local dx = Lx - Vertex[1]
 					local dy = Ly - Vertex[2]
 					
-					Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+					Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 					
 				end
 				
@@ -314,7 +315,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 					local dx = Lx - Vertex[1]
 					local dy = Ly - Vertex[2]
 					
-					Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+					Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 					
 				end
 				
@@ -365,7 +366,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 						local dx = Lx - Vertex[1]
 						local dy = Ly - Vertex[2]
 						
-						Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+						Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 						
 					end
 					
@@ -409,7 +410,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, Light)
 						local dx = Lx - Vertex[1]
 						local dy = Ly - Vertex[2]
 						
-						Length = Bz / atan2( Lz, sqrt( dx * dx + dy * dy ) )
+						Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 						
 					end
 					
