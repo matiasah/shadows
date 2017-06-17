@@ -19,6 +19,8 @@ function NormalShadow:new(Body, Texture, Width, Height)
 		self.Height = Height
 		
 		self.Transform = Transform:new()
+		self.Transform:SetParent(Body:GetTransform())
+		self.Transform.Object = Body
 		self.Body = Body
 		
 		Body:AddShape(self)
@@ -88,6 +90,15 @@ function NormalShadow:GetRadius()
 	local Height = self:GetHeight()
 	
 	return math.sqrt( Width * Width + Height * Height )
+	
+end
+
+function NormalShadow:GetSqrRadius()
+	
+	local Width = self:GetWidth()
+	local Height = self:GetHeight()
+	
+	return Width * Width + Height * Height
 	
 end
 

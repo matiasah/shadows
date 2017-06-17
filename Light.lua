@@ -38,7 +38,6 @@ function Light:new(World, Radius)
 		self.Radius = Radius
 		self.Canvas = love.graphics.newCanvas( Radius * 2, Radius * 2 )
 		self.ShadowCanvas = love.graphics.newCanvas( Radius * 2, Radius * 2 )
-		self.Shadows = {}
 		
 		World:AddLight(self)
 		
@@ -69,8 +68,8 @@ function Light:GenerateShadows(x, y, z, Layer)
 						local Radius = self.Radius + Shape:GetRadius(Body)
 						local ShapeX, ShapeY, ShapeZ = Shape:GetPosition(Body)
 						local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
-						-- Is the light in the draw range?
 						
+						-- Is the light in the draw range?
 						if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < Radius * Radius then
 							
 							Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
@@ -91,11 +90,12 @@ function Light:GenerateShadows(x, y, z, Layer)
 				
 				for _, Shape in pairs(Body.Shapes) do
 					
-					local Radius = self.Radius + Shape:GetRadius()
+					local SqrRadius = self.Radius * self.Radius + Shape:GetSqrRadius()
 					local ShapeX, ShapeY, ShapeZ = Shape:GetPosition()
 					local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
+					
 					-- Is the light in the draw range?
-					if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < Radius * Radius then
+					if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < SqrRadius then
 						
 						Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
 						

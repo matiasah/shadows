@@ -23,7 +23,7 @@ function PolygonShadow:new(Body, ...)
 	if Body and Vertices and #Vertices > 0 then
 	
 		self.Transform = Transform:new()
-		self.Transform:SetParent(Body.Transform)
+		self.Transform:SetParent(Body:GetTransform())
 		self.Transform.Object = self
 		
 		self.Body = Body
@@ -81,20 +81,29 @@ function PolygonShadow:GetRadius()
 	
 end
 
+function PolygonShadow:GetSqrRadius()
+	
+	return self.SqrRadius
+	
+end
+
 function PolygonShadow:SetVertices(...)
 	
 	self.Vertices = {...}
 	self.Radius = 0
+	self.SqrRadius = 0
 	self.World.Changed = true
 	
 	for i = 1, #self.Vertices, 2 do
 		
 		local x, y = self.Vertices[i], self.Vertices[i + 1]
-		local Radius = sqrt( x * x + y * y )
+		local SqrRadius = x * x + y * y
+		local Radius = sqrt( SqrRadius )
 		
 		if Radius > self.Radius then
 			
 			self.Radius = Radius
+			self.SqrRadius = SqrRadius
 			
 		end
 		

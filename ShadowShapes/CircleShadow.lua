@@ -22,7 +22,7 @@ function CircleShadow:new(Body, x, y, Radius)
 	if Body and x and y and Radius then
 	
 		self.Transform = Transform:new()
-		self.Transform:SetParent(Body.Transform)
+		self.Transform:SetParent(Body:GetTransform())
 		self.Transform:SetLocalPosition(x, y)
 		self.Transform.Object = self
 		
@@ -76,6 +76,12 @@ end
 function CircleShadow:GetRadius()
 	
 	return self.Radius
+	
+end
+
+function CircleShadow:GetSqrRadius()
+	
+	return self.Radius * self.Radius
 	
 end
 

@@ -36,7 +36,6 @@ function Star:new(World, Radius)
 		self.Radius = Radius
 		self.Canvas = love.graphics.newCanvas( Width, Height )
 		self.ShadowCanvas = love.graphics.newCanvas( Width, Height )
-		self.Shadows = {}
 		
 		World:AddStar(self)
 		
