@@ -147,10 +147,10 @@ function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 		insert(Polygon, Lx + cos(Heading - Offset) * BorderDistance)
 		insert(Polygon, Ly + sin(Heading - Offset) * BorderDistance)
 
-		insert(Polygon, Polygon[3] + cos(Heading - Offset) * Length)
-		insert(Polygon, Polygon[4] + sin(Heading - Offset) * Length)
-		insert(Polygon, Polygon[1] + cos(Heading + Offset) * Length)
-		insert(Polygon, Polygon[2] + sin(Heading + Offset) * Length)
+		insert(Polygon, Polygon[4] + cos(Heading - Offset) * Length)
+		insert(Polygon, Polygon[5] + sin(Heading - Offset) * Length)
+		insert(Polygon, Polygon[2] + cos(Heading + Offset) * Length)
+		insert(Polygon, Polygon[3] + sin(Heading + Offset) * Length)
 		insert(Shapes, Polygon)
 		
 		if Lz > Bz then
@@ -159,13 +159,13 @@ function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			
 			insert(Circle, "fill")
 			
-			Circle[1] = Lx + cos(Heading) * (Length + Distance)
-			Circle[2] = Ly + sin(Heading) * (Length + Distance)
+			Circle[2] = Lx + cos(Heading) * (Length + Distance)
+			Circle[3] = Ly + sin(Heading) * (Length + Distance)
 			
-			local dx = Polygon[5] - Circle[1]
-			local dy = Polygon[6] - Circle[2]
+			local dx = Polygon[6] - Circle[2]
+			local dy = Polygon[7] - Circle[3]
 			
-			Circle[3] = sqrt( dx * dx + dy * dy )
+			Circle[4] = sqrt( dx * dx + dy * dy )
 			
 			insert(Shapes, Circle)
 			
