@@ -204,18 +204,6 @@ function Body:Remove()
 	
 	if self.World then
 		
-		for _, Light in pairs(self.World.Lights) do
-			
-			Light.Shadows[ self.ID ] = nil
-			
-		end
-		
-		for _, Light in pairs(self.World.Stars) do
-			
-			Light.Shadows[ self.ID ] = nil
-			
-		end
-		
 		self.World.Bodies[ self.ID ] = nil
 		self.World.Changed = true
 		self.World = nil
