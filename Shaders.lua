@@ -169,9 +169,9 @@ Shadows.ShapeShader = love.graphics.newShader [[
 		
 		vec4 pixel = Texel(Texture, textureCoord);
 		
-		if ( pixel.a > 0 ) {
+		if ( pixel.a > 0.0 ) {
 			
-			if ( pixel.r > 0 || pixel.g > 0 || pixel.b > 0 ) {
+			if ( pixel.r > 0.0 || pixel.g > 0.0 || pixel.b > 0.0 ) {
 				
 				return Color;
 				
