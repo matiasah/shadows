@@ -54,48 +54,21 @@ function Light:GenerateShadows(x, y, z, Layer)
 	
 	for _, Body in pairs(self.World.Bodies) do
 		-- If a body has been removed from the local reference, the light has moved, or the body has moved
-		if self.Transform.HasChanged or Body.Moved then
-			-- Insert the shadow shapes of a body into this table
-			
-			if Body.Body then
-				-- Get the physics shapes of the physics body
-				for _, Fixture in pairs(Body.Body:getFixtureList()) do
-					
-					local Shape = Fixture:getShape()
-					-- It must be a type of shape that is supported by the engine
-					if Shape.GenerateShadows then
-						
-						local Radius = self.Radius + Shape:GetRadius(Body)
-						local ShapeX, ShapeY, ShapeZ = Shape:GetPosition(Body)
-						local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
-						
-						-- Is the light in the draw range?
-						if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < Radius * Radius then
-							
-							Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
-							
-							if not newZ or ShapeZ < newZ then
-								
-								newZ = ShapeZ
-								
-							end
-							
-						end
-						
-					end
-					
-				end
+		
+		if Body.Body then
+			-- Get the physics shapes of the physics body
+			for _, Fixture in pairs(Body.Body:getFixtureList()) do
 				
-			else
-				
-				for _, Shape in pairs(Body.Shapes) do
+				local Shape = Fixture:getShape()
+				-- It must be a type of shape that is supported by the engine
+				if Shape.GenerateShadows then
 					
-					local SqrRadius = self.Radius * self.Radius + Shape:GetSqrRadius()
-					local ShapeX, ShapeY, ShapeZ = Shape:GetPosition()
+					local Radius = self.Radius + Shape:GetRadius(Body)
+					local ShapeX, ShapeY, ShapeZ = Shape:GetPosition(Body)
 					local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
 					
 					-- Is the light in the draw range?
-					if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < SqrRadius then
+					if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < Radius * Radius then
 						
 						Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
 						
@@ -104,6 +77,29 @@ function Light:GenerateShadows(x, y, z, Layer)
 							newZ = ShapeZ
 							
 						end
+						
+					end
+					
+				end
+				
+			end
+			
+		else
+			
+			for _, Shape in pairs(Body.Shapes) do
+				
+				local SqrRadius = self.Radius * self.Radius + Shape:GetSqrRadius()
+				local ShapeX, ShapeY, ShapeZ = Shape:GetPosition()
+				local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
+				
+				-- Is the light in the draw range?
+				if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < SqrRadius then
+					
+					Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
+					
+					if not newZ or ShapeZ < newZ then
+						
+						newZ = ShapeZ
 						
 					end
 					
