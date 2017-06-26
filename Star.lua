@@ -75,8 +75,12 @@ function Star:Update()
 			-- Draw the shadow shapes
 			for _, Shadow in pairs(Shapes) do
 				
-				love.graphics.setShader(Shadow.shader)
-				love.graphics[Shadow.type]( unpack(Shadow) )
+				if not Shadow.IfNextLayerHigher or ( Shadow.IfNextLayerHigher and MinAltitude == Shadow.z ) then
+					
+					love.graphics.setShader(Shadow.shader)
+					love.graphics[Shadow.type]( unpack(Shadow) )
+					
+				end
 				
 			end
 			
@@ -89,6 +93,7 @@ function Star:Update()
 				
 				local Bx, By, Bz = Body:GetPosition()
 				
+				-- As long as this body is on top of the layer
 				if Bz > Layer then
 					
 					Body:DrawRadius(x, y, self.Radius)

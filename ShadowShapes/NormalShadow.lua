@@ -134,7 +134,9 @@ function NormalShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			y,
 			Rotation,
 			ScaleX,
-			SCaleY
+			SCaleY,
+			IfNextLayerHigher = true,
+			z = z,
 			
 		}
 		
