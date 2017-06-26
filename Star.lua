@@ -7,16 +7,6 @@ Transform	=		require("shadows.Transform")
 Star = Light:new()
 Star.__index = Star
 
-local setCanvas = love.graphics.setCanvas
-local clear = love.graphics.clear
-local origin = love.graphics.origin
-local translate = love.graphics.translate
-local setBlendMode = love.graphics.setBlendMode
-local setColor = love.graphics.setColor
-local setShader = love.graphics.setShader
-local setScale = love.graphics.scale
-local arc = love.graphics.arc
-local draw = love.graphics.draw
 local halfPi = math.pi * 0.5
 
 function Star:new(World, Radius)
@@ -62,21 +52,21 @@ function Star:Update()
 		local MinAltitudeLast
 		
 		-- Generate new content for the shadow canvas
-		setCanvas(self.ShadowCanvas)
-		setShader()
-		clear(255, 255, 255, 255)
+		love.graphics.setCanvas(self.ShadowCanvas)
+		love.graphics.setShader()
+		love.graphics.clear(255, 255, 255, 255)
 		
 		-- Move all the objects so that their position are corrected
-		translate(-self.World.x, -self.World.y)
-		setScale(self.World.z, self.World.z)
+		love.graphics.translate(-self.World.x, -self.World.y)
+		love.graphics.scale(self.World.z, self.World.z)
 		
 		while MinAltitude ~= MinAltitudeLast and MinAltitude and MinAltitude < z do
 			
 			local Layer = MinAltitude
 			
 			-- Shadow shapes should subtract white color, so that you see black
-			setBlendMode("subtract", "alphamultiply")
-			setColor(255, 255, 255, 255)
+			love.graphics.setBlendMode("subtract", "alphamultiply")
+			love.graphics.setColor(255, 255, 255, 255)
 			
 			-- Produce the shadow shapes
 			MinAltitudeLast = MinAltitude
@@ -85,15 +75,15 @@ function Star:Update()
 			-- Draw the shadow shapes
 			for _, Shadow in pairs(Shapes) do
 				
-				setShader(Shadow.shader)
+				love.graphics.setShader(Shadow.shader)
 				love.graphics[Shadow.type]( unpack(Shadow) )
 				
 			end
 			
 			-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
-			setBlendMode("add", "alphamultiply")
-			setColor(255, 255, 255, 255)
-			setShader()
+			love.graphics.setBlendMode("add", "alphamultiply")
+			love.graphics.setColor(255, 255, 255, 255)
+			love.graphics.setShader()
 			
 			for Index, Body in pairs(self.World.Bodies) do
 				
@@ -119,28 +109,28 @@ function Star:Update()
 		end
 		
 		-- Draw custom shadows
-		setBlendMode("subtract", "alphamultiply")
-		setColor(255, 255, 255, 255)
+		love.graphics.setBlendMode("subtract", "alphamultiply")
+		love.graphics.setColor(255, 255, 255, 255)
 		self.World:DrawShadows(self)
 		
 		-- Draw the sprites so that shadows don't cover them
-		setShader(Shadows.ShapeShader)
-		setBlendMode("add", "alphamultiply")
-		setColor(255, 255, 255, 255)
+		love.graphics.setShader(Shadows.ShapeShader)
+		love.graphics.setBlendMode("add", "alphamultiply")
+		love.graphics.setColor(255, 255, 255, 255)
 		self.World:DrawSprites(self)
 		
 		-- Now stop using the shadow canvas and generate the light
-		setCanvas(self.Canvas)
-		setShader()
-		clear()
-		origin()
-		translate(x - self.World.x - self.Radius, y - self.World.y - self.Radius)
+		love.graphics.setCanvas(self.Canvas)
+		love.graphics.setShader()
+		love.graphics.clear()
+		love.graphics.origin()
+		love.graphics.translate(x - self.World.x - self.Radius, y - self.World.y - self.Radius)
 		
 		if self.Image then
 			-- If there's a image to be used as light texture, use it
-			setBlendMode("lighten", "premultiplied")
-			setColor(self.R, self.G, self.B, self.A)
-			draw(self.Image, self.Radius, self.Radius)
+			love.graphics.setBlendMode("lighten", "premultiplied")
+			love.graphics.setColor(self.R, self.G, self.B, self.A)
+			love.graphics.draw(self.Image, self.Radius, self.Radius)
 			
 		else
 			-- Use a shader to generate the light
@@ -152,22 +142,22 @@ function Star:Update()
 			local Angle = self.Transform:GetRadians(-halfPi)
 			
 			-- Set the light shader
-			setShader(Shadows.LightShader)
-			setBlendMode("alpha", "premultiplied")
+			love.graphics.setShader(Shadows.LightShader)
+			love.graphics.setBlendMode("alpha", "premultiplied")
 			
 			-- Filling it with a arc is more efficient than with a rectangle for this case
-			setColor(self.R, self.G, self.B, self.A)
-			arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
+			love.graphics.setColor(self.R, self.G, self.B, self.A)
+			love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
 			
 			-- Unset the shader
-			setShader()
+			love.graphics.setShader()
 			
 		end
 		
 		if self.Blur then
 			-- Generate a radial blur (to make the light softer)
-			origin()
-			setShader(Shadows.RadialBlurShader)
+			love.graphics.origin()
+			love.graphics.setShader(Shadows.RadialBlurShader)
 			Shadows.RadialBlurShader:send("Size", {self.Canvas:getDimensions()})
 			Shadows.RadialBlurShader:send("Position", {x - self.World.x, y - self.World.y})
 			Shadows.RadialBlurShader:send("Radius", self.Radius)
@@ -175,12 +165,12 @@ function Star:Update()
 		end
 		
 		-- Draw the shadow shapes over the canvas
-		setBlendMode("multiply", "alphamultiply")
-		draw(self.ShadowCanvas, 0, 0)
+		love.graphics.setBlendMode("multiply", "alphamultiply")
+		love.graphics.draw(self.ShadowCanvas, 0, 0)
 		
 		-- Reset the blending mode
-		setBlendMode("alpha", "alphamultiply")
-		setShader()
+		love.graphics.setBlendMode("alpha", "alphamultiply")
+		love.graphics.setShader()
 		
 		-- Tell the world it needs to update it's canvas
 		self.Changed = nil

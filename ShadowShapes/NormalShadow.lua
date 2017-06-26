@@ -43,10 +43,16 @@ end
 
 function NormalShadow:Remove()
 	
-	self.Body.Shapes[self.ID] = nil
-	self.World.Changed = true
-	
-	self.Transform:SetParent(nil)
+	if self.Body then
+		
+		self.Body.Shapes[self.ID] = nil
+		self.Body.World.Changed = true
+		self.Body = nil
+		self.ID = nil
+		
+		self.Transform:SetParent(nil)
+		
+	end
 	
 end
 
