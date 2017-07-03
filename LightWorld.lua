@@ -1,7 +1,7 @@
 module("shadows.LightWorld", package.seeall)
 
-Shadows = require("shadows")
-Body = require("shadows.Body")
+Shadows		=		require("shadows")
+Body			=		require("shadows.Body")
 
 LightWorld = {}
 LightWorld.__index = LightWorld
@@ -11,78 +11,25 @@ LightWorld.x, LightWorld.y, LightWorld.z = 0, 0, 1
 
 function LightWorld:new()
 	
-	local World = setmetatable({}, LightWorld)
+	local self = setmetatable( {}, LightWorld )
 	local Width, Height = love.graphics.getDimensions()
 	
-	World.Canvas = love.graphics.newCanvas(Width, Height)
+	self.Canvas = love.graphics.newCanvas(Width, Height)
 	
-	World.Bloom = {
-		Shader = Shadows.BloomShader,
-		Canvas = love.graphics.newCanvas(Width, Height),
-		--Active = true,
-	}
+	self.Rooms = {}
+	self.Bodies = {}
+	self.Lights = {}
+	self.Stars = {}
+	self.Changed = true
 	
-	World.Blur = {
-		Shader = Shadows.BlurShader,
-		Canvas = love.graphics.newCanvas(Width, Height),
-		--Active = true
-	}
-	
-	World.Aberration = {
-		Shader = Shadows.AberrationShader,
-		Canvas = love.graphics.newCanvas(Width, Height),
-		--Active = true
-	}
-	
-	World.Bloom.Shader:send("Size", {Width, Height})
-	World.Blur.Shader:send("Size", {Width, Height})
-	World.Aberration.Shader:send("Size", {Width, Height})
-	
-	World.Rooms = {}
-	World.Bodies = {}
-	World.Lights = {}
-	World.Stars = {}
-	World.Changed = true
-	World.FinalFilter = World.Canvas
-	
-	return World
+	return self
 	
 end
 
-function LightWorld:ApplyFilters()
+function LightWorld:Resize(Width, Height)
 	
-	local Canvas = self.Canvas
-	
-	if self.Bloom.Active then
-		
-		love.graphics.setShader(self.Bloom.Shader)
-		love.graphics.setCanvas(self.Bloom.Canvas)
-		love.graphics.draw(Canvas, 0, 0)
-		Canvas = self.Bloom.Canvas
-		
-	end
-	
-	if self.Blur.Active then
-		
-		love.graphics.setShader(self.Blur.Shader)
-		love.graphics.setCanvas(self.Blur.Canvas)
-		love.graphics.draw(Canvas, 0, 0)
-		Canvas = self.Blur.Canvas
-		
-	end
-	
-	if self.Aberration.Active then
-		
-		love.graphics.setShader(self.Aberration.Shader)
-		love.graphics.setCanvas(self.Aberration.Canvas)
-		love.graphics.draw(Canvas, 0, 0)
-		Canvas = self.Aberration.Canvas
-		
-	end
-	
-	love.graphics.setShader()
-	love.graphics.setCanvas()
-	self.FinalFilter = Canvas
+	self.Canvas = love.graphics.newCanvas(Width, Height)
+	self.UpdateCanvas = true
 	
 end
 
@@ -154,7 +101,7 @@ function LightWorld:Draw()
 	
 	love.graphics.setBlendMode("multiply", "alphamultiply")
 	love.graphics.setColor(255, 255, 255, 255)
-	love.graphics.draw(self.FinalFilter, 0, 0)
+	love.graphics.draw(self.Canvas, 0, 0)
 	love.graphics.setBlendMode("alpha", "alphamultiply")
 	
 end
@@ -336,7 +283,6 @@ function LightWorld:Update(dt)
 		
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		love.graphics.origin()
-		self:ApplyFilters()
 		
 		for Index, Body in pairs(self.Bodies) do
 			
