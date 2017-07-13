@@ -117,12 +117,11 @@ function NormalShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 	Lz = Lz + DeltaZ
 	
 	local x, y, z = self.Transform:GetPosition()
+	local Rotation = self.Transform:GetRadians()
 	
 	if Lz > z then
 		
 		Shadows.NormalShader:send("LightPos", { Lx, Ly, Lz })
-		
-		local Rotation = self.Transform:GetRadians()
 		
 		local ScaleX = self:GetWidth() / self.Texture:getWidth()
 		local ScaleY = self:GetHeight() / self.Texture:getHeight()
@@ -142,6 +141,24 @@ function NormalShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 		
 		Shape.type = "draw"
 		Shape.shader = Shadows.NormalShader
+		
+		table.insert(Shapes, Shape)
+		
+	else
+		-- Make sure the light doesn't cover the normal map
+		local wx, wy = self.Transform:ToWorld( self:GetWidth(), self:GetHeight() )
+		
+		local Shape = {
+			
+			"fill",
+			x, y,
+			wx, y,
+			wx, wy,
+			x, wy
+			
+		}
+		
+		Shape.type = "polygon"
 		
 		table.insert(Shapes, Shape)
 		
