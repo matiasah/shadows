@@ -22,7 +22,6 @@ function LightWorld:new()
 	self.Bodies = {}
 	self.Lights = {}
 	self.Stars = {}
-	self.NormalMaps = {}
 	self.Changed = true
 	
 	return self
@@ -106,19 +105,6 @@ function LightWorld:AddRoom(Room)
 	self.Rooms[ID] = Room
 	
 	return Room
-	
-end
-
-function LightWorld:AddNormalMap(NormalMap)
-	
-	local ID = #self.NormalMaps + 1
-	NormalMap.World = self
-	NormalMap.ID = ID
-	
-	self.Changed = true
-	self.NormalMaps[ID] = NormalMap
-	
-	return NormalMap
 	
 end
 
@@ -275,12 +261,6 @@ function LightWorld:Update(dt)
 		Room:Update()
 		
 	end; love.graphics.setCanvas()
-	
-	for Index, NormalMap in pairs(self.NormalMaps) do
-		
-		NormalMap:Update()
-		
-	end
 	
 	self.Changed = false
 	

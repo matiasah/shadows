@@ -12,15 +12,13 @@ Light.SizeRadius = 10
 
 Light.R, Light.G, Light.B, Light.A = 255, 255, 255, 255
 
-local halfPi = math.pi * 0.5
+halfPi = math.pi * 0.5
 
 function Light:new(World, Radius)
-	
-	local self = setmetatable({}, Light)
-	
+	-- Class constructor
 	if World and Radius then
 		
-		local Width, Height = World.Canvas:getDimensions()
+		local self = setmetatable({}, Light)
 		
 		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(0, 0, 1)
@@ -32,9 +30,9 @@ function Light:new(World, Radius)
 		
 		World:AddLight(self)
 		
+		return self
+		
 	end
-	
-	return self
 	
 end
 

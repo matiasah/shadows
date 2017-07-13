@@ -4,34 +4,34 @@ Shadows		=		require("shadows")
 Light			=		require("shadows.Light")
 Transform	=		require("shadows.Transform")
 
-Star = Light:new()
+Star = setmetatable( {}, Light )
 Star.__index = Star
 
-local halfPi = math.pi * 0.5
+Star.Star = true
+Star.Blur = true
+
+halfPi = math.pi * 0.5
 
 function Star:new(World, Radius)
-	
-	local self = setmetatable({}, Star)
-	
+	-- Class constructor
 	if World and Radius then
 		
+		local self = setmetatable({}, Star)
 		local Width, Height = World.Canvas:getDimensions()
 		
 		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(0, 0, 1)
 		self.Transform.Object = self
 		
-		self.Star = true
-		self.Blur = true
 		self.Radius = Radius
 		self.Canvas = love.graphics.newCanvas( Width, Height )
 		self.ShadowCanvas = love.graphics.newCanvas( Width, Height )
 		
 		World:AddStar(self)
 		
+		return self
+		
 	end
-	
-	return self
 	
 end
 

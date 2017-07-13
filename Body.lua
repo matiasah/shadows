@@ -8,9 +8,9 @@ Body.__index = Body
 
 function Body:new(World, ID)
 	
-	local self = setmetatable({}, Body)
-	
 	if World then
+		
+		local self = setmetatable({}, Body)
 		
 		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(0, 0, 1)
@@ -20,9 +20,9 @@ function Body:new(World, ID)
 		
 		World:AddBody(self, ID)
 		
+		return self
+		
 	end
-	
-	return self
 	
 end
 
