@@ -11,16 +11,14 @@ local insert = table.insert
 
 local atan2 = math.atan2
 local sqrt = math.sqrt
-local cos = math.cos
-local sin = math.sin
-local rad = math.rad
 
 function PolygonShadow:new(Body, ...)
 	
 	local Vertices = {...}
-	local self = setmetatable({}, PolygonShadow)
 	
 	if Body and Vertices and #Vertices > 0 then
+		
+		local self = setmetatable({}, PolygonShadow)
 	
 		self.Transform = Transform:new()
 		self.Transform:SetParent(Body:GetTransform())
@@ -32,9 +30,9 @@ function PolygonShadow:new(Body, ...)
 		
 		Body:AddShape(self)
 		
+		return self
+		
 	end
-	
-	return self
 	
 end
 
@@ -157,8 +155,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 		insert(VisibleEdge, (Normal[1] * Direction[1] + Normal[2] * Direction[2]) > 0)
 		
 	end
-
-	local PenumbraAngle = math.atan(Light.SizeRadius / Light.Radius)
+	
 	local VisibleEdges = #VisibleEdge
 	local Geometry = {}
 	

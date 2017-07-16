@@ -17,10 +17,10 @@ local cos = math.cos
 
 function CircleShadow:new(Body, x, y, Radius)
 	
-	local self = setmetatable({}, CircleShadow)
-	
 	if Body and x and y and Radius then
-	
+		
+		local self = setmetatable({}, CircleShadow)
+		
 		self.Transform = Transform:new()
 		self.Transform:SetParent(Body:GetTransform())
 		self.Transform:SetLocalPosition(x, y)
@@ -31,9 +31,9 @@ function CircleShadow:new(Body, x, y, Radius)
 		
 		Body:AddShape(self)
 		
+		return self
+		
 	end
-	
-	return self
 	
 end
 

@@ -6,13 +6,11 @@ Transform = require("shadows.Transform")
 NormalShadow = {}
 NormalShadow.__index = NormalShadow
 
-NormalShadow.NormalMap = false
-
 function NormalShadow:new(Body, Texture, Width, Height)
 	
-	local self = setmetatable( {}, NormalShadow )
-	
 	if Body and Texture then
+		
+		local self = setmetatable( {}, NormalShadow )
 		
 		self.Texture = Texture
 		self.Width = Width
@@ -20,7 +18,7 @@ function NormalShadow:new(Body, Texture, Width, Height)
 		
 		self.Transform = Transform:new()
 		self.Transform:SetParent(Body:GetTransform())
-		self.Transform.Object = Body
+		self.Transform.Object = self
 		self.Body = Body
 		
 		Body:AddShape(self)
@@ -59,6 +57,12 @@ end
 function NormalShadow:SetTexture(Texture)
 	
 	self.Texture = Texture
+	
+end
+
+function NormalShadow:GetTexture()
+	
+	return self.Texture
 	
 end
 

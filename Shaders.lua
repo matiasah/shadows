@@ -204,4 +204,52 @@ Shadows.NormalShader = love.graphics.newShader [[
 	
 ]]
 
+Shadows.HeightShader = love.graphics.newShader [[
+	
+	extern vec3 LightPos;
+	extern vec3 LightCenter;
+	extern vec3 MapPos;
+	extern vec2 LightSize;
+	extern vec2 Size;
+	extern Image Texture;
+	
+	vec4 effect(vec4 Color, Image tex, vec2 tc, vec2 pixelCoord) {
+		
+		vec2 inverseSize = 1 / Size;
+		
+		vec2 textureCoord = ( LightPos.xy - LightSize * 0.5 + pixelCoord - MapPos.xy ) / Size;
+		float pointHeight = Texel(Texture, textureCoord).r;
+		
+		vec3 LightDir = vec3( LightCenter.xy - pixelCoord.xy, LightPos.z );
+		vec3 L = normalize(LightDir);
+		float Distance = length(LightDir);
+		
+		for (float i = 0.0; i < Distance; i++) {
+			
+			vec2 position = textureCoord + L.xy * i / Size;
+			
+			if ( position.x > 0.0 && position.y > 0.0 && position.x < 1.0 && position.y < 1.0 ) {
+			
+				float pixelHeight = Texel(Texture, position).r;
+				
+				if (pixelHeight > pointHeight) {
+				
+					if ( LightPos.z / Distance <= pixelHeight * MapPos.z / i ) {
+					
+						return vec4(1.0, 1.0, 1.0, 1.0);
+						
+					}
+					
+				}
+				
+			}
+			
+		}
+		
+		return vec4(0.0, 0.0, 0.0, 0.0);
+		
+	}
+	
+]]
+
 return Shadows

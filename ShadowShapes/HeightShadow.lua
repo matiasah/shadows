@@ -1,7 +1,10 @@
-module("shadows.PhysicsShapes.PolygonShape", package.seeall)
+module("shadows.ShadowShapes.HeightShadow", package.seeall)
 
 Shadows = require("shadows")
-PolygonShape = debug.getregistry()["PolygonShape"]
+Transform = require("shadows.Transform")
+
+HeightShadow = {}
+HeightShadow.__index = HeightShadow
 
 local Normalize = Shadows.Normalize
 local insert = table.insert
@@ -9,77 +12,140 @@ local insert = table.insert
 local atan2 = math.atan2
 local sqrt = math.sqrt
 
-function PolygonShape:Draw(Body)
+function HeightShadow:new(Body, Texture)
 	
-	love.graphics.polygon("fill", Body.Body:getWorldPoints( self:getPoints() ) )
-	
-end
-
-function PolygonShape:GetPosition(Body)
-	
-	local Points = { self:getPoints() }
-	local x, y = 0, 0
-	
-	for i = 1, #Points, 2 do
+	if Body and Texture then
 		
-		x = x + Points[i]
-		y = y + Points[i + 1]
+		local self = setmetatable( {}, HeightShadow )
 		
-	end
-	
-	local InvCount = 1 / #Points * 0.5
-	local WorldX, WorldY = Body.Body:getWorldPoint( x * InvCount, y * InvCount )
-	local n1, n2, WorldZ = Body:GetPosition()
-	
-	return WorldX, WorldY, WorldZ, Points
-	
-end
-
-function PolygonShape:GetRadius(Body)
-	
-	local x, y, z, Points = self:GetPosition(Body)
-	local Radius = 0
-	
-	for i = 1, #Points, 2 do
+		self.Texture = Texture
 		
-		local dx = Points[i] - x
-		local dy = Points[i + 1] - y
-		local PointRadius = sqrt( dx * dx + dy * dy )
+		self.Transform = Transform:new()
+		self.Transform:SetParent(Body:GetTransform())
+		self.Transform.Object = self
+		self.Body = Body
 		
-		if PointRadius > Radius then
-			
-			Radius = PointRadius
-			
-		end
+		Body:AddShape(self)
+		
+		return self
 		
 	end
 	
-	return Radius
+end
+
+function HeightShadow:Update()
+	
+	if self.Transform.HasChanged then
+		
+		self.Body:GetTransform().HasChanged = true
+		
+	end
 	
 end
 
-function PolygonShape:GetVertices(Body)
+function HeightShadow:Remove()
 	
-	return {
+	if self.Body then
 		
-		Body.Body:getWorldPoints( self:getPoints() )
+		self.Body.Shapes[self.ID] = nil
+		self.Body.World.Changed = true
+		self.Body = nil
+		self.ID = nil
 		
-	}
+		self.Transform:SetParent(nil)
+		
+	end
 	
 end
 
-function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
+function HeightShadow:SetTexture(Texture)
 	
-	local Vertices = self:GetVertices(Body)
+	self.Texture = Texture
+	
+end
+
+function HeightShadow:GetTexture()
+	
+	return self.Texture
+	
+end
+
+function HeightShadow:GetWidth()
+	
+	return self.Texture:getWidth()
+	
+end
+
+function HeightShadow:GetHeight()
+	
+	return self.Texture:getHeight()
+	
+end
+
+function HeightShadow:Draw()
+	
+end
+
+function HeightShadow:SetPosition(x, y)
+	
+	self.Transform:SetLocalPosition(x, y)
+	
+end
+
+function HeightShadow:GetPosition()
+	
+	return self.Transform:GetPosition()
+	
+end
+
+function HeightShadow:GetRadius()
+	
+	local Width = self:GetWidth()
+	local Height = self:GetHeight()
+	
+	return math.sqrt( Width * Width + Height * Height )
+	
+end
+
+function HeightShadow:GetSqrRadius()
+	
+	local Width = self:GetWidth()
+	local Height = self:GetHeight()
+	
+	return Width * Width + Height * Height
+	
+end
+
+function HeightShadow:GetVertices()
+	
+	local x, y = self.Transform:GetPosition()
+	local wx, wy = self.Transform:ToWorld(self:GetWidth(), self:GetHeight())
+	
+	return {x, y, wx, y, wx, wy, x, wy}
+	
+end
+
+function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
+	
+	local Vertices = self:GetVertices()
 	local VerticesLength = #Vertices
 	local VisibleEdge = {}
 	
 	local Lx, Ly, Lz = Light:GetPosition()
-	local Bx, By, Bz = Body:GetPosition()
 	
 	Lx = Lx + DeltaX
 	Ly = Ly + DeltaY
 	Lz = Lz + DeltaZ
+	
+	local x, y, z = self.Transform:GetPosition()
+	local Bx, By, Bz = x, y, z
+	
+	Shadows.HeightShader:send("LightPos", { Lx, Ly, Lz } )
+	Shadows.HeightShader:send("LightCenter", { Light:GetCanvasCenter() } )
+	Shadows.HeightShader:send("LightSize", { Light.Canvas:getDimensions() } )
+	Shadows.HeightShader:send("MapPos", { x, y, z })
+	Shadows.HeightShader:send("Size", { self.Texture:getDimensions() } )
+	Shadows.HeightShader:send("Texture", self.Texture)
 	
 	for Index = 1, VerticesLength, 2 do
 		
@@ -144,6 +210,10 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 				insert(Geometry, Vertex[2] + Direction[2] * Length)
 				
 			end
+			
+			Geometry.shader = Shadows.HeightShader
+			Geometry.IfNextLayerHigher = true
+			Geometry.z = z
 			
 			insert(Shapes, Geometry)
 			
@@ -214,7 +284,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 					
 				end
 				
-				if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
+				if VisibleEdge[Index] and VisibleEdge[PrevIndex] then
 					
 					insert(Geometry, Vertices[Index * 2 - 1])
 					insert(Geometry, Vertices[Index * 2])
@@ -233,7 +303,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 					
 				end
 				
-				if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
+				if VisibleEdge[Index] and VisibleEdge[PrevIndex] then
 					
 					insert(Geometry, Vertices[Index * 2 - 1])
 					insert(Geometry, Vertices[Index * 2])
@@ -391,16 +461,14 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 		
 		if #Geometry > 0 then
 			
-			-- Triangulation is necessary, otherwise rays will be intersecting
-			local Triangles = love.math.triangulate(Geometry)
+			Geometry.shader = Shadows.HeightShader
+			Geometry.IfNextLayerHigher = true
+			Geometry.z = z
 			
-			for _, Shadow in pairs(Triangles) do
-				
-				Shadow.type = "polygon"
-				insert(Shadow, 1, "fill")
-				insert(Shapes, Shadow)
-				
-			end
+			Geometry.type = "polygon"
+			insert(Geometry, 1, "fill")
+			
+			insert(Shapes, Geometry)
 			
 		end
 		
@@ -408,4 +476,4 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 	
 end
 
-return PolygonShape
+return HeightShadow
