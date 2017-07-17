@@ -2,14 +2,16 @@ local Path = (...):gsub("%.", "/")
 local Shadows = {}
 
 package.loaded["shadows"] = Shadows
-package.preload["shadows.Transform"]	=		assert(love.filesystem.load(Path.."/Transform.lua"))
-package.preload["shadows.LightWorld"]	=		assert(love.filesystem.load(Path.."/LightWorld.lua"))
-package.preload["shadows.Light"]			=		assert(love.filesystem.load(Path.."/Light.lua"))
-package.preload["shadows.Star"]			=		assert(love.filesystem.load(Path.."/Star.lua"))
-package.preload["shadows.Body"]			=		assert(love.filesystem.load(Path.."/Body.lua"))
+package.preload["shadows.Transform"]		=	assert(love.filesystem.load(Path.."/Transform.lua"))
+package.preload["shadows.LightWorld"]		=	assert(love.filesystem.load(Path.."/LightWorld.lua"))
+package.preload["shadows.Light"]				=	assert(love.filesystem.load(Path.."/Light.lua"))
+package.preload["shadows.Star"]				=	assert(love.filesystem.load(Path.."/Star.lua"))
+package.preload["shadows.Body"]				=	assert(love.filesystem.load(Path.."/Body.lua"))
+package.preload["shadows.OutputShadow"]	=	assert(love.filesystem.load(Path.."/OutputShadow.lua"))
 
 -- Shadow shapes
 
+package.preload["shadows.ShadowShapes.Shadow"]			=	assert(love.filesystem.load(Path.."/ShadowShapes/Shadow.lua"))
 package.preload["shadows.ShadowShapes.CircleShadow"]	=	assert(love.filesystem.load(Path.."/ShadowShapes/CircleShadow.lua"))
 package.preload["shadows.ShadowShapes.PolygonShadow"]	=	assert(love.filesystem.load(Path.."/ShadowShapes/PolygonShadow.lua"))
 package.preload["shadows.ShadowShapes.NormalShadow"]	=	assert(love.filesystem.load(Path.."/ShadowShapes/NormalShadow.lua"))

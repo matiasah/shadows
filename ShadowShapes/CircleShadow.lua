@@ -2,8 +2,11 @@ module("shadows.ShadowShapes.CircleShadow", package.seeall)
 
 Shadows = require("shadows")
 Transform = require("shadows.Transform")
+OutputShadow = require("shadows.OutputShadow")
 
-CircleShadow = {}
+Shadow = require("shadows.ShadowShapes.Shadow")
+
+CircleShadow = setmetatable( {}, Shadow )
 CircleShadow.__index = CircleShadow
 
 local insert = table.insert
@@ -32,31 +35,6 @@ function CircleShadow:new(Body, x, y, Radius)
 		Body:AddShape(self)
 		
 		return self
-		
-	end
-	
-end
-
-function CircleShadow:Update()
-	
-	if self.Transform.HasChanged then
-		
-		self.Body:GetTransform().HasChanged = true
-		
-	end
-	
-end
-
-function CircleShadow:Remove()
-	
-	if self.Body then
-		
-		self.Body.Shapes[self.ID] = nil
-		self.Body.World.Changed = true
-		self.Body = nil
-		self.ID = nil
-		
-		self.Transform:SetParent(nil)
 		
 	end
 	
@@ -93,22 +71,6 @@ function CircleShadow:Draw()
 	
 end
 
-function CircleShadow:SetPosition(x, y)
-	
-	if self.Transform:SetLocalPosition(x, y) then
-		
-		self.Body.World.Changed = true
-		
-	end
-	
-end
-
-function CircleShadow:GetPosition()
-	
-	return self.Transform:GetPosition()
-	
-end
-
 function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
 	
 	local x, y, Bz = self:GetPosition()
@@ -140,34 +102,32 @@ function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			
 		end
 		
-		local Polygon = {type = "polygon"}
-		insert(Polygon, "fill")
+		local Polygon = {}
 		insert(Polygon, Lx + cos(Heading + Offset) * BorderDistance)
 		insert(Polygon, Ly + sin(Heading + Offset) * BorderDistance)
 		insert(Polygon, Lx + cos(Heading - Offset) * BorderDistance)
 		insert(Polygon, Ly + sin(Heading - Offset) * BorderDistance)
 
-		insert(Polygon, Polygon[4] + cos(Heading - Offset) * Length)
-		insert(Polygon, Polygon[5] + sin(Heading - Offset) * Length)
-		insert(Polygon, Polygon[2] + cos(Heading + Offset) * Length)
-		insert(Polygon, Polygon[3] + sin(Heading + Offset) * Length)
-		insert(Shapes, Polygon)
+		insert(Polygon, Polygon[3] + cos(Heading - Offset) * Length)
+		insert(Polygon, Polygon[4] + sin(Heading - Offset) * Length)
+		insert(Polygon, Polygon[1] + cos(Heading + Offset) * Length)
+		insert(Polygon, Polygon[2] + sin(Heading + Offset) * Length)
+		
+		insert(Shapes, OutputShadow:new("polygon", "fill", unpack(Polygon)))
 		
 		if Lz > Bz then
 			
-			local Circle = {type = "circle"}
+			local Circle = {}
 			
-			insert(Circle, "fill")
+			Circle[1] = Lx + cos(Heading) * (Length + Distance)
+			Circle[2] = Ly + sin(Heading) * (Length + Distance)
 			
-			Circle[2] = Lx + cos(Heading) * (Length + Distance)
-			Circle[3] = Ly + sin(Heading) * (Length + Distance)
+			local dx = Polygon[5] - Circle[1]
+			local dy = Polygon[6] - Circle[2]
 			
-			local dx = Polygon[6] - Circle[2]
-			local dy = Polygon[7] - Circle[3]
+			Circle[3] = sqrt( dx * dx + dy * dy )
 			
-			Circle[4] = sqrt( dx * dx + dy * dy )
-			
-			insert(Shapes, Circle)
+			insert(Shapes, OutputShadow:new("circle", "fill", unpack(Circle)))
 			
 		end
 		

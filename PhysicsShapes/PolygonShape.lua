@@ -1,6 +1,8 @@
 module("shadows.PhysicsShapes.PolygonShape", package.seeall)
 
 Shadows = require("shadows")
+OutputShadow = require("shadows.OutputShadow")
+
 PolygonShape = debug.getregistry()["PolygonShape"]
 
 local Normalize = Shadows.Normalize
@@ -116,10 +118,6 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 		
 		if Lz > Bz then
 			
-			Geometry.type = "polygon"
-			
-			insert(Geometry, "fill")
-			
 			for i = 1, #Vertices, 2 do
 				
 				local Vertex = {
@@ -145,7 +143,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 				
 			end
 			
-			insert(Shapes, Geometry)
+			insert(Shapes, OutputShadow:new("polygon", "fill", unpack(Geometry)))
 			
 		end
 		
@@ -396,9 +394,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			
 			for _, Shadow in pairs(Triangles) do
 				
-				Shadow.type = "polygon"
-				insert(Shadow, 1, "fill")
-				insert(Shapes, Shadow)
+				insert(Shapes, OutputShadow:new("polygon", "fill", unpack(Shadow)))
 				
 			end
 			

@@ -143,12 +143,7 @@ function Light:Update()
 			-- Draw the shadow shapes
 			for _, Shadow in pairs(Shapes) do
 				
-				if not Shadow.IfNextLayerHigher or ( Shadow.IfNextLayerHigher and MinAltitude == Shadow.z ) then
-					
-					love.graphics.setShader(Shadow.shader)
-					love.graphics[Shadow.type]( unpack(Shadow) )
-					
-				end
+				Shadow:Draw(MinAltitude)
 				
 			end
 			

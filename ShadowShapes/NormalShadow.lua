@@ -2,8 +2,11 @@ module("shadows.ShadowShapes.NormalShadow", package.seeall)
 
 Shadows = require("shadows")
 Transform = require("shadows.Transform")
+OutputShadow = require("shadows.OutputShadow")
 
-NormalShadow = {}
+Shadow = require("shadows.ShadowShapes.Shadow")
+
+NormalShadow = setmetatable( {}, Shadow )
 NormalShadow.__index = NormalShadow
 
 function NormalShadow:new(Body, Texture, Width, Height)
@@ -24,31 +27,6 @@ function NormalShadow:new(Body, Texture, Width, Height)
 		Body:AddShape(self)
 		
 		return self
-		
-	end
-	
-end
-
-function NormalShadow:Update()
-	
-	if self.Transform.HasChanged then
-		
-		self.Body:GetTransform().HasChanged = true
-		
-	end
-	
-end
-
-function NormalShadow:Remove()
-	
-	if self.Body then
-		
-		self.Body.Shapes[self.ID] = nil
-		self.Body.World.Changed = true
-		self.Body = nil
-		self.ID = nil
-		
-		self.Transform:SetParent(nil)
 		
 	end
 	
@@ -78,31 +56,6 @@ function NormalShadow:GetHeight()
 	
 end
 
-function NormalShadow:Draw()
-	
-end
-
-function NormalShadow:SetPosition(x, y)
-	
-	self.Transform:SetLocalPosition(x, y)
-	
-end
-
-function NormalShadow:GetPosition()
-	
-	return self.Transform:GetPosition()
-	
-end
-
-function NormalShadow:GetRadius()
-	
-	local Width = self:GetWidth()
-	local Height = self:GetHeight()
-	
-	return math.sqrt( Width * Width + Height * Height )
-	
-end
-
 function NormalShadow:GetSqrRadius()
 	
 	local Width = self:GetWidth()
@@ -125,28 +78,24 @@ function NormalShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 	
 	if Lz > z then
 		
-		Shadows.NormalShader:send("LightPos", { Lx, Ly, Lz })
-		
-		local ScaleX = self:GetWidth() / self.Texture:getWidth()
-		local ScaleY = self:GetHeight() / self.Texture:getHeight()
-		
 		local Shape = {
 			
 			self.Texture,
 			x,
 			y,
 			Rotation,
-			ScaleX,
-			SCaleY,
-			IfNextLayerHigher = true,
-			z = z,
+			self:GetWidth() / self.Texture:getWidth(),
+			self:GetHeight() / self.Texture:getHeight(),
 			
 		}
 		
-		Shape.type = "draw"
-		Shape.shader = Shadows.NormalShader
+		local Output = OutputShadow:new()
+		Output:Pack(unpack(Shape))
+		Output:SetShader(Shadows.NormalShader)
+		Output:SendShader("LightPos", { Lx, Ly, Lz })
+		Output:SetLayer(z)
 		
-		table.insert(Shapes, Shape)
+		table.insert(Shapes, Output)
 		
 	else
 		-- Make sure the light doesn't cover the normal map
@@ -154,7 +103,6 @@ function NormalShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 		
 		local Shape = {
 			
-			"fill",
 			x, y,
 			wx, y,
 			wx, wy,
@@ -162,9 +110,10 @@ function NormalShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			
 		}
 		
-		Shape.type = "polygon"
+		local Output = OutputShadow:new("polygon", "fill")
+		Output:Pack(Shape)
 		
-		table.insert(Shapes, Shape)
+		table.insert(Shapes, Output)
 		
 	end
 	

@@ -2,8 +2,11 @@ module("shadows.ShadowShapes.HeightShadow", package.seeall)
 
 Shadows = require("shadows")
 Transform = require("shadows.Transform")
+OutputShadow = require("shadows.OutputShadow")
 
-HeightShadow = {}
+Shadow = require("shadows.ShadowShapes.Shadow")
+
+HeightShadow = setmetatable( {}, Shadow )
 HeightShadow.__index = HeightShadow
 
 local Normalize = Shadows.Normalize
@@ -33,31 +36,6 @@ function HeightShadow:new(Body, Texture)
 	
 end
 
-function HeightShadow:Update()
-	
-	if self.Transform.HasChanged then
-		
-		self.Body:GetTransform().HasChanged = true
-		
-	end
-	
-end
-
-function HeightShadow:Remove()
-	
-	if self.Body then
-		
-		self.Body.Shapes[self.ID] = nil
-		self.Body.World.Changed = true
-		self.Body = nil
-		self.ID = nil
-		
-		self.Transform:SetParent(nil)
-		
-	end
-	
-end
-
 function HeightShadow:SetTexture(Texture)
 	
 	self.Texture = Texture
@@ -79,31 +57,6 @@ end
 function HeightShadow:GetHeight()
 	
 	return self.Texture:getHeight()
-	
-end
-
-function HeightShadow:Draw()
-	
-end
-
-function HeightShadow:SetPosition(x, y)
-	
-	self.Transform:SetLocalPosition(x, y)
-	
-end
-
-function HeightShadow:GetPosition()
-	
-	return self.Transform:GetPosition()
-	
-end
-
-function HeightShadow:GetRadius()
-	
-	local Width = self:GetWidth()
-	local Height = self:GetHeight()
-	
-	return math.sqrt( Width * Width + Height * Height )
 	
 end
 
@@ -140,13 +93,6 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 	local x, y, z = self.Transform:GetPosition()
 	local Bx, By, Bz = x, y, z
 	
-	Shadows.HeightShader:send("LightPos", { Lx, Ly, Lz } )
-	Shadows.HeightShader:send("LightCenter", { Light:GetCanvasCenter() } )
-	Shadows.HeightShader:send("LightSize", { Light.Canvas:getDimensions() } )
-	Shadows.HeightShader:send("MapPos", { x, y, z })
-	Shadows.HeightShader:send("Size", { self.Texture:getDimensions() } )
-	Shadows.HeightShader:send("Texture", self.Texture)
-	
 	for Index = 1, VerticesLength, 2 do
 		
 		local NextIndex = Index + 2
@@ -182,10 +128,6 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 		
 		if Lz > Bz then
 			
-			Geometry.type = "polygon"
-			
-			insert(Geometry, "fill")
-			
 			for i = 1, #Vertices, 2 do
 				
 				local Vertex = {
@@ -211,11 +153,18 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 				
 			end
 			
-			Geometry.shader = Shadows.HeightShader
-			Geometry.IfNextLayerHigher = true
-			Geometry.z = z
+			local Output = OutputShadow:new("polygon", "fill")
+			Output:Pack(Geometry)
+			Output:SetLayer(z)
+			Output:SetShader(Shadows.HeightShader)
+			Output:SendShader("LightPos", { Lx, Ly, Lz } )
+			Output:SendShader("LightCenter", { Light:GetCanvasCenter() } )
+			Output:SendShader("LightSize", { Light.Canvas:getDimensions() } )
+			Output:SendShader("MapPos", { x, y, z } )
+			Output:SendShader("Size", { self.Texture:getDimensions() } )
+			Output:SendShader("Texture", self.Texture)
 			
-			insert(Shapes, Geometry)
+			insert(Shapes, Output)
 			
 		end
 		
@@ -461,14 +410,18 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 		
 		if #Geometry > 0 then
 			
-			Geometry.shader = Shadows.HeightShader
-			Geometry.IfNextLayerHigher = true
-			Geometry.z = z
+			local Output = OutputShadow:new("polygon", "fill")
+			Output:Pack(Geometry)
+			Output:SetLayer(z)
+			Output:SetShader(Shadows.HeightShader)
+			Output:SendShader("LightPos", { Lx, Ly, Lz } )
+			Output:SendShader("LightCenter", { Light:GetCanvasCenter() } )
+			Output:SendShader("LightSize", { Light.Canvas:getDimensions() } )
+			Output:SendShader("MapPos", { x, y, z } )
+			Output:SendShader("Size", { self.Texture:getDimensions() } )
+			Output:SendShader("Texture", self.Texture)
 			
-			Geometry.type = "polygon"
-			insert(Geometry, 1, "fill")
-			
-			insert(Shapes, Geometry)
+			insert(Shapes, Output)
 			
 		end
 		

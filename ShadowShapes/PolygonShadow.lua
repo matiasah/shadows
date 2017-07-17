@@ -2,8 +2,11 @@ module("shadows.ShadowShapes.PolygonShadow", package.seeall)
 
 Shadows = require("shadows")
 Transform = require("shadows.Transform")
+OutputShadow = require("shadows.OutputShadow")
 
-PolygonShadow = {}
+Shadow = require("shadows.ShadowShapes.Shadow")
+
+PolygonShadow = setmetatable( {}, Shadow )
 PolygonShadow.__index = PolygonShadow
 
 local Normalize = Shadows.Normalize
@@ -36,40 +39,9 @@ function PolygonShadow:new(Body, ...)
 	
 end
 
-function PolygonShadow:Update()
-	
-	if self.Transform.HasChanged then
-		
-		self.Body:GetTransform().HasChanged = true
-		
-	end
-	
-end
-
-function PolygonShadow:Remove()
-	
-	if self.Body then
-		
-		self.Body.Shapes[self.ID] = nil
-		self.Body.World.Changed = true
-		self.Body = nil
-		self.ID = nil
-		
-		self.Transform:SetParent(nil)
-		
-	end
-	
-end
-
 function PolygonShadow:Draw()
 	
 	love.graphics.polygon("fill", self:GetVertices() )
-	
-end
-
-function PolygonShadow:GetPosition()
-	
-	return self.Body:GetPosition()
 	
 end
 
@@ -163,10 +135,6 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 		
 		if Lz > Bz then
 			
-			Geometry.type = "polygon"
-			
-			insert(Geometry, "fill")
-			
 			for i = 1, #Vertices, 2 do
 				
 				local Vertex = {
@@ -192,7 +160,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 				
 			end
 			
-			insert(Shapes, Geometry)
+			insert(Shapes, OutputShadow:new("polygon", "fill", unpack(Geometry)))
 			
 		end
 		
@@ -443,9 +411,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 			
 			for _, Shadow in pairs(Triangles) do
 				
-				Shadow.type = "polygon"
-				insert(Shadow, 1, "fill")
-				insert(Shapes, Shadow)
+				insert(Shapes, OutputShadow:new("polygon", "fill", unpack(Shadow)))
 				
 			end
 			
