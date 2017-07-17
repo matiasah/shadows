@@ -1,6 +1,8 @@
 # Shädows
 A Shadows & Lights engine for löve
 
+![](http://i.imgur.com/MOZmkhG.png)
+
 ### Wiki
 https://github.com/Starkkz/shadows/wiki
 
