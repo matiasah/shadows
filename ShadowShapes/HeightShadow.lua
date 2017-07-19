@@ -1,3 +1,4 @@
+-- If you're thinking on using height maps, normal map is more efficient in some cases
 module("shadows.ShadowShapes.HeightShadow", package.seeall)
 
 Shadows = require("shadows")

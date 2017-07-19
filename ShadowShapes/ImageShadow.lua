@@ -1,4 +1,4 @@
-module("shadows.ShadowShapes.NormalShadow", package.seeall)
+module("shadows.ShadowShapes.ImageShadow", package.seeall)
 
 Shadows = require("shadows")
 Transform = require("shadows.Transform")
@@ -6,16 +6,16 @@ OutputShadow = require("shadows.OutputShadow")
 
 Shadow = require("shadows.ShadowShapes.Shadow")
 
-NormalShadow = setmetatable( {}, Shadow )
-NormalShadow.__index = NormalShadow
+ImageShadow = setmetatable( {}, Shadow )
+ImageShadow.__index = ImageShadow
 
 local insert = table.insert
 
-function NormalShadow:new(Body, Texture, Width, Height)
+function ImageShadow:new(Body, Texture, Width, Height)
 	
 	if Body and Texture then
 		
-		local self = setmetatable( {}, NormalShadow )
+		local self = setmetatable( {}, ImageShadow )
 		
 		self.Texture = Texture
 		self.Width = Width
@@ -34,31 +34,31 @@ function NormalShadow:new(Body, Texture, Width, Height)
 	
 end
 
-function NormalShadow:SetTexture(Texture)
+function ImageShadow:SetTexture(Texture)
 	
 	self.Texture = Texture
 	
 end
 
-function NormalShadow:GetTexture()
+function ImageShadow:GetTexture()
 	
 	return self.Texture
 	
 end
 
-function NormalShadow:GetWidth()
+function ImageShadow:GetWidth()
 	
 	return self.Width or self.Texture:getWidth()
 	
 end
 
-function NormalShadow:GetHeight()
+function ImageShadow:GetHeight()
 	
 	return self.Height or self.Texture:getHeight()
 	
 end
 
-function NormalShadow:GetSqrRadius()
+function ImageShadow:GetSqrRadius()
 	
 	local Width = self:GetWidth()
 	local Height = self:GetHeight()
@@ -67,9 +67,9 @@ function NormalShadow:GetSqrRadius()
 	
 end
 
-function NormalShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
+function ImageShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
 	
-	local Lx, Ly, Lz = Light:GetCanvasCenter()
+	local Lx, Ly, Lz = Light:GetPosition()
 	
 	Lx = Lx + DeltaX
 	Ly = Ly + DeltaY
@@ -81,44 +81,18 @@ function NormalShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 	if Lz > z then
 		
 		local Shape = {
-			
 			self.Texture,
 			x,
 			y,
 			Rotation,
 			self:GetWidth() / self.Texture:getWidth(),
 			self:GetHeight() / self.Texture:getHeight(),
-			
 		}
 		
-		local Output = OutputShadow:new()
-		Output:Pack(unpack(Shape))
-		Output:SetShader(Shadows.NormalShader)
-		Output:SendShader("LightPos", { Lx, Ly, Lz })
-		Output:SetLayer(z)
-		
-		insert(Shapes, Output)
-		
-	else
-		-- Make sure the light doesn't cover the normal map
-		local wx, wy = self.Transform:ToWorld( self:GetWidth(), self:GetHeight() )
-		
-		local Shape = {
-			
-			x, y,
-			wx, y,
-			wx, wy,
-			x, wy
-			
-		}
-		
-		local Output = OutputShadow:new("polygon", "fill")
-		Output:Pack(Shape)
-		
-		insert(Shapes, Output)
+		insert(Shapes, OutputShadow:new(nil, nil, unpack(Shape)))
 		
 	end
 	
 end
 
-return NormalShadow
+return ImageShadow
