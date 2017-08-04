@@ -9,6 +9,7 @@ Light.__index = Light
 Light.Arc = 360
 Light.Radius = 0
 Light.SizeRadius = 10
+Light.Blur = true
 
 Light.R, Light.G, Light.B, Light.A = 255, 255, 255, 255
 
@@ -41,12 +42,15 @@ function Light:GenerateShadows(x, y, z, Layer)
 	local Shapes = {}
 	local newZ
 	
-	for _, Body in pairs(self.World.Bodies) do
+	for Index = 1, self.World.Bodies:GetLength() do
+		
+		local Body = self.World.Bodies:Get(Index)
+		local Physics = Body:GetPhysics()
 		-- If a body has been removed from the local reference, the light has moved, or the body has moved
 		
-		if Body.Body then
+		if Physics then
 			-- Get the physics shapes of the physics body
-			for _, Fixture in pairs(Body.Body:getFixtureList()) do
+			for _, Fixture in pairs(Physics:getFixtureList()) do
 				
 				local Shape = Fixture:getShape()
 				-- It must be a type of shape that is supported by the engine
@@ -141,7 +145,9 @@ function Light:Update()
 			Shapes, MinAltitude = self:GenerateShadows(x, y, z, Layer)
 			
 			-- Draw the shadow shapes
-			for _, Shadow in pairs(Shapes) do
+			for Index = 1, #Shapes do
+				
+				local Shadow = Shapes[Index]
 				
 				Shadow:Draw(MinAltitude)
 				
@@ -152,16 +158,19 @@ function Light:Update()
 			love.graphics.setColor(255, 255, 255, 255)
 			love.graphics.setShader()
 			
-			for Index, Body in pairs(self.World.Bodies) do
+			for Index = self.World.Bodies:GetLength(), 1, -1 do
 				
+				local Body = self.World.Bodies:Get(Index)
 				local Bx, By, Bz = Body:GetPosition()
 				
-				-- As long as this body is on top of the layer
-				if Bz > Layer then
+				if Bz <= Layer then
 					
-					Body:DrawRadius(x, y, self.Radius)
+					break
 					
 				end
+				
+				-- As long as this body is on top of the layer
+				Body:DrawRadius(x, y, self.Radius)
 				
 			end
 			
@@ -221,11 +230,15 @@ function Light:Update()
 			
 		end
 		
-		-- Generate a radial blur (to make the light softer)
-		love.graphics.setShader(Shadows.RadialBlurShader)
-		Shadows.RadialBlurShader:send("Size", {self.Canvas:getDimensions()})
-		Shadows.RadialBlurShader:send("Position", {self.Radius, self.Radius})
-		Shadows.RadialBlurShader:send("Radius", self.Radius)
+		if self.Blur then
+			
+			-- Generate a radial blur (to make the light softer)
+			love.graphics.setShader(Shadows.RadialBlurShader)
+			Shadows.RadialBlurShader:send("Size", {self.Canvas:getDimensions()})
+			Shadows.RadialBlurShader:send("Position", {self.Radius, self.Radius})
+			Shadows.RadialBlurShader:send("Radius", self.Radius)
+			
+		end
 		
 		-- Now apply the blur along with the shadow shapes over the light canvas
 		love.graphics.setBlendMode("multiply", "alphamultiply")

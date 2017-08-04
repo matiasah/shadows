@@ -73,7 +73,9 @@ function Star:Update()
 			Shapes, MinAltitude, MaxAltitude = self:GenerateShadows(x, y, z, Layer)
 			
 			-- Draw the shadow shapes
-			for _, Shadow in pairs(Shapes) do
+			for Index = 1, #Shapes do
+				
+				local Shadow = Shapes[Index]
 				
 				Shadow:Draw(MinAltitude)
 				
@@ -84,16 +86,19 @@ function Star:Update()
 			love.graphics.setColor(255, 255, 255, 255)
 			love.graphics.setShader()
 			
-			for Index, Body in pairs(self.World.Bodies) do
+			for Index = self.World.Bodies:GetLength(), 1, -1 do
 				
+				local Body = self.World.Bodies:Get(Index)
 				local Bx, By, Bz = Body:GetPosition()
 				
-				-- As long as this body is on top of the layer
-				if Bz > Layer then
+				if Bz <= Layer then
 					
-					Body:DrawRadius(x, y, self.Radius)
+					break
 					
 				end
+				
+				-- As long as this body is on top of the layer
+				Body:DrawRadius(x, y, self.Radius)
 				
 			end
 			

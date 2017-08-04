@@ -3,6 +3,7 @@ module("shadows.LightWorld", package.seeall)
 Shadows				=		require("shadows")
 Body					=		require("shadows.Body")
 BodyTransform		=		require("shadows.BodyTransform")
+PriorityQueue		=		require("shadows.PriorityQueue")
 
 LightWorld = {}
 LightWorld.__index = LightWorld
@@ -16,10 +17,10 @@ function LightWorld:new()
 	local Width, Height = love.graphics.getDimensions()
 	
 	self.Canvas = love.graphics.newCanvas(Width, Height)
+	self.Bodies = PriorityQueue:new()	-- Bodies sorted by height
 	
 	self.BodyTracks = {}
 	self.Rooms = {}
-	self.Bodies = {}
 	self.Lights = {}
 	self.Stars = {}
 	self.Changed = true
@@ -41,9 +42,15 @@ function LightWorld:Resize(Width, Height)
 	
 end
 
-function LightWorld:SetPhysics(PhysicsWorld)
+function LightWorld:InitFromPhysics(PhysicsWorld)
 	
-	self.Physics = PhysicsWorld
+	for _, BodyObject in pairs( PhysicsWorld:getBodyList() ) do
+		
+		local newBody = Body:new(self)
+		
+		newBody:SetPhysics(BodyObject)
+		
+	end
 	
 end
 
@@ -53,15 +60,13 @@ function LightWorld:GetPhysics()
 	
 end
 
-function LightWorld:AddBody(Body, ID)
+function LightWorld:AddBody(Body)
 	
-	local ID = ID or #self.Bodies + 1
 	Body.World = self
-	Body.ID = ID
 	
 	self.Changed = true
 	self.UpdateCanvas = true
-	self.Bodies[ID] = Body
+	self.Bodies:Insert(Body)
 	
 end
 
@@ -208,33 +213,11 @@ end
 
 function LightWorld:Update(dt)
 	
-	if self.Physics then
+	for i = 1, self.Bodies:GetLength() do
 		
-		for _, BodyObject in pairs( self.Physics:getBodyList() ) do
-			
-			-- The 'Body' userdata is interpreted as a 'ID' (a.k.a table index)
-			
-			if not self.Bodies[BodyObject] then
-				
-				Body:new(self, BodyObject).Body = BodyObject
-				
-			end
-			
-		end
+		local Body = self.Bodies:Get(i)
 		
-	end
-	
-	for Index, Body in pairs(self.Bodies) do
-		
-		if Body.Body and Body.Body:isDestroyed() then
-			
-			Body:Remove()
-			
-		else
-			
-			Body:Update()
-			
-		end
+		Body:Update()
 		
 	end
 	
@@ -265,6 +248,8 @@ function LightWorld:Update(dt)
 	self.Changed = false
 	
 	if self.UpdateCanvas then
+		
+		Shadows.insertionSort(self.Bodies)
 		
 		self.UpdateCanvas = nil
 		self.UpdateStars = nil
@@ -313,7 +298,9 @@ function LightWorld:Update(dt)
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		love.graphics.origin()
 		
-		for Index, Body in pairs(self.Bodies) do
+		for i = 1, self.Bodies:GetLength() do
+			
+			local Body = self.Bodies:Get(i)
 			
 			Body.Moved = false
 			

@@ -6,7 +6,7 @@ Transform	=	require("shadows.Transform")
 Body = {}
 Body.__index = Body
 
-function Body:new(World, ID)
+function Body:new(World)
 	
 	if World then
 		
@@ -18,11 +18,41 @@ function Body:new(World, ID)
 		
 		self.Shapes = {}
 		
-		World:AddBody(self, ID)
+		World:AddBody(self)
 		
 		return self
 		
 	end
+	
+end
+
+function Body:__lt(secondBody)
+	
+	local x1, y1, z1 = self:GetTransform():GetPosition()
+	local x2, y2, z2 = secondBody:GetTransform():GetPosition()
+	
+	return z1 < z2
+	
+end
+
+function Body:__lt(secondBody)
+	
+	local x1, y1, z1 = self:GetTransform():GetPosition()
+	local x2, y2, z2 = secondBody:GetTransform():GetPosition()
+	
+	return z1 <= z2
+	
+end
+
+function Body:SetPhysics(Body)
+	
+	self.Body = Body
+	
+end
+
+function Body:GetPhysics()
+	
+	return self.Body
 	
 end
 
@@ -101,6 +131,14 @@ end
 function Body:Update()
 	
 	if self.Body then
+		
+		if self.Body:isDestroyed() then
+			
+			self:Remove()
+			
+			return nil
+			
+		end
 		
 		if self.Transform:SetPosition( self.Body:getPosition() ) or self.Transform:SetRotation( math.deg( self.Body:getAngle() ) ) then
 			
@@ -204,10 +242,9 @@ function Body:Remove()
 	
 	if self.World then
 		
-		self.World.Bodies[ self.ID ] = nil
+		self.World.Bodies:Remove(self)
 		self.World.Changed = true
 		self.World = nil
-		self.ID = nil
 		
 		self.Transform:SetParent(nil)
 		

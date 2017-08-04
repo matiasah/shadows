@@ -83,3 +83,26 @@ function Shadows.PointInPolygon(gx, gy, Vertices)
 	return  Intersections % 2 == 1
 	
 end
+
+function Shadows.insertionSort(Table)
+	
+	local Left = 1
+	local Right = #Table
+	
+	for i = Left + 1, Right do
+		
+		local Aux = Table[i]
+		local j = i
+		
+		while j > Left and not ( Table[j - 1] < Aux ) do
+			
+			Table[j] = Table[j - 1]
+			j = j - 1
+			
+		end
+		
+		Table[j] = aux
+		
+	end
+	
+end
