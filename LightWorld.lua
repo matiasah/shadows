@@ -54,12 +54,6 @@ function LightWorld:InitFromPhysics(PhysicsWorld)
 	
 end
 
-function LightWorld:GetPhysics()
-	
-	return self.Physics
-	
-end
-
 function LightWorld:AddBody(Body)
 	
 	Body.World = self
