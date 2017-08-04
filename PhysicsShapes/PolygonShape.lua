@@ -390,11 +390,15 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 		if #Geometry > 0 then
 			
 			-- Triangulation is necessary, otherwise rays will be intersecting
-			local Triangles = love.math.triangulate(Geometry)
+			local Ok, Triangles = pcall(love.math.triangulate, Geometry)
 			
-			for _, Shadow in pairs(Triangles) do
+			if Ok then
 				
-				insert(Shapes, OutputShadow:new("polygon", "fill", unpack(Shadow)))
+				for i = 1, #Triangles do
+					
+					insert(Shapes, OutputShadow:new("polygon", "fill", unpack(Triangles[i])))
+					
+				end
 				
 			end
 			
