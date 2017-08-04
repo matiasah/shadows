@@ -167,12 +167,8 @@ end
 
 function Body:SetPhysics(Body)
 	
-	if Body:typeOf("Body") then
-		
-		self.Body = Body
-		self.World.Changed = true
-		
-	end
+	self.Body = Body
+	self.World.Changed = true
 	
 	return self
 	

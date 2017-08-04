@@ -58,8 +58,6 @@ function PolygonShape:GetRadius(Body)
 	
 	return Radius
 	
-	--return self:getRadius() -- seems to be acting weird with this function
-	
 end
 
 function PolygonShape:GetSqrRadius(Body)
