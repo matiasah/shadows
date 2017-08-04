@@ -43,13 +43,15 @@ function Star:GetCanvasCenter()
 	
 end
 
+function Star:GenerateDarkness()
+	
+end
+
 function Star:Update()
 	
 	if self.Changed or self.World.Changed or self.Transform.HasChanged or self.World.UpdateStars then
 		
 		local x, y, z = self.Transform:GetPosition()
-		local MinAltitude = 0
-		local MinAltitudeLast
 		
 		-- Generate new content for the shadow canvas
 		love.graphics.setCanvas(self.ShadowCanvas)
@@ -60,49 +62,7 @@ function Star:Update()
 		love.graphics.translate(-self.World.x, -self.World.y)
 		love.graphics.scale(self.World.z, self.World.z)
 		
-		while MinAltitude ~= MinAltitudeLast and MinAltitude and MinAltitude < z do
-			
-			local Layer = MinAltitude
-			
-			-- Shadow shapes should subtract white color, so that you see black
-			love.graphics.setBlendMode("subtract", "alphamultiply")
-			love.graphics.setColor(255, 255, 255, 255)
-			
-			-- Produce the shadow shapes
-			MinAltitudeLast = MinAltitude
-			Shapes, MinAltitude, MaxAltitude = self:GenerateShadows(x, y, z, Layer)
-			
-			-- Draw the shadow shapes
-			for Index = 1, #Shapes do
-				
-				local Shadow = Shapes[Index]
-				
-				Shadow:Draw(MinAltitude)
-				
-			end
-			
-			-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
-			love.graphics.setBlendMode("add", "alphamultiply")
-			love.graphics.setColor(255, 255, 255, 255)
-			love.graphics.setShader()
-			
-			for Index = self.World.Bodies:GetLength(), 1, -1 do
-				
-				local Body = self.World.Bodies:Get(Index)
-				local Bx, By, Bz = Body:GetPosition()
-				
-				if Bz <= Layer then
-					
-					break
-					
-				end
-				
-				-- As long as this body is on top of the layer
-				Body:DrawRadius(x, y, self.Radius)
-				
-			end
-			
-		end
+		self:GenerateDarkness(x, y, z)
 		
 		self.Moved = nil
 		

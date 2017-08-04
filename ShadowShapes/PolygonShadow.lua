@@ -8,9 +8,11 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 
 PolygonShadow = setmetatable( {}, Shadow )
 PolygonShadow.__index = PolygonShadow
+PolygonShadow.__lt = Shadow.__lt
+PolygonShadow.__le = Shadow.__le
 
 local Normalize = Shadows.Normalize
-local insert = table.insert
+local insert = Shadows.Insert
 
 local atan2 = math.atan2
 local sqrt = math.sqrt
@@ -135,7 +137,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 		
 		if Lz > Bz then
 			
-			for i = 1, #Vertices, 2 do
+			for i = 1, VerticesLength, 2 do
 				
 				local Vertex = {
 					

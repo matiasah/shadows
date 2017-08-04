@@ -5,7 +5,7 @@ OutputShadow = require("shadows.OutputShadow")
 
 CircleShape = debug.getregistry()["CircleShape"]
 
-local insert = table.insert
+local insert = Shadows.Insert
 
 local halfPi = math.pi * 0.5
 local atan = math.atan
@@ -34,6 +34,14 @@ end
 function CircleShape:GetRadius()
 	
 	return self:getRadius()
+	
+end
+
+function CircleShape:GetSqrRadius()
+	
+	local Radius = self:getRadius()
+	
+	return Radius * Radius
 	
 end
 

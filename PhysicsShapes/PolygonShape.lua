@@ -6,7 +6,7 @@ OutputShadow = require("shadows.OutputShadow")
 PolygonShape = debug.getregistry()["PolygonShape"]
 
 local Normalize = Shadows.Normalize
-local insert = table.insert
+local insert = Shadows.Insert
 
 local atan2 = math.atan2
 local sqrt = math.sqrt
@@ -21,7 +21,7 @@ function PolygonShape:GetPosition(Body)
 	
 	local Points = { self:getPoints() }
 	local x, y = 0, 0
-	
+	-- Get average center
 	for i = 1, #Points, 2 do
 		
 		x = x + Points[i]
@@ -29,7 +29,7 @@ function PolygonShape:GetPosition(Body)
 		
 	end
 	
-	local InvCount = 1 / #Points * 0.5
+	local InvCount = 1 / #Points
 	local WorldX, WorldY = Body.Body:getWorldPoint( x * InvCount, y * InvCount )
 	local n1, n2, WorldZ = Body:GetPosition()
 	
@@ -58,15 +58,36 @@ function PolygonShape:GetRadius(Body)
 	
 	return Radius
 	
+	--return self:getRadius() -- seems to be acting weird with this function
+	
+end
+
+function PolygonShape:GetSqrRadius(Body)
+	
+	local x, y, z, Points = self:GetPosition(Body)
+	local Radius = 0
+	
+	for i = 1, #Points, 2 do
+		
+		local dx = Points[i] - x
+		local dy = Points[i + 1] - y
+		local PointRadius = dx * dx + dy * dy
+		
+		if PointRadius > Radius then
+			
+			Radius = PointRadius
+			
+		end
+		
+	end
+	
+	return Radius
+	
 end
 
 function PolygonShape:GetVertices(Body)
 	
-	return {
-		
-		Body.Body:getWorldPoints( self:getPoints() )
-		
-	}
+	return { Body.Body:getWorldPoints( self:getPoints() ) }
 	
 end
 
@@ -118,28 +139,28 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 		
 		if Lz > Bz then
 			
-			for i = 1, #Vertices, 2 do
+			for i = 1, VerticesLength, 2 do
 				
-				local Vertex = {
-					
-					Vertices[i],
-					Vertices[i + 1],
-					
-				}
+				-- Get the current vertex
+				local x = Vertices[i]
+				local y = Vertices[i + 1]
 				
-				local dx = Lx - Vertex[1]
-				local dy = Ly - Vertex[2]
+				-- Calculate distance
+				local dx = Lx - x
+				local dy = Ly - y
 				local Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 				
+				-- Normalize direction
 				local Direction = Normalize {
 					
-					Vertex[1] - Lx,
-					Vertex[2] - Ly,
+					x - Lx,
+					y - Ly,
 					
 				}
 				
-				insert(Geometry, Vertex[1] + Direction[1] * Length)
-				insert(Geometry, Vertex[2] + Direction[2] * Length)
+				-- Multiply direction by distance
+				insert(Geometry, x + Direction[1] * Length)
+				insert(Geometry, y + Direction[2] * Length)
 				
 			end
 			
@@ -165,17 +186,15 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 				
 				FirstVertex = Index
 				
-				local Vertex = {
-					Vertices[Index * 2 - 1];
-					Vertices[Index * 2];
-				}
+				local x = Vertices[Index * 2 - 1]
+				local y = Vertices[Index * 2]
 				
-				local Length = Light.Radius
+				local Length = Light:GetRadius()
 				
 				if Lz > Bz then
 					
-					local dx = Lx - Vertex[1]
-					local dy = Ly - Vertex[2]
+					local dx = Lx - x
+					local dy = Ly - y
 					
 					Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 					
@@ -183,16 +202,16 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 				
 				local Direction = Normalize {
 					
-					Vertex[1] - Lx,
-					Vertex[2] - Ly,
+					x - Lx,
+					y - Ly,
 					
 				}
 				
-				insert(Geometry, Vertex[1] + Direction[1] * Length)
-				insert(Geometry, Vertex[2] + Direction[2] * Length)
+				insert(Geometry, x + Direction[1] * Length)
+				insert(Geometry, y + Direction[2] * Length)
 				
-				insert(Geometry, Vertex[1])
-				insert(Geometry, Vertex[2])
+				insert(Geometry, x)
+				insert(Geometry, y)
 				
 				break
 				
@@ -265,7 +284,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 					
 				}
 				
-				local Length = Light.Radius
+				local Length = Light:GetRadius()
 				
 				if Lz > Bz then
 					
@@ -316,7 +335,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 						
 					}
 					
-					local Length = Light.Radius
+					local Length = Light:GetRadius()
 					
 					if Lz > Bz then
 						
@@ -360,7 +379,7 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 						
 					}
 					
-					local Length = Light.Radius
+					local Length = Light:GetRadius()
 					
 					if Lz > Bz then
 						

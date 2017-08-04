@@ -42,7 +42,7 @@ function Light:GenerateShadows(x, y, z, Layer)
 	local Shapes = {}
 	local newZ
 	
-	for Index = 1, self.World.Bodies:GetLength() do
+	for Index = self.World.Bodies:GetLength(), 1, -1 do
 		
 		local Body = self.World.Bodies:Get(Index)
 		local Physics = Body:GetPhysics()
@@ -50,18 +50,26 @@ function Light:GenerateShadows(x, y, z, Layer)
 		
 		if Physics then
 			-- Get the physics shapes of the physics body
-			for _, Fixture in pairs(Physics:getFixtureList()) do
+			local FixtureList = Physics:getFixtureList()
+			
+			for i = 1, #FixtureList do
 				
-				local Shape = Fixture:getShape()
+				local Shape = FixtureList[i]:getShape()
 				-- It must be a type of shape that is supported by the engine
 				if Shape.GenerateShadows then
 					
-					local Radius = self.Radius + Shape:GetRadius(Body)
+					local SqrRadius = self.Radius * self.Radius + Shape:GetSqrRadius(Body)
 					local ShapeX, ShapeY, ShapeZ = Shape:GetPosition(Body)
 					local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
 					
+					if ShapeZ <= Layer then
+						-- All the remaining bodies on the iteration will have a ShapeZ lower than 'Layer' so just return the shapes and the new z
+						return Shapes, newZ
+						
+					end
+					
 					-- Is the light in the draw range?
-					if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < Radius * Radius then
+					if dx * dx + dy * dy + dz * dz < SqrRadius then
 						
 						Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
 						
@@ -79,14 +87,23 @@ function Light:GenerateShadows(x, y, z, Layer)
 			
 		else
 			
-			for _, Shape in pairs(Body.Shapes) do
+			local ShapesList = Body:GetShapes()
+			
+			for i = ShapesList:GetLength(), 1, -1 do
 				
+				local Shape = ShapesList:Get(i)
 				local SqrRadius = self.Radius * self.Radius + Shape:GetSqrRadius()
 				local ShapeX, ShapeY, ShapeZ = Shape:GetPosition()
 				local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
 				
+				if ShapeZ <= Layer then
+					-- All the remaining bodies on the iteration will have a ShapeZ lower than 'Layer' so just return the shapes and the new z
+					return Shapes, newZ
+					
+				end
+				
 				-- Is the light in the draw range?
-				if ShapeZ > Layer and dx * dx + dy * dy + dz * dz < SqrRadius then
+				if dx * dx + dy * dy + dz * dz < SqrRadius then
 					
 					Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
 					
@@ -116,13 +133,60 @@ function Light:GetCanvasCenter()
 	
 end
 
+function Light:GenerateDarkness(x, y, z)
+	
+	local MinAltitude = 0
+	local MinAltitudeLast
+	
+	while MinAltitude ~= MinAltitudeLast and MinAltitude and MinAltitude < z do
+		
+		local Layer = MinAltitude
+		
+		-- Shadow shapes should subtract white color, so that you see black
+		love.graphics.setBlendMode("subtract", "alphamultiply")
+		love.graphics.setColor(255, 255, 255, 255)
+		
+		-- Produce the shadow shapes
+		MinAltitudeLast = MinAltitude
+		Shapes, MinAltitude = self:GenerateShadows(x, y, z, Layer)
+		
+		-- Draw the shadow shapes
+		for Index = 1, #Shapes do
+			
+			Shapes[Index]:Draw(MinAltitude)
+			
+		end
+		
+		-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
+		love.graphics.setBlendMode("add", "alphamultiply")
+		love.graphics.setColor(255, 255, 255, 255)
+		love.graphics.setShader()
+		
+		for Index = self.World.Bodies:GetLength(), 1, -1 do
+			
+			local Body = self.World.Bodies:Get(Index)
+			local Bx, By, Bz = Body:GetPosition()
+			
+			if Bz <= Layer then
+				
+				break
+				
+			end
+			
+			-- As long as this body is on top of the layer
+			Body:DrawRadius(x, y, self.Radius)
+			
+		end
+		
+	end
+	
+end
+
 function Light:Update()
 	
 	if self.Changed or self.World.Changed or self.Transform.HasChanged then
 		
 		local x, y, z = self.Transform:GetPosition()
-		local MinAltitude = 0
-		local MinAltitudeLast
 		
 		-- Generate new content for the shadow canvas
 		love.graphics.setCanvas(self.ShadowCanvas)
@@ -132,49 +196,7 @@ function Light:Update()
 		-- Move all the objects so that their position local to the light are corrected
 		love.graphics.translate(self.Radius - x, self.Radius - y)
 		
-		while MinAltitude ~= MinAltitudeLast and MinAltitude and MinAltitude < z do
-			
-			local Layer = MinAltitude
-			
-			-- Shadow shapes should subtract white color, so that you see black
-			love.graphics.setBlendMode("subtract", "alphamultiply")
-			love.graphics.setColor(255, 255, 255, 255)
-			
-			-- Produce the shadow shapes
-			MinAltitudeLast = MinAltitude
-			Shapes, MinAltitude = self:GenerateShadows(x, y, z, Layer)
-			
-			-- Draw the shadow shapes
-			for Index = 1, #Shapes do
-				
-				local Shadow = Shapes[Index]
-				
-				Shadow:Draw(MinAltitude)
-				
-			end
-			
-			-- Draw the shapes over the shadow shapes, so that the shadow of a object doesn't cover another object
-			love.graphics.setBlendMode("add", "alphamultiply")
-			love.graphics.setColor(255, 255, 255, 255)
-			love.graphics.setShader()
-			
-			for Index = self.World.Bodies:GetLength(), 1, -1 do
-				
-				local Body = self.World.Bodies:Get(Index)
-				local Bx, By, Bz = Body:GetPosition()
-				
-				if Bz <= Layer then
-					
-					break
-					
-				end
-				
-				-- As long as this body is on top of the layer
-				Body:DrawRadius(x, y, self.Radius)
-				
-			end
-			
-		end
+		self:GenerateDarkness(x, y, z)
 		
 		self.Moved = nil
 		

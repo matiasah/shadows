@@ -8,8 +8,10 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 
 NormalShadow = setmetatable( {}, Shadow )
 NormalShadow.__index = NormalShadow
+NormalShadow.__lt = Shadow.__lt
+NormalShadow.__le = Shadow.__le
 
-local insert = table.insert
+local insert = Shadows.Insert
 
 function NormalShadow:new(Body, Texture, Width, Height)
 	

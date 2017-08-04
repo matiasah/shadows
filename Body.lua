@@ -1,7 +1,8 @@
 module("shadows.Body", package.seeall)
 
-Shadows		=	require("shadows")
-Transform	=	require("shadows.Transform")
+PriorityQueue		=	require("shadows.PriorityQueue")
+Shadows				=	require("shadows")
+Transform			=	require("shadows.Transform")
 
 Body = {}
 Body.__index = Body
@@ -16,7 +17,7 @@ function Body:new(World)
 		self.Transform:SetLocalPosition(0, 0, 1)
 		self.Transform.Object = self
 		
-		self.Shapes = {}
+		self.Shapes = PriorityQueue:new()
 		
 		World:AddBody(self)
 		
@@ -35,24 +36,12 @@ function Body:__lt(secondBody)
 	
 end
 
-function Body:__lt(secondBody)
+function Body:__le(secondBody)
 	
 	local x1, y1, z1 = self:GetTransform():GetPosition()
 	local x2, y2, z2 = secondBody:GetTransform():GetPosition()
 	
 	return z1 <= z2
-	
-end
-
-function Body:SetPhysics(Body)
-	
-	self.Body = Body
-	
-end
-
-function Body:GetPhysics()
-	
-	return self.Body
 	
 end
 
@@ -88,9 +77,11 @@ function Body:DrawRadius(x, y, DrawRadius)
 	
 	if self.Body then
 		
-		for _, Fixture in pairs( self.Body:getFixtureList() ) do
+		local FixtureList = self.Body:getFixtureList()
+		
+		for i = 1, #FixtureList do
 			
-			local Shape = Fixture:getShape()
+			local Shape = FixtureList[i]:getShape()
 			
 			if Shape.Draw then
 				
@@ -112,8 +103,9 @@ function Body:DrawRadius(x, y, DrawRadius)
 		
 	end
 	
-	for _, Shape in pairs(self.Shapes) do
+	for i = 1, self.Shapes:GetLength() do
 		
+		local Shape = self.Shapes:Get(i)
 		local Radius = DrawRadius + Shape:GetRadius()
 		local ShapeX, ShapeY = Shape:GetPosition()
 		local dx, dy = ShapeX - x, ShapeY - y
@@ -148,9 +140,9 @@ function Body:Update()
 		
 	end
 	
-	for Index, Shape in pairs(self.Shapes) do
+	for i = 1, self.Shapes:GetLength() do
 		
-		Shape:Update()
+		self.Shapes:Get(i):Update()
 		
 	end
 	
@@ -161,15 +153,13 @@ function Body:Update()
 		
 	end
 	
+	Shadows.insertionSort(self.Shapes.Array)
+	
 end
 
 function Body:AddShape(Shape)
 	
-	local ID = #self.Shapes + 1
-	
-	Shape.ID = ID
-	
-	self.Shapes[ID] = Shape
+	self.Shapes:Insert(Shape)
 	
 	return self
 	
@@ -255,6 +245,12 @@ end
 function Body:GetTransform()
 	
 	return self.Transform
+	
+end
+
+function Body:GetShapes()
+	
+	return self.Shapes
 	
 end
 

@@ -9,9 +9,11 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 
 HeightShadow = setmetatable( {}, Shadow )
 HeightShadow.__index = HeightShadow
+HeightShadow.__lt = Shadow.__lt
+HeightShadow.__le = Shadow.__le
 
 local Normalize = Shadows.Normalize
-local insert = table.insert
+local insert = Shadows.Insert
 
 local atan2 = math.atan2
 local sqrt = math.sqrt
@@ -164,6 +166,14 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			Output:SendShader("MapPos", { x, y, z } )
 			Output:SendShader("Size", { self.Texture:getDimensions() } )
 			Output:SendShader("Texture", self.Texture)
+			
+			insert(Shapes, Output)
+			
+		else
+			
+			local Output = OutputShadow:new("polygon", "fill")
+			
+			Output:Pack(Vertices)
 			
 			insert(Shapes, Output)
 			
@@ -413,7 +423,7 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			
 			local Output = OutputShadow:new("polygon", "fill")
 			Output:Pack(Geometry)
-			Output:SetLayer(z)
+			Output:SetLayer(z)			-- Make a alternative output shadow if layer doesn't match
 			Output:SetShader(Shadows.HeightShader)
 			Output:SendShader("LightPos", { Lx, Ly, Lz } )
 			Output:SendShader("LightCenter", { Light:GetCanvasCenter() } )

@@ -18,6 +18,24 @@ function Shadow:Update()
 	
 end
 
+function Shadow:__lt(secondShadow)
+	
+	local x1, y1, z1 = self:GetTransform():GetPosition()
+	local x2, y2, z2 = secondShadow:GetTransform():GetPosition()
+	
+	return z1 < z2
+	
+end
+
+function Shadow:__le(secondShadow)
+	
+	local x1, y1, z1 = self:GetTransform():GetPosition()
+	local x2, y2, z2 = secondShadow:GetTransform():GetPosition()
+	
+	return z1 <= z2
+	
+end
+
 function Shadow:Draw()
 	
 end
@@ -54,10 +72,9 @@ function Shadow:Remove()
 	
 	if self.Body then
 		
-		self.Body.Shapes[self.ID] = nil
+		self.Body:GetShapes():Remove(self)
 		self.Body.World.Changed = true
 		self.Body = nil
-		self.ID = nil
 		
 		self.Transform:SetParent(nil)
 		
@@ -66,6 +83,12 @@ function Shadow:Remove()
 end
 
 function Shadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
+	
+end
+
+function Shadow:GetTransform()
+	
+	return self.Transform
 	
 end
 

@@ -243,7 +243,7 @@ function LightWorld:Update(dt)
 	
 	if self.UpdateCanvas then
 		
-		Shadows.insertionSort(self.Bodies)
+		Shadows.insertionSort(self.Bodies.Array)
 		
 		self.UpdateCanvas = nil
 		self.UpdateStars = nil
@@ -291,14 +291,6 @@ function LightWorld:Update(dt)
 		
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		love.graphics.origin()
-		
-		for i = 1, self.Bodies:GetLength() do
-			
-			local Body = self.Bodies:Get(i)
-			
-			Body.Moved = false
-			
-		end
 		
 	end
 	

@@ -8,8 +8,10 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 
 CircleShadow = setmetatable( {}, Shadow )
 CircleShadow.__index = CircleShadow
+CircleShadow.__lt = Shadow.__lt
+CircleShadow.__le = Shadow.__le
 
-local insert = table.insert
+local insert = Shadows.Insert
 
 local halfPi = math.pi * 0.5
 local atan = math.atan

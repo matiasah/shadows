@@ -86,22 +86,41 @@ end
 
 function Shadows.insertionSort(Table)
 	
-	local Left = 1
-	local Right = #Table
+	local Length = #Table
 	
-	for i = Left + 1, Right do
+	for j = 2, Length do
 		
-		local Aux = Table[i]
-		local j = i
+		local Aux = Table[j]
+		local i = j - 1
 		
-		while j > Left and not ( Table[j - 1] < Aux ) do
+		while i > 0 and Table[j] > Aux do
 			
-			Table[j] = Table[j - 1]
-			j = j - 1
+			Table[i + 1] = Table[i]
+			i = i - 1
 			
 		end
 		
-		Table[j] = aux
+		Table[i + 1] = Aux
+		
+	end
+	
+end
+
+function Shadows.Insert(Table, Index, Value)
+	
+	if Value then
+		
+		for i = #Table, Index, -1 do
+			
+			Table[i + 1] = Table[i]
+			
+		end
+		
+		Table[Index] = Value
+		
+	else
+		
+		Table[#Table + 1] = Index
 		
 	end
 	
