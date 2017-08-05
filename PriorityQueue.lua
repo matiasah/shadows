@@ -128,7 +128,7 @@ end
 
 function PriorityQueue:GetLength()
 	
-	return #self.Array
+	return self.Size
 	
 end
 

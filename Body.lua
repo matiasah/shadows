@@ -49,9 +49,11 @@ function Body:Draw()
 	
 	if self.Body then
 		
-		for _, Fixture in pairs( self.Body:getFixtureList() ) do
+		local FixtureList = self.Body:getFixtureList()
+		
+		for i = 1, #FixtureList do
 			
-			local Shape = Fixture:getShape()
+			local Shape = FixtureList[i]:getShape()
 			
 			if Shape.Draw then
 				
@@ -65,9 +67,9 @@ function Body:Draw()
 		
 	end
 	
-	for _, Shape in pairs(self.Shapes) do
+	for i = 1, self.Shapes:GetLength() do
 		
-		Shape:Draw()
+		self.Shapes:Get(i):Draw()
 		
 	end
 	

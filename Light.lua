@@ -197,7 +197,6 @@ function Light:Update()
 		love.graphics.translate(self.Radius - x, self.Radius - y)
 		
 		self:GenerateDarkness(x, y, z)
-		
 		self.Moved = nil
 		
 		-- This needs to be put right after self:GenerateShadows, because it uses the self.Transform.HasChanged field

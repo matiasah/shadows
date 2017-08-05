@@ -43,10 +43,6 @@ function Star:GetCanvasCenter()
 	
 end
 
-function Star:GenerateDarkness()
-	
-end
-
 function Star:Update()
 	
 	if self.Changed or self.World.Changed or self.Transform.HasChanged or self.World.UpdateStars then
@@ -63,7 +59,6 @@ function Star:Update()
 		love.graphics.scale(self.World.z, self.World.z)
 		
 		self:GenerateDarkness(x, y, z)
-		
 		self.Moved = nil
 		
 		-- This needs to be put right after self:GenerateShadows, because it uses the self.Transform.HasChanged field
