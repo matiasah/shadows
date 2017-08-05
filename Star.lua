@@ -115,6 +115,7 @@ function Star:Update()
 		end
 		
 		if self.Blur then
+			
 			-- Generate a radial blur (to make the light softer)
 			love.graphics.origin()
 			love.graphics.setShader(Shadows.RadialBlurShader)

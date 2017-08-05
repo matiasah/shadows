@@ -252,4 +252,16 @@ function Body:GetShapes()
 	
 end
 
+function Body:SetMoved(Moved)
+	
+	self.Moved = Moved
+	
+end
+
+function Body:GetMoved()
+	
+	return self.Moved
+	
+end
+
 return Body
