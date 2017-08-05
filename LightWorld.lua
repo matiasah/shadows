@@ -209,9 +209,7 @@ function LightWorld:Update(dt)
 	
 	for i = 1, self.Bodies:GetLength() do
 		
-		local Body = self.Bodies:Get(i)
-		
-		Body:Update()
+		self.Bodies:Get(i):Update()
 		
 	end
 	

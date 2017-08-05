@@ -275,19 +275,15 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 				
 				LastVertex = Index
 				
-				local Vertex = {
-					
-					Vertices[Index * 2 - 1],
-					Vertices[Index * 2],
-					
-				}
+				local x = Vertices[Index * 2 - 1]
+				local y = Vertices[Index * 2]
 				
 				local Length = Light:GetRadius()
 				
 				if Lz > Bz then
 					
-					local dx = Lx - Vertex[1]
-					local dy = Ly - Vertex[2]
+					local dx = Lx - x
+					local dy = Ly - y
 					
 					Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 					
@@ -295,16 +291,16 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 				
 				local Direction = Normalize {
 					
-					Vertex[1] - Lx,
-					Vertex[2] - Ly,
+					x - Lx,
+					y - Ly,
 					
 				}
 				
-				insert(Geometry, Vertex[1])
-				insert(Geometry, Vertex[2])
+				insert(Geometry, x)
+				insert(Geometry, y)
 				
-				insert(Geometry, Vertex[1] + Direction[1] * Length)
-				insert(Geometry, Vertex[2] + Direction[2] * Length)
+				insert(Geometry, x + Direction[1] * Length)
+				insert(Geometry, y + Direction[2] * Length)
 				
 				break
 				
@@ -326,19 +322,15 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 				
 				if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
 					
-					local Vertex = {
-						
-						Vertices[Index * 2 - 1],
-						Vertices[Index * 2],
-						
-					}
+					local x = Vertices[Index * 2 - 1]
+					local y = Vertices[Index * 2 ]
 					
 					local Length = Light:GetRadius()
 					
 					if Lz > Bz then
 						
-						local dx = Lx - Vertex[1]
-						local dy = Ly - Vertex[2]
+						local dx = Lx - x
+						local dy = Ly - y
 						
 						Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 						
@@ -346,13 +338,13 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 					
 					local Direction = Normalize {
 						
-						Vertex[1] - Lx,
-						Vertex[2] - Ly,
+						x - Lx,
+						y - Ly,
 						
 					}
 					
-					insert(Geometry, Vertex[1] + Direction[1] * Length)
-					insert(Geometry, Vertex[2] + Direction[2] * Length)
+					insert(Geometry, x + Direction[1] * Length)
+					insert(Geometry, y + Direction[2] * Length)
 					
 				end
 				
@@ -370,19 +362,15 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 				
 				if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
 					
-					local Vertex = {
-						
-						Vertices[Index * 2 - 1],
-						Vertices[Index * 2],
-						
-					}
+					local x = Vertices[Index * 2 - 1]
+					local y = Vertices[Index * 2]
 					
 					local Length = Light:GetRadius()
 					
 					if Lz > Bz then
 						
-						local dx = Lx - Vertex[1]
-						local dy = Ly - Vertex[2]
+						local dx = Lx - x
+						local dy = Ly - y
 						
 						Length = 1 / atan2( Lz / Bz, sqrt( dx * dx + dy * dy ) )
 						
@@ -390,13 +378,13 @@ function PolygonShape:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 					
 					local Direction = Normalize {
 						
-						Vertex[1] - Lx,
-						Vertex[2] - Ly,
+						x - Lx,
+						y - Ly,
 						
 					}
 					
-					insert(Geometry, Vertex[1] + Direction[1] * Length)
-					insert(Geometry, Vertex[2] + Direction[2] * Length)
+					insert(Geometry, x + Direction[1] * Length)
+					insert(Geometry, y + Direction[2] * Length)
 					
 				end
 				
