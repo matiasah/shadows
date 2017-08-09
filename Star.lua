@@ -27,6 +27,8 @@ function Star:new(World, Radius)
 		self.Canvas = love.graphics.newCanvas( Width, Height )
 		self.ShadowCanvas = love.graphics.newCanvas( Width, Height )
 		
+		self.Shapes = {}
+		
 		World:AddStar(self)
 		
 		return self
@@ -45,6 +47,13 @@ end
 
 function Star:Update()
 	
+	if self.Transform.HasChanged then
+		
+		self.Transform.HasChanged = false
+		self.Changed = true
+		
+	end
+	
 	if self.Changed or self.World.Changed or self.Transform.HasChanged or self.World.UpdateStars then
 		
 		local x, y, z = self.Transform:GetPosition()
@@ -59,14 +68,6 @@ function Star:Update()
 		love.graphics.scale(self.World.z, self.World.z)
 		
 		self:GenerateDarkness(x, y, z)
-		self.Moved = nil
-		
-		-- This needs to be put right after self:GenerateShadows, because it uses the self.Transform.HasChanged field
-		if self.Transform.HasChanged then
-			-- If the light has moved, mark it as it hasn't so that it doesn't update until self.Transform.HasChanged is set to true
-			self.Transform.HasChanged = false
-			
-		end
 		
 		-- Draw custom shadows
 		love.graphics.setBlendMode("subtract", "alphamultiply")
