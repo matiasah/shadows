@@ -144,14 +144,22 @@ function Body:Update()
 	
 	for i = 1, self.Shapes:GetLength() do
 		
-		self.Shapes:Get(i):Update()
+		local Shape = self.Shapes:Get(i)
+		
+		Shape:Update()
+		
+		if Shape:GetChanged() then
+			
+			self.Changed = true
+			
+		end
 		
 	end
 	
 	if self.Transform.HasChanged then
 		
 		self.Transform.HasChanged = false
-		self.Moved = true
+		self.Changed = true
 		
 	end
 	
@@ -252,15 +260,15 @@ function Body:GetShapes()
 	
 end
 
-function Body:SetMoved(Moved)
+function Body:SetChanged(Changed)
 	
-	self.Moved = Moved
+	self.Changed = Changed
 	
 end
 
-function Body:GetMoved()
+function Body:GetChanged()
 	
-	return self.Moved
+	return self.Changed
 	
 end
 

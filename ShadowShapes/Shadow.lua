@@ -45,6 +45,7 @@ function Shadow:SetPosition(x, y)
 	if self.Transform:SetLocalPosition(x, y) then
 		
 		self.Body.World.Changed = true
+		self.Changed = true
 		
 	end
 	
@@ -89,6 +90,18 @@ end
 function Shadow:GetTransform()
 	
 	return self.Transform
+	
+end
+
+function Shadow:SetChanged(Changed)
+	
+	self.Changed = Changed
+	
+end
+
+function Shadow:GetChanged()
+	
+	return self.Changed
 	
 end
 

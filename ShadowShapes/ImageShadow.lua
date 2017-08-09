@@ -39,6 +39,7 @@ end
 function ImageShadow:SetTexture(Texture)
 	
 	self.Texture = Texture
+	self.Changed = true
 	
 end
 

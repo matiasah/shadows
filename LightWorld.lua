@@ -290,6 +290,22 @@ function LightWorld:Update(dt)
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		love.graphics.origin()
 		
+		for i = 1, self.Bodies:GetLength() do
+			
+			local Body = self.Bodies:Get(i)
+			
+			Body:SetChanged(false)
+			
+			local Shapes = Body:GetShapes()
+			
+			for j = 1, Shapes:GetLength() do
+				
+				Shapes:Get(j):SetChanged(false)
+				
+			end
+			
+		end
+		
 	end
 	
 	love.graphics.setCanvas()

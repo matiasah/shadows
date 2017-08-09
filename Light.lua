@@ -29,6 +29,8 @@ function Light:new(World, Radius)
 		self.Canvas = love.graphics.newCanvas( Radius * 2, Radius * 2 )
 		self.ShadowCanvas = love.graphics.newCanvas( Radius * 2, Radius * 2 )
 		
+		self.Shapes = {}
+		
 		World:AddLight(self)
 		
 		return self
@@ -39,7 +41,8 @@ end
 
 function Light:GenerateShadows(x, y, z, Layer)
 	
-	local Shapes = {}
+	local preLayerShapes = self.Shapes[Layer] or {}
+	local newLayerShapes = {}
 	local newZ
 	
 	for Index = self.World.Bodies:GetLength(), 1, -1 do
@@ -48,13 +51,19 @@ function Light:GenerateShadows(x, y, z, Layer)
 		local Physics = Body:GetPhysics()
 		-- If a body has been removed from the local reference, the light has moved, or the body has moved
 		
+		local preBodyShapes = preLayerShapes[Body] or {}
+		local newBodyShapes = {}
+		
+		newLayerShapes[Body] = newBodyShapes
+		
 		if Physics then
 			-- Get the physics shapes of the physics body
 			local FixtureList = Physics:getFixtureList()
 			
 			for i = 1, #FixtureList do
 				
-				local Shape = FixtureList[i]:getShape()
+				local Fixture = FixtureList[i]
+				local Shape = Fixture:getShape()
 				-- It must be a type of shape that is supported by the engine
 				if Shape.GenerateShadows then
 					
@@ -63,15 +72,32 @@ function Light:GenerateShadows(x, y, z, Layer)
 					local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
 					
 					if ShapeZ <= Layer then
+						
 						-- All the remaining bodies on the iteration will have a ShapeZ lower than 'Layer' so just return the shapes and the new z
-						return Shapes, newZ
+						return newLayerShapes, newZ
 						
 					end
 					
 					-- Is the light in the draw range?
 					if dx * dx + dy * dy + dz * dz < SqrRadius then
 						
-						Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
+						if Body:GetChanged() or self.Changed or not preBodyShapes[Fixture] then
+							
+							local ShapesList = {}
+							
+							Shape:GenerateShadows(ShapesList, Body, 0, 0, dz, self)
+							
+							if #ShapesList > 0 then
+								
+								newBodyShapes[Fixture] = ShapesList
+								
+							end
+							
+						else
+							
+							newBodyShapes[Fixture] = preBodyShapes[Fixture]
+							
+						end
 						
 						if not newZ or ShapeZ < newZ then
 							
@@ -98,14 +124,30 @@ function Light:GenerateShadows(x, y, z, Layer)
 				
 				if ShapeZ <= Layer then
 					-- All the remaining bodies on the iteration will have a ShapeZ lower than 'Layer' so just return the shapes and the new z
-					return Shapes, newZ
+					return newLayerShapes, newZ
 					
 				end
 				
 				-- Is the light in the draw range?
 				if dx * dx + dy * dy + dz * dz < SqrRadius then
 					
-					Shape:GenerateShadows(Shapes, Body, 0, 0, dz, self)
+					if Shape:GetChanged() or Body:GetChanged() or self.Changed or not preBodyShapes[Shape] then
+						
+						local ShapesList = {}
+						
+						Shape:GenerateShadows(ShapesList, Body, 0, 0, dz, self)
+						
+						if #ShapesList > 0 then
+							
+							newBodyShapes[Shape] = ShapesList
+							
+						end
+						
+					else
+						
+						newBodyShapes[Shape] = preBodyShapes[Shape]
+						
+					end
 					
 					if not newZ or ShapeZ < newZ then
 						
@@ -121,7 +163,7 @@ function Light:GenerateShadows(x, y, z, Layer)
 		
 	end
 	
-	return Shapes, newZ
+	return newLayerShapes, newZ
 	
 end
 
@@ -135,6 +177,7 @@ end
 
 function Light:GenerateDarkness(x, y, z)
 	
+	local newShapes = {}
 	local MinAltitude = 0
 	local MinAltitudeLast
 	
@@ -150,10 +193,18 @@ function Light:GenerateDarkness(x, y, z)
 		MinAltitudeLast = MinAltitude
 		Shapes, MinAltitude = self:GenerateShadows(x, y, z, Layer)
 		
-		-- Draw the shadow shapes
-		for Index = 1, #Shapes do
+		-- Draw the shadow shapes		
+		for Body, BodyShapes in pairs(Shapes) do
 			
-			Shapes[Index]:Draw(MinAltitude)
+			for Shape, ShadowList in pairs(BodyShapes) do
+				
+				for _, Shadow in pairs(ShadowList) do
+					
+					Shadow:Draw(MinAltitude)
+					
+				end
+				
+			end
 			
 		end
 		
@@ -178,11 +229,22 @@ function Light:GenerateDarkness(x, y, z)
 			
 		end
 		
+		newShapes[Layer] = Shapes
+		
 	end
+	
+	self.Shapes = newShapes
 	
 end
 
 function Light:Update()
+	
+	if self.Transform.HasChanged then
+		
+		self.Transform.HasChanged = false
+		self.Changed = true
+		
+	end
 	
 	if self.Changed or self.World.Changed or self.Transform.HasChanged then
 		
@@ -198,13 +260,6 @@ function Light:Update()
 		
 		self:GenerateDarkness(x, y, z)
 		self.Moved = nil
-		
-		-- This needs to be put right after self:GenerateShadows, because it uses the self.Transform.HasChanged field
-		if self.Transform.HasChanged then
-			-- If the light has moved, mark it as it hasn't so that it doesn't update until self.Transform.HasChanged is set to true
-			self.Transform.HasChanged = false
-			
-		end
 		
 		-- Draw custom shadows
 		love.graphics.setBlendMode("subtract", "alphamultiply")

@@ -42,6 +42,7 @@ end
 function HeightShadow:SetTexture(Texture)
 	
 	self.Texture = Texture
+	self.Changed = true
 	
 end
 

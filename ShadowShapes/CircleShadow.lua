@@ -47,6 +47,7 @@ function CircleShadow:SetRadius(Radius)
 	if self.Radius ~= Radius then
 		
 		self.Radius = Radius
+		self.Changed = true
 		self.Body.World.Changed = true
 		
 	end
