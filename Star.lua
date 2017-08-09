@@ -54,7 +54,7 @@ function Star:Update()
 		
 	end
 	
-	if self.Changed or self.World.Changed or self.Transform.HasChanged or self.World.UpdateStars then
+	if self.Changed or self.World.Changed or self.World.UpdateStars then
 		
 		local x, y, z = self.Transform:GetPosition()
 		

@@ -246,7 +246,7 @@ function Light:Update()
 		
 	end
 	
-	if self.Changed or self.World.Changed or self.Transform.HasChanged then
+	if self.Changed or self.World.Changed then
 		
 		local x, y, z = self.Transform:GetPosition()
 		
