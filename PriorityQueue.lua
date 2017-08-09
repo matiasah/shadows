@@ -86,13 +86,19 @@ function PriorityQueue:Contains(Value)
 	
 	local Left = 1
 	local Right = self.Size
-	local Middle = math.floor( ( Left + Right ) * 0.5 )
+	local Middle = 1
 	
-	while Left < Right do
+	while Left <= Right do
+		
+		Middle = math.floor( ( Left + Right ) / 2 )
 		
 		local ArrayValue = self.Array[Middle]
 		
-		if Value < ArrayValue then
+		if ArrayValue == Value then
+			
+			return Middle
+			
+		elseif Value < ArrayValue then
 			
 			Right = Middle - 1
 			
@@ -100,13 +106,43 @@ function PriorityQueue:Contains(Value)
 			
 			Left = Middle + 1
 			
-		elseif ArrayValue == Value then
+		else
+			-- Linear search
+			local LeftPointer = Middle - 1
+			local PointerValue = self.Array[LeftPointer]
 			
-			return Middle
+			while PointerValue and not ( PointerValue < Value ) do
+				
+				if PointerValue == Value then
+					
+					return LeftPointer
+					
+				end
+				
+				LeftPointer = LeftPointer - 1
+				PointerValue = self.Array[LeftPointer]
+				
+			end
+			
+			local RightPointer = Middle + 1
+			local PointerValue = self.Array[RightPointer]
+			
+			while PointerValue and not ( PointerValue > Value ) do
+				
+				if PointerValue == Value then
+					
+					return RightPointer
+					
+				end
+				
+				RightPointer = RightPointer + 1
+				PointerValue = self.Array[RightPointer]
+				
+			end
+			
+			return false
 			
 		end
-		
-		Middle = math.floor( ( Left + Right ) * 0.5 )
 		
 	end
 	
