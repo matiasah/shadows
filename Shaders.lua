@@ -209,7 +209,6 @@ Shadows.HeightShader = love.graphics.newShader [[
 	extern vec3 LightPos;
 	extern vec3 LightCenter;
 	extern vec3 MapPos;
-	extern vec2 LightSize;
 	extern vec2 Size;
 	extern Image Texture;
 	
@@ -217,7 +216,7 @@ Shadows.HeightShader = love.graphics.newShader [[
 		
 		vec2 inverseSize = 1 / Size;
 		
-		vec2 textureCoord = ( LightPos.xy - LightSize * 0.5 + pixelCoord - MapPos.xy ) / Size;
+		vec2 textureCoord = ( LightPos.xy - LightCenter.xy + pixelCoord - MapPos.xy ) / Size;
 		float pointHeight = Texel(Texture, textureCoord).r;
 		
 		vec3 LightDir = vec3( LightCenter.xy - pixelCoord.xy, LightPos.z );

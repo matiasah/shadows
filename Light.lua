@@ -259,7 +259,6 @@ function Light:Update()
 		love.graphics.translate(self.Radius - x, self.Radius - y)
 		
 		self:GenerateDarkness(x, y, z)
-		self.Moved = nil
 		
 		-- Draw custom shadows
 		love.graphics.setBlendMode("subtract", "alphamultiply")

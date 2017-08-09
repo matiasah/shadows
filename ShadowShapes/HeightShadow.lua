@@ -163,7 +163,6 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			Output:SetShader(Shadows.HeightShader)
 			Output:SendShader("LightPos", { Lx, Ly, Lz } )
 			Output:SendShader("LightCenter", { Light:GetCanvasCenter() } )
-			Output:SendShader("LightSize", { Light.Canvas:getDimensions() } )
 			Output:SendShader("MapPos", { x, y, z } )
 			Output:SendShader("Size", { self.Texture:getDimensions() } )
 			Output:SendShader("Texture", self.Texture)
@@ -203,7 +202,7 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 					Vertices[Index * 2];
 				}
 				
-				local Length = Light.Radius
+				local Length = Light:GetRadius()
 				
 				if Lz > Bz then
 					
@@ -298,7 +297,7 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 					
 				}
 				
-				local Length = Light.Radius
+				local Length = Light:GetRadius()
 				
 				if Lz > Bz then
 					
@@ -349,7 +348,7 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 						
 					}
 					
-					local Length = Light.Radius
+					local Length = Light:GetRadius()
 					
 					if Lz > Bz then
 						
@@ -393,7 +392,7 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 						
 					}
 					
-					local Length = Light.Radius
+					local Length = Light:GetRadius()
 					
 					if Lz > Bz then
 						
@@ -428,7 +427,6 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			Output:SetShader(Shadows.HeightShader)
 			Output:SendShader("LightPos", { Lx, Ly, Lz } )
 			Output:SendShader("LightCenter", { Light:GetCanvasCenter() } )
-			Output:SendShader("LightSize", { Light.Canvas:getDimensions() } )
 			Output:SendShader("MapPos", { x, y, z } )
 			Output:SendShader("Size", { self.Texture:getDimensions() } )
 			Output:SendShader("Texture", self.Texture)
