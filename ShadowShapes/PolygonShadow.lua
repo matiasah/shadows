@@ -70,11 +70,10 @@ function PolygonShadow:SetVertices(...)
 		
 		local x, y = self.Vertices[i], self.Vertices[i + 1]
 		local SqrRadius = x * x + y * y
-		local Radius = sqrt( SqrRadius )
 		
-		if Radius > self.Radius then
+		if SqrRadius > self.SqrRadius then
 			
-			self.Radius = Radius
+			self.Radius = sqrt( SqrRadius )
 			self.SqrRadius = SqrRadius
 			
 		end
