@@ -37,7 +37,7 @@ function Transform:SetParent(Parent)
 		self.ID = #Parent.Children + 1
 		self.Parent = Parent
 		
-		Parent[ self.ID ] = self
+		Parent.Children[ self.ID ] = self
 		
 	else
 		

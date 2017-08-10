@@ -196,6 +196,7 @@ function Light:Update()
 		love.graphics.clear(255, 255, 255, 255)
 		
 		-- Move all the objects so that their position local to the light are corrected
+		love.graphics.origin()
 		love.graphics.translate(self.Radius - x, self.Radius - y)
 		
 		self:GenerateDarkness(x, y, z)

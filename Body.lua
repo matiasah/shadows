@@ -127,9 +127,9 @@ end
 
 function Body:Update()
 	
-	if self.Body then
+	if self.TrackBody then
 		
-		if self.Body:isDestroyed() then
+		if self.TrackBody:isDestroyed() then
 			
 			self:Remove()
 			
@@ -137,7 +137,7 @@ function Body:Update()
 			
 		end
 		
-		if self.Transform:SetPosition( self.Body:getPosition() ) or self.Transform:SetRotation( math.deg( self.Body:getAngle() ) ) then
+		if self.Transform:SetPosition( self.TrackBody:getPosition() ) or self.Transform:SetRotation( math.deg( self.TrackBody:getAngle() ) ) then
 			
 			self.World.Changed = true
 			
@@ -187,7 +187,7 @@ function Body:InitFromPhysics(Body)
 		
 		if Type == "circle" then
 			
-			local x, y = Shape:getPosition()
+			local x, y = Shape:getPoint()
 			local Radius = Shape:getRadius()
 			
 			CircleShadow:new(self, x, y, Radius)
@@ -200,7 +200,15 @@ function Body:InitFromPhysics(Body)
 		
 	end
 	
+	self:TrackPhysics(Body)
+	
 	return self
+	
+end
+
+function Body:TrackPhysics(Body)
+	
+	self.TrackBody = Body
 	
 end
 
