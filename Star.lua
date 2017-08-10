@@ -64,6 +64,7 @@ function Star:Update()
 		love.graphics.clear(255, 255, 255, 255)
 		
 		-- Move all the objects so that their position are corrected
+		love.graphics.origin()
 		love.graphics.translate(-self.World.x, -self.World.y)
 		love.graphics.scale(self.World.z, self.World.z)
 		
