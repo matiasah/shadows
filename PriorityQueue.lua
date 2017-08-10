@@ -197,4 +197,10 @@ function PriorityQueue:RemoveAt(Index)
 	
 end
 
+function PriorityQueue:GetArray()
+	
+	return self.Array
+	
+end
+
 return PriorityQueue

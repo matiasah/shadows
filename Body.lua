@@ -4,6 +4,9 @@ PriorityQueue		=	require("shadows.PriorityQueue")
 Shadows				=	require("shadows")
 Transform			=	require("shadows.Transform")
 
+CircleShadow		=	require("shadows.ShadowShapes.CircleShadow")
+PolygonShadow		=	require("shadows.ShadowShapes.PolygonShadow")
+
 Body = {}
 Body.__index = Body
 
@@ -175,18 +178,29 @@ function Body:AddShape(Shape)
 	
 end
 
-function Body:SetPhysics(Body)
+function Body:InitFromPhysics(Body)
 	
-	self.Body = Body
-	self.World.Changed = true
+	for Index, Fixture in pairs(Body:getFixtureList()) do
+		
+		local Shape = Fixture:getShape()
+		local Type = Shape:getType()
+		
+		if Type == "circle" then
+			
+			local x, y = Shape:getPosition()
+			local Radius = Shape:getRadius()
+			
+			CircleShadow:new(self, x, y, Radius)
+			
+		elseif Type == "polygon" then
+			
+			PolygonShadow:new(self, Shape:getPoints())
+			
+		end
+		
+	end
 	
 	return self
-	
-end
-
-function Body:GetPhysics()
-	
-	return self.Body
 	
 end
 

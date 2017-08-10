@@ -48,7 +48,6 @@ function Light:GenerateShadows(x, y, z, Layer)
 	for Index = self.World.Bodies:GetLength(), 1, -1 do
 		
 		local Body = self.World.Bodies:Get(Index)
-		local Physics = Body:GetPhysics()
 		-- If a body has been removed from the local reference, the light has moved, or the body has moved
 		
 		local preBodyShapes = preLayerShapes[Body] or {}
@@ -56,104 +55,45 @@ function Light:GenerateShadows(x, y, z, Layer)
 		
 		newLayerShapes[Body] = newBodyShapes
 		
-		if Physics then
-			-- Get the physics shapes of the physics body
-			local FixtureList = Physics:getFixtureList()
+		local ShapesList = Body:GetShapes()
+		
+		for i = ShapesList:GetLength(), 1, -1 do
 			
-			for i = 1, #FixtureList do
-				
-				local Fixture = FixtureList[i]
-				local Shape = Fixture:getShape()
-				-- It must be a type of shape that is supported by the engine
-				if Shape.GenerateShadows then
-					
-					local SqrRadius = self.Radius * self.Radius + Shape:GetSqrRadius(Body)
-					local ShapeX, ShapeY, ShapeZ = Shape:GetPosition(Body)
-					local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
-					
-					if ShapeZ <= Layer then
-						
-						-- All the remaining bodies on the iteration will have a ShapeZ lower than 'Layer' so just return the shapes and the new z
-						return newLayerShapes, newZ
-						
-					end
-					
-					-- Is the light in the draw range?
-					if dx * dx + dy * dy + dz * dz < SqrRadius then
-						
-						if Body:GetChanged() or self.Changed or not preBodyShapes[Fixture] then
-							
-							local ShapesList = {}
-							
-							Shape:GenerateShadows(ShapesList, Body, 0, 0, dz, self)
-							
-							if #ShapesList > 0 then
-								
-								newBodyShapes[Fixture] = ShapesList
-								
-							end
-							
-						else
-							
-							newBodyShapes[Fixture] = preBodyShapes[Fixture]
-							
-						end
-						
-						if not newZ or ShapeZ < newZ then
-							
-							newZ = ShapeZ
-							
-						end
-						
-					end
-					
-				end
+			local Shape = ShapesList:Get(i)
+			local SqrRadius = self.Radius * self.Radius + Shape:GetSqrRadius()
+			local ShapeX, ShapeY, ShapeZ = Shape:GetPosition()
+			local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
+			
+			if ShapeZ <= Layer then
+				-- All the remaining bodies on the iteration will have a ShapeZ lower than 'Layer' so just return the shapes and the new z	
+				return newLayerShapes, newZ
 				
 			end
 			
-		else
-			
-			local ShapesList = Body:GetShapes()
-			
-			for i = ShapesList:GetLength(), 1, -1 do
+			-- Is the light in the draw range?
+			if dx * dx + dy * dy + dz * dz <= SqrRadius then
 				
-				local Shape = ShapesList:Get(i)
-				local SqrRadius = self.Radius * self.Radius + Shape:GetSqrRadius()
-				local ShapeX, ShapeY, ShapeZ = Shape:GetPosition()
-				local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
-				
-				if ShapeZ <= Layer then
-					-- All the remaining bodies on the iteration will have a ShapeZ lower than 'Layer' so just return the shapes and the new z
-					return newLayerShapes, newZ
+				if Shape:GetChanged() or Body:GetChanged() or self.Changed or not preBodyShapes[Shape] then
+					
+					local ShadowList = {}
+					
+					Shape:GenerateShadows(ShadowList, Body, 0, 0, dz, self)
+					
+					if #ShadowList > 0 then
+						
+						newBodyShapes[Shape] = ShadowList
+						
+					end
+					
+				else
+					
+					newBodyShapes[Shape] = preBodyShapes[Shape]
 					
 				end
 				
-				-- Is the light in the draw range?
-				if dx * dx + dy * dy + dz * dz < SqrRadius then
+				if not newZ or ShapeZ < newZ then
 					
-					if Shape:GetChanged() or Body:GetChanged() or self.Changed or not preBodyShapes[Shape] then
-						
-						local ShapesList = {}
-						
-						Shape:GenerateShadows(ShapesList, Body, 0, 0, dz, self)
-						
-						if #ShapesList > 0 then
-							
-							newBodyShapes[Shape] = ShapesList
-							
-						end
-						
-					else
-						
-						newBodyShapes[Shape] = preBodyShapes[Shape]
-						
-					end
-					
-					if not newZ or ShapeZ < newZ then
-						
-						newZ = ShapeZ
-						
-					end
+					newZ = ShapeZ
 					
 				end
 				

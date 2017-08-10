@@ -19,11 +19,6 @@ package.preload["shadows.ShadowShapes.ImageShadow"]	=	assert(love.filesystem.loa
 package.preload["shadows.ShadowShapes.NormalShadow"]	=	assert(love.filesystem.load(Path.."/ShadowShapes/NormalShadow.lua"))
 package.preload["shadows.ShadowShapes.PolygonShadow"]	=	assert(love.filesystem.load(Path.."/ShadowShapes/PolygonShadow.lua"))
 
--- Integration for love.physics.*
-
-package.preload["shadows.PhysicsShapes.CircleShape"]	=	assert(love.filesystem.load(Path.."/PhysicsShapes/CircleShape.lua"))
-package.preload["shadows.PhysicsShapes.PolygonShape"]	=	assert(love.filesystem.load(Path.."/PhysicsShapes/PolygonShape.lua"))
-
 -- Rooms
 
 package.preload["shadows.Room"]						=		assert(love.filesystem.load(Path.."/Room/init.lua"))
@@ -36,8 +31,5 @@ package.preload["shadows.Shaders"]					=		assert(love.filesystem.load(Path.."/Sh
 
 require("shadows.Shaders")
 require("shadows.Functions")
-
-require("shadows.PhysicsShapes.CircleShape")
-require("shadows.PhysicsShapes.PolygonShape")
 
 return Shadows

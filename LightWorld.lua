@@ -46,9 +46,7 @@ function LightWorld:InitFromPhysics(PhysicsWorld)
 	
 	for _, BodyObject in pairs( PhysicsWorld:getBodyList() ) do
 		
-		local newBody = Body:new(self)
-		
-		newBody:SetPhysics(BodyObject)
+		Body:new(self):InitFromPhysics(BodyObject)
 		
 	end
 	
@@ -207,9 +205,9 @@ end
 
 function LightWorld:Update(dt)
 	
-	for i = 1, self.Bodies:GetLength() do
+	for Index, Body in pairs(self.Bodies:GetArray()) do
 		
-		self.Bodies:Get(i):Update()
+		Body:Update()
 		
 	end
 	
@@ -241,7 +239,7 @@ function LightWorld:Update(dt)
 	
 	if self.UpdateCanvas then
 		
-		Shadows.insertionSort(self.Bodies.Array)
+		Shadows.insertionSort(self.Bodies:GetArray())
 		
 		self.UpdateCanvas = nil
 		self.UpdateStars = nil
@@ -293,10 +291,9 @@ function LightWorld:Update(dt)
 		for i = 1, self.Bodies:GetLength() do
 			
 			local Body = self.Bodies:Get(i)
+			local Shapes = Body:GetShapes()
 			
 			Body:SetChanged(false)
-			
-			local Shapes = Body:GetShapes()
 			
 			for j = 1, Shapes:GetLength() do
 				
