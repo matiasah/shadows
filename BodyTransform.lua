@@ -4,6 +4,7 @@ Transform = require("shadows.Transform")
 
 BodyTransform = setmetatable( {}, Transform )
 BodyTransform.__index = BodyTransform
+BodyTransform.__type = "BodyTransform"
 
 BodyTransform.DestroyAttachments = false
 BodyTransform.FollowPosition = true

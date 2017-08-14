@@ -4,8 +4,9 @@ Room = require("shadows.Room")
 Shadows = require("shadows")
 Transform = require("shadows.Transform")
 
-CircleRoom = Room:new()
+CircleRoom = setmetatable( {}, Room )
 CircleRoom.__index = CircleRoom
+CircleRoom.__type = "CircleRoom"
 
 CircleRoom.Radius = 0
 

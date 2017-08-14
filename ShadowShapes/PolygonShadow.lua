@@ -8,6 +8,7 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 
 PolygonShadow = setmetatable( {}, Shadow )
 PolygonShadow.__index = PolygonShadow
+PolygonShadow.__type = "PolygonShadow"
 PolygonShadow.__lt = Shadow.__lt
 PolygonShadow.__le = Shadow.__le
 

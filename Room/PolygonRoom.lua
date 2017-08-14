@@ -4,8 +4,9 @@ Shadows = require("shadows")
 Room = require("shadows.Room")
 Transform = require("shadows.Transform")
 
-PolygonRoom = Room:new()
+PolygonRoom = setmetatable( {}, Room )
 PolygonRoom.__index = PolygonRoom
+PolygonRoom.__type = "PolygonRoom"
 
 function PolygonRoom:new(World, x, y, Vertices)
 	

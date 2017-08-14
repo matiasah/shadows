@@ -8,6 +8,7 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 
 CircleShadow = setmetatable( {}, Shadow )
 CircleShadow.__index = CircleShadow
+CircleShadow.__type = "CircleShadow"
 CircleShadow.__lt = Shadow.__lt
 CircleShadow.__le = Shadow.__le
 

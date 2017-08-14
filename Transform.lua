@@ -2,8 +2,11 @@
 
 module("shadows.Transform", package.seeall)
 
-Transform = {}
+Object = require("shadows.Object")
+
+Transform = setmetatable( {}, Object )
 Transform.__index = Transform
+Transform.__type = "Transform"
 Transform.x, Transform.y, Transform.z = 0, 0, 0
 
 PI = math.pi

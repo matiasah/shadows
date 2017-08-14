@@ -1,12 +1,15 @@
 module("shadows.LightWorld", package.seeall)
 
+Object = require("shadows.Object")
+
 Shadows				=		require("shadows")
 Body					=		require("shadows.Body")
 BodyTransform		=		require("shadows.BodyTransform")
 PriorityQueue		=		require("shadows.PriorityQueue")
 
-LightWorld = {}
+LightWorld = setmetatable( {}, Object )
 LightWorld.__index = LightWorld
+LightWorld.__type = "LightWorld"
 
 LightWorld.R, LightWorld.G, LightWorld.B, LightWorld.A = 0, 0, 0, 255
 LightWorld.x, LightWorld.y, LightWorld.z = 0, 0, 1

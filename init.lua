@@ -2,6 +2,7 @@ local Path = (...):gsub("%.", "/")
 local Shadows = {}
 
 package.loaded["shadows"] = Shadows
+package.preload["shadows.Object"]			=	assert(love.filesystem.load(Path.."/Object.lua"))
 package.preload["shadows.Transform"]		=	assert(love.filesystem.load(Path.."/Transform.lua"))
 package.preload["shadows.LightWorld"]		=	assert(love.filesystem.load(Path.."/LightWorld.lua"))
 package.preload["shadows.Light"]				=	assert(love.filesystem.load(Path.."/Light.lua"))
@@ -21,7 +22,7 @@ package.preload["shadows.ShadowShapes.PolygonShadow"]	=	assert(love.filesystem.l
 
 -- Rooms
 
-package.preload["shadows.Room"]						=		assert(love.filesystem.load(Path.."/Room/init.lua"))
+package.preload["shadows.Room"]						=		assert(love.filesystem.load(Path.."/Room/Room.lua"))
 package.preload["shadows.Room.CircleRoom"]		=		assert(love.filesystem.load(Path.."/Room/CircleRoom.lua"))
 package.preload["shadows.Room.PolygonRoom"]		=		assert(love.filesystem.load(Path.."/Room/PolygonRoom.lua"))
 package.preload["shadows.Room.RectangleRoom"]	=		assert(love.filesystem.load(Path.."/Room/RectangleRoom.lua"))

@@ -1,5 +1,7 @@
 module("shadows.Body", package.seeall)
 
+Object = require("shadows.Object")
+
 PriorityQueue		=	require("shadows.PriorityQueue")
 Shadows				=	require("shadows")
 Transform			=	require("shadows.Transform")
@@ -7,8 +9,9 @@ Transform			=	require("shadows.Transform")
 CircleShadow		=	require("shadows.ShadowShapes.CircleShadow")
 PolygonShadow		=	require("shadows.ShadowShapes.PolygonShadow")
 
-Body = {}
+Body = setmetatable( {}, Object )
 Body.__index = Body
+Body.__type = "Body"
 
 function Body:new(World)
 	

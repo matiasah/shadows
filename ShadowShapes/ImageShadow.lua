@@ -8,6 +8,7 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 
 ImageShadow = setmetatable( {}, Shadow )
 ImageShadow.__index = ImageShadow
+ImageShadow.__type = "ImageShadow"
 ImageShadow.__lt = Shadow.__lt
 ImageShadow.__le = Shadow.__le
 

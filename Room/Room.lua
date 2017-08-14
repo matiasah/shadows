@@ -1,9 +1,11 @@
 module("shadows.Room", package.seeall)
 
+Object = require("shadows.Object")
 Shadows = require("shadows")
 
-Room = {}
+Room = setmetatable( {}, Object )
 Room.__index = Room
+Room.__type = "Room"
 
 Room.R, Room.G, Room.B, Room.A = 0, 0, 0, 255
 

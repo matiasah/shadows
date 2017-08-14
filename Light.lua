@@ -1,10 +1,13 @@
 module("shadows.Light", package.seeall)
 
+Object = require("shadows.Object")
+
 Shadows = require("shadows")
 Transform = require("shadows.Transform")
 
-Light = {}
+Light = setmetatable( {}, Object )
 Light.__index = Light
+Light.__type = "Light"
 
 Light.Arc = 360
 Light.Radius = 0

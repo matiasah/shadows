@@ -6,6 +6,7 @@ Transform	=		require("shadows.Transform")
 
 Star = setmetatable( {}, Light )
 Star.__index = Star
+Star.__type = "Star"
 
 Star.Star = true
 Star.Blur = true

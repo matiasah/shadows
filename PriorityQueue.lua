@@ -1,6 +1,8 @@
 module("shadows.PriorityQueue", package.seeall)
 
-PriorityQueue = {}
+Object = require("shadows.Object")
+
+PriorityQueue = setmetatable( {}, Object )
 PriorityQueue.__index = PriorityQueue
 PriorityQueue.__type = "PriorityQueue"
 

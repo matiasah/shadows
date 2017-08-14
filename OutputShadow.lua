@@ -1,6 +1,8 @@
 module("shadows.OutputShadow", package.seeall)
 
-OutputShadow = {}
+Object = require("shadows.Object")
+
+OutputShadow = setmetatable( {}, Object )
 OutputShadow.__index = OutputShadow
 OutputShadow.__type = "OutputShadow"
 

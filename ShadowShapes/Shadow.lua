@@ -1,7 +1,10 @@
 module("shadows.ShadowShapes.Shadow", package.seeall)
 
-Shadow = {}
+Object = require("shadows.Object")
+
+Shadow = setmetatable( {}, Object )
 Shadow.__index = Shadow
+Shadow.__type = "Shadow"
 
 function Shadow:Update()
 	

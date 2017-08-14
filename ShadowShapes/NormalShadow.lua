@@ -8,6 +8,7 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 
 NormalShadow = setmetatable( {}, Shadow )
 NormalShadow.__index = NormalShadow
+NormalShadow.__type = "NormalShadow"
 NormalShadow.__lt = Shadow.__lt
 NormalShadow.__le = Shadow.__le
 

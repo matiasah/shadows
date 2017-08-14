@@ -9,6 +9,7 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 
 HeightShadow = setmetatable( {}, Shadow )
 HeightShadow.__index = HeightShadow
+HeightShadow.__type = "HeightShadow"
 HeightShadow.__lt = Shadow.__lt
 HeightShadow.__le = Shadow.__le
 

@@ -6,6 +6,7 @@ Transform = require("shadows.Transform")
 
 RectangleRoom = Room:new()
 RectangleRoom.__index = RectangleRoom
+RectangleRoom.__type = "RectangleRoom"
 
 RectangleRoom.Width, RectangleRoom.Height = 0, 0
 
