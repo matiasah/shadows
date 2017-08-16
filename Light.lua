@@ -64,7 +64,7 @@ function Light:GenerateShadows(x, y, z, Layer)
 			
 			local Shape = ShapesList:Get(i)
 			local SqrRadius = self.Radius * self.Radius + Shape:GetSqrRadius()
-			local ShapeX, ShapeY, ShapeZ = Shape:GetPosition()
+			local ShapeX, ShapeY, ShapeZ = Shape:GetCentroid()
 			local dx, dy, dz = ShapeX - x, ShapeY - y, Layer
 			
 			if ShapeZ <= Layer then

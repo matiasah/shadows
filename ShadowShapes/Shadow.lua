@@ -60,6 +60,12 @@ function Shadow:GetPosition()
 	
 end
 
+function Shadow:GetCentroid()
+	
+	return self.Transform:GetPosition()
+	
+end
+
 function Shadow:GetRadius()
 	
 	return math.sqrt( self:GetSqrRadius() )

@@ -60,32 +60,62 @@ function PolygonShadow:GetSqrRadius()
 	
 end
 
+function PolygonShadow:GetCentroid()
+	
+	return self.CentroidTransform:GetPosition()
+	
+end
+
 function PolygonShadow:SetVertices(...)
 	
-	self.Vertices = {...}
+	local Vertices = {...}
+	local CentroidX = 0
+	local CentroidY = 0
+	
+	for i = 1, #Vertices, 2 do
+		
+		CentroidX = CentroidX + Vertices[i]
+		CentroidY = CentroidY + Vertices[i + 1]
+		
+	end
+	
+	CentroidX = CentroidX * 2 / #Vertices
+	CentroidY = CentroidY * 2 / #Vertices
+	
+	self.Vertices = {}
+	self.CentroidTransform = Transform:new()
+	self.CentroidTransform:SetLocalPosition(CentroidX, CentroidY)
+	self.CentroidTransform:SetParent(self.Transform)
+	
 	self.Radius = 0
 	self.SqrRadius = 0
 	self.World.Changed = true
+	self.Changed = true
 	
-	for i = 1, #self.Vertices, 2 do
+	for i = 1, #Vertices, 2 do
 		
-		local x, y = self.Vertices[i], self.Vertices[i + 1]
+		local x = Vertices[i] - CentroidX
+		local y = Vertices[i + 1] - CentroidY
 		local SqrRadius = x * x + y * y
+		
+		self.Vertices[i] = x
+		self.Vertices[i + 1] = y
 		
 		if SqrRadius > self.SqrRadius then
 			
-			self.Radius = sqrt( SqrRadius )
 			self.SqrRadius = SqrRadius
 			
 		end
 		
 	end
 	
+	self.Radius = sqrt( self.SqrRadius )
+	
 end
 
 function PolygonShadow:GetVertices()
 	
-	return self.Transform:ToWorldPoints( self.Vertices )
+	return self.CentroidTransform:ToWorldPoints( self.Vertices )
 	
 end
 

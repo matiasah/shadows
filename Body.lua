@@ -53,26 +53,6 @@ end
 
 function Body:Draw()
 	
-	if self.Body then
-		
-		local FixtureList = self.Body:getFixtureList()
-		
-		for i = 1, #FixtureList do
-			
-			local Shape = FixtureList[i]:getShape()
-			
-			if Shape.Draw then
-				
-				Shape:Draw(self)
-				
-			end
-			
-		end
-		
-		return nil
-		
-	end
-	
 	for i = 1, self.Shapes:GetLength() do
 		
 		self.Shapes:Get(i):Draw()
@@ -83,39 +63,11 @@ end
 
 function Body:DrawRadius(x, y, DrawRadius)
 	
-	if self.Body then
-		
-		local FixtureList = self.Body:getFixtureList()
-		
-		for i = 1, #FixtureList do
-			
-			local Shape = FixtureList[i]:getShape()
-			
-			if Shape.Draw then
-				
-				local Radius = DrawRadius + Shape:GetRadius(self)
-				local ShapeX, ShapeY = Shape:GetPosition(self)
-				local dx, dy = ShapeX - x, ShapeY - y
-				
-				if dx * dx + dy * dy < Radius * Radius then
-				
-					Shape:Draw(self)
-					
-				end
-				
-			end
-			
-		end
-		
-		return nil
-		
-	end
-	
 	for i = 1, self.Shapes:GetLength() do
 		
 		local Shape = self.Shapes:Get(i)
 		local Radius = DrawRadius + Shape:GetRadius()
-		local ShapeX, ShapeY = Shape:GetPosition()
+		local ShapeX, ShapeY = Shape:GetCentroid()
 		local dx, dy = ShapeX - x, ShapeY - y
 		
 		if dx * dx + dy * dy < Radius * Radius then
@@ -154,12 +106,13 @@ function Body:Update()
 		
 		Shape:Update()
 		
+		--[[
 		if Shape:GetChanged() then
 			
 			self.Changed = true
 			
 		end
-		
+		]]
 	end
 	
 	if self.Transform.HasChanged then
