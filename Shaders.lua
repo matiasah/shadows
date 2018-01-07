@@ -5,8 +5,8 @@ Shadows = require("shadows")
 Shadows.BlurShader = love.graphics.newShader[[
 	
 	extern vec2 Size;
-	#define Quality 1.0
-	#define Radius 2.0
+	const float Quality = 1.0;
+	const float Radius = 2.0;
 	
 	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 pc) {
 		
@@ -35,8 +35,8 @@ Shadows.BloomShader = love.graphics.newShader [[
 	
 	extern vec2 Size;
 	
-	#define Radius 1.0		// pixels per axis; higher = bigger glow, worse performance
-	#define Quality 5.0			// lower = smaller glow, better quality
+	const float Radius = 1.0;		// pixels per axis; higher = bigger glow, worse performance
+	const float Quality = 5.0;			// lower = smaller glow, better quality
 
 	vec4 effect(vec4 color, Image tex, vec2 tc, vec2 sc) {
 		
@@ -120,12 +120,11 @@ Shadows.RadialBlurShader = love.graphics.newShader [[
 	extern vec2 Size;
 	extern float Radius;
 	
-	#define Quality 				1.3
+	const float Quality		= 1.3;
+	const float Pi				= 3.141592653589793238462643383279502884197169399375;
+	const float invPi			= 1.0 / Pi;
 	
-	#define Pi						3.141592653589793238462643383279502884197169399375
-	#define invPi					1.0 / Pi
-	
-	#define BlurRadius			5
+	const int BlurRadius	= 5;
 	
 	float gauss(vec2 vec, float deviation) {
 		
@@ -214,7 +213,7 @@ Shadows.HeightShader = love.graphics.newShader [[
 	
 	vec4 effect(vec4 Color, Image tex, vec2 tc, vec2 pixelCoord) {
 		
-		vec2 inverseSize = 1 / Size;
+		vec2 inverseSize = 1.0 / Size;
 		
 		vec2 textureCoord = ( LightPos.xy - LightCenter.xy + pixelCoord - MapPos.xy ) / Size;
 		float pointHeight = Texel(Texture, textureCoord).r;
