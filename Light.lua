@@ -168,7 +168,7 @@ function Light:GenerateDarkness(x, y, z)
 			end
 			
 			-- As long as this body is on top of the layer
-			Body:DrawRadius(x, y, self.Radius)
+			Body:DrawRadius(x, y, z, self.Radius)
 			
 		end
 		

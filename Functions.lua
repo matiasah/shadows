@@ -19,69 +19,28 @@ function Shadows.Normalize(v)
 	
 end
 
-function Shadows.PointInPolygon(gx, gy, Vertices)
+function Shadows.PointInPolygon(x, y, Vertices)
 	
-	local Minimum = Vertices[1]
-	local Length = #Vertices
+	local Intersects = false
+	local j = #Vertices - 1
 	
-	for i = 3, Length, 2 do
+	for i = 1, #Vertices, 2 do
 		
-		local x = Vertices[i]
-		
-		if x < Minimum then
+		if Vertices[i + 1] < y and Vertices[j + 1] >= y or Vertices[j + 1] < y and Vertices[i + 1] >= y then
 			
-			Minimum = x
-			
-		end
-		
-	end
-	
-	Minimum = Minimum - 1
-	
-	local px = Vertices[1]
-	local py = Vertices[2]
-	local Intersections = 0
-	
-	for i = 3, Length, 2 do
-		
-		local x = Vertices[i]
-		local y = Vertices[i + 1]
-		local Inclination = ( py - y ) / ( px - x )
-		
-		if Inclination ~= 0 then
-			
-			local Intersection = ( gy - y ) / Inclination + x
-			
-			if Intersection >= max( min(x, px), Minimum ) and Intersection <= min( max(x, px), gx) and gy >= min(y, py) and gy <= max(y, py) then
+			if Vertices[i] + ( y - Vertices[i + 1] ) / (Vertices[j + 1] - Vertices[i + 1]) * (Vertices[j] - Vertices[i]) < x then
 				
-				Intersections = Intersections + 1
+				Intersects = not Intersects
 				
 			end
 			
 		end
 		
-		px, py = x, y
+		j = i
 		
 	end
 	
-	local x = Vertices[1]
-	local y = Vertices[2]
-	local Inclination = ( py - y ) / ( px - x )
-	
-	if Inclination ~= 0 then
-		
-		local Intersection = ( gy - y ) / Inclination + x
-		
-		if Intersection >= max( min(x, px), Minimum ) and Intersection <= min( max(x, px), gx) and gy >= min(y, py) and gy <= max(y, py) then
-			
-			Intersections = Intersections + 1
-			
-		end
-		
-	end
-	
-	return  Intersections % 2 == 1
-	
+	return Intersects
 end
 
 function Shadows.insertionSort(Table)

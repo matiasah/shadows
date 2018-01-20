@@ -61,7 +61,7 @@ function Body:Draw()
 	
 end
 
-function Body:DrawRadius(x, y, DrawRadius)
+function Body:DrawRadius(x, y, z, DrawRadius)
 	
 	for i = 1, self.Shapes:GetLength() do
 		
@@ -72,7 +72,7 @@ function Body:DrawRadius(x, y, DrawRadius)
 		
 		if dx * dx + dy * dy < Radius * Radius then
 			
-			Shape:Draw()
+			Shape:Draw(z)
 			
 		end
 		
@@ -106,13 +106,6 @@ function Body:Update()
 		
 		Shape:Update()
 		
-		--[[
-		if Shape:GetChanged() then
-			
-			self.Changed = true
-			
-		end
-		]]
 	end
 	
 	if self.Transform.HasChanged then

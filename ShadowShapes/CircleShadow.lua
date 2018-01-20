@@ -15,8 +15,8 @@ CircleShadow.__le = Shadow.__le
 local insert = Shadows.Insert
 
 local halfPi = math.pi * 0.5
-local atan = math.atan
 local atan2 = math.atan2
+local asin = math.asin
 local sqrt = math.sqrt
 local sin = math.sin
 local cos = math.cos
@@ -67,11 +67,15 @@ function CircleShadow:GetSqrRadius()
 	
 end
 
-function CircleShadow:Draw()
+function CircleShadow:Draw(Lz)
 	
-	local x, y = self.Transform:GetPosition()
+	local x, y, z = self.Transform:GetPosition()
 	
-	return love.graphics.circle("fill", x, y, self.Radius)
+	if Lz > z then
+		
+		love.graphics.circle("fill", x, y, self.Radius)
+		
+	end
 	
 end
 
@@ -95,10 +99,10 @@ function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 	if Distance > Radius then
 		
 		local Heading = atan2(Lx - x, y - Ly) + halfPi
-		local Offset = atan(Radius / Distance)
-		local BorderDistance = Distance * cos(Offset)
+		local BorderDistance = sqrt( ( Distance - Radius ) * ( Distance + Radius ) )
+		local Offset = halfPi - asin(BorderDistance / Distance)
 		
-		local Length = Light.Radius
+		local Length = Light.Radius * self.Radius
 		
 		if Bz < Lz then
 			
@@ -134,6 +138,12 @@ function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			insert(Shapes, OutputShadow:new("circle", "fill", unpack(Circle)))
 			
 		end
+		
+	end
+	
+	do
+		
+		insert(Shapes, OutputShadow:new("circle", "fill", x, y, Radius))
 		
 	end
 	

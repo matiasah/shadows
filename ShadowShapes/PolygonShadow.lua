@@ -42,9 +42,15 @@ function PolygonShadow:new(Body, ...)
 	
 end
 
-function PolygonShadow:Draw()
+function PolygonShadow:Draw(Lz)
 	
-	love.graphics.polygon("fill", self:GetVertices() )
+	local x, y, z = self.Transform:GetPosition()
+	
+	if Lz > z then
+		
+		love.graphics.polygon("fill", self:GetVertices() )
+		
+	end
 	
 end
 
@@ -261,7 +267,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 					
 				end
 				
-				if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
+				if ( Lz > Bz and not VisibleEdge[Index] and not VisibleEdge[PrevIndex] ) or ( Lz <= Bz and VisibleEdge[Index] and VisibleEdge[PrevIndex] ) then
 					
 					insert(Geometry, Vertices[Index * 2 - 1])
 					insert(Geometry, Vertices[Index * 2])
@@ -280,7 +286,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 					
 				end
 				
-				if not VisibleEdge[Index] and not VisibleEdge[PrevIndex] then
+				if ( Lz > Bz and not VisibleEdge[Index] and not VisibleEdge[PrevIndex] ) or ( Lz <= Bz and VisibleEdge[Index] and VisibleEdge[PrevIndex] ) then
 					
 					insert(Geometry, Vertices[Index * 2 - 1])
 					insert(Geometry, Vertices[Index * 2])
