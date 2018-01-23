@@ -92,20 +92,24 @@ Shadows.AberrationShader = love.graphics.newShader[[
 
 Shadows.LightShader = love.graphics.newShader [[
 	
+	#ifdef GL_ES
+		#ifdef GL_FRAGMENT_PRECISION_HIGH
+			precision highp float;
+		#else
+			precision mediump float;
+		#endif
+	#endif
+	
 	extern float Radius;
 	extern vec3 Center;
 
 	vec4 effect(vec4 Color, Image Texture, vec2 tc, vec2 pc) {
 		
-		float Distance = length( vec3(pc, 0.0) - Center);
+		float Distance = distance( vec3(pc, 0.0), Center);
 		
 		if (Distance <= Radius) {
-		
-			float Mult = 1.0 - ( Distance / Radius );
 			
-			Color.rgb = Color.rgb * Mult;
-		
-			return Color;
+			return mix(vec4(0.0), vec4(1.0), 1.0 - Distance / Radius);
 			
 		}
 		
