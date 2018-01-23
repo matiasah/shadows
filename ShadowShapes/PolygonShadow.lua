@@ -225,7 +225,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 					Vertices[Index * 2];
 				}
 				
-				local Length = Light.Radius
+				local Length = Light:GetRadius() * self.Radius
 				
 				if Lz > Bz then
 					
@@ -320,7 +320,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 					
 				}
 				
-				local Length = Light.Radius
+				local Length = Light:GetRadius() * self.Radius
 				
 				if Lz > Bz then
 					
@@ -371,7 +371,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 						
 					}
 					
-					local Length = Light.Radius
+					local Length = Light:GetRadius() * self.Radius
 					
 					if Lz > Bz then
 						
@@ -415,7 +415,7 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 						
 					}
 					
-					local Length = Light.Radius
+					local Length = Light:GetRadius() * self.Radius
 					
 					if Lz > Bz then
 						

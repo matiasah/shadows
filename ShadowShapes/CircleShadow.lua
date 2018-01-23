@@ -102,7 +102,7 @@ function CircleShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 		local BorderDistance = sqrt( ( Distance - Radius ) * ( Distance + Radius ) )
 		local Offset = halfPi - asin(BorderDistance / Distance)
 		
-		local Length = Light.Radius * self.Radius
+		local Length = Light:GetRadius() * self.Radius
 		
 		if Bz < Lz then
 			
