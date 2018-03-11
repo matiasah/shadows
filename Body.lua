@@ -161,6 +161,12 @@ function Body:TrackPhysics(Body)
 	
 end
 
+function Body:GetTrackedPhysics()
+	
+	return self.TrackBody
+	
+end
+
 function Body:SetAngle(Angle)
 	
 	self.Transform:SetRotation( Angle )
