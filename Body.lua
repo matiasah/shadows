@@ -159,6 +159,8 @@ function Body:TrackPhysics(Body)
 	
 	self.TrackBody = Body
 	
+	return self
+	
 end
 
 function Body:GetTrackedPhysics()
