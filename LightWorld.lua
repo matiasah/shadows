@@ -123,7 +123,7 @@ end
 
 function LightWorld:Draw()
 	
-	love.graphics.setBlendMode("multiply", "alphamultiply")
+	love.graphics.setBlendMode("multiply", "premultiplied")
 	love.graphics.setColor(255, 255, 255, 255)
 	love.graphics.draw(self.Canvas, 0, 0)
 	love.graphics.setBlendMode("alpha", "alphamultiply")

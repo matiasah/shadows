@@ -260,7 +260,7 @@ function Light:Update()
 		end
 		
 		-- Now apply the blur along with the shadow shapes over the light canvas
-		love.graphics.setBlendMode("multiply", "alphamultiply")
+		love.graphics.setBlendMode("multiply", "premultiplied")
 		love.graphics.draw(self.ShadowCanvas, 0, 0)
 		
 		-- Reset the blending mode

@@ -129,7 +129,7 @@ end
 
 function Body:InitFromPhysics(Body)
 	
-	for Index, Fixture in pairs(Body:getFixtureList()) do
+	for Index, Fixture in pairs(Body:getFixtures()) do
 		
 		local Shape = Fixture:getShape()
 		local Type = Shape:getType()
