@@ -47,7 +47,7 @@ end
 
 function LightWorld:InitFromPhysics(PhysicsWorld)
 	
-	for _, BodyObject in pairs( PhysicsWorld:getBodyList() ) do
+	for _, BodyObject in pairs( PhysicsWorld:getBodies() ) do
 		
 		Body:new(self):InitFromPhysics(BodyObject)
 		
@@ -124,7 +124,7 @@ end
 function LightWorld:Draw()
 	
 	love.graphics.setBlendMode("multiply", "premultiplied")
-	love.graphics.setColor(255, 255, 255, 255)
+	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.draw(self.Canvas, 0, 0)
 	love.graphics.setBlendMode("alpha", "alphamultiply")
 	
@@ -248,10 +248,11 @@ function LightWorld:Update(dt)
 		self.UpdateStars = nil
 		
 		love.graphics.setCanvas(self.Canvas)
-		love.graphics.clear(self.R, self.G, self.B, self.A)
-		
 		love.graphics.setShader()
-		love.graphics.setColor(255, 255, 255, 255)
+		love.graphics.setBlendMode("alpha", "alphamultiply")
+		love.graphics.clear(self.R / 255, self.G / 255, self.B / 255, self.A / 255)
+		
+		love.graphics.setColor(1, 1, 1, 1)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		love.graphics.origin()
 		
@@ -273,7 +274,7 @@ function LightWorld:Update(dt)
 		end
 		
 		love.graphics.setShader()
-		love.graphics.setColor(255, 255, 255, 255)
+		love.graphics.setColor(1, 1, 1, 1)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		
 		love.graphics.origin()
@@ -309,6 +310,7 @@ function LightWorld:Update(dt)
 	end
 	
 	love.graphics.setCanvas()
+	love.graphics.setShader()
 	
 end
 

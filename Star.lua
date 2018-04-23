@@ -73,13 +73,13 @@ function Star:Update()
 		
 		-- Draw custom shadows
 		love.graphics.setBlendMode("subtract", "alphamultiply")
-		love.graphics.setColor(255, 255, 255, 255)
+		love.graphics.setColor(1, 1, 1, 1)
 		self.World:DrawShadows(self)
 		
 		-- Draw the sprites so that shadows don't cover them
 		love.graphics.setShader(Shadows.ShapeShader)
 		love.graphics.setBlendMode("add", "alphamultiply")
-		love.graphics.setColor(255, 255, 255, 255)
+		love.graphics.setColor(1, 1, 1, 1)
 		self.World:DrawSprites(self)
 		
 		-- Now stop using the shadow canvas and generate the light
@@ -92,7 +92,7 @@ function Star:Update()
 		if self.Image then
 			-- If there's a image to be used as light texture, use it
 			love.graphics.setBlendMode("lighten", "premultiplied")
-			love.graphics.setColor(self.R, self.G, self.B, self.A)
+			love.graphics.setColor(self.R / 255, self.G / 255, self.B / 255, self.A / 255)
 			love.graphics.draw(self.Image, self.Radius, self.Radius)
 			
 		else
@@ -109,7 +109,7 @@ function Star:Update()
 			love.graphics.setBlendMode("alpha", "premultiplied")
 			
 			-- Filling it with a arc is more efficient than with a rectangle for this case
-			love.graphics.setColor(self.R, self.G, self.B, self.A)
+			love.graphics.setColor(self.R / 255, self.G / 255, self.B / 255, self.A / 255)
 			love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
 			
 			-- Unset the shader
