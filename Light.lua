@@ -29,16 +29,45 @@ function Light:new(World, Radius)
 		self.Transform.Object = self
 		
 		self.Radius = Radius
-		self.Canvas = love.graphics.newCanvas( Radius * 2, Radius * 2 )
-		self.ShadowCanvas = love.graphics.newCanvas( Radius * 2, Radius * 2 )
-		
-		self.Shapes = {}
 		
 		World:AddLight(self)
 		
 		return self
 		
 	end
+	
+end
+
+function Light:InitCanvas()
+	
+	if not self.Canvas then
+		self.Canvas = love.graphics.newCanvas( self.Radius * 2, self.Radius * 2 )
+	end
+	
+	if not self.ShadowCanvas then
+		self.ShadowCanvas = love.graphics.newCanvas( self.Radius * 2, self.Radius * 2 )
+	end
+	
+	if not self.Shapes then
+		self.Shapes = {}
+	end
+	
+	self.Changed = true
+	self.Moved = true
+	
+end
+
+function Light:DestroyCanvas()
+	
+	self.Canvas = nil
+	self.ShadowCanvas = nil
+	self.Shapes = nil
+	
+end
+
+function Light:GetCanvasDestroyed()
+	
+	return self.Canvas == nil
 	
 end
 
@@ -180,7 +209,48 @@ function Light:GenerateDarkness(x, y, z)
 	
 end
 
+function Light:GetUpdateVisibility()
+	
+	-- World's position
+	local wx, wy, wz = self.World:GetPosition()
+	
+	-- Light's position
+	local x, y, z = self:GetPosition()
+	
+	-- Delta
+	local dx = ( wx + self.World:GetWidth() * 0.5 ) - x
+	local dy = ( wy + self.World:GetHeight() * 0.5 ) - y
+	local Distance = math.sqrt( dx * dx + dy * dy )
+	
+	if self:GetCanvasDestroyed() then
+		
+		-- If the distance is lower than the light's radius + world's border radius
+		if Distance <= self.World:GetBorderRadius() + self.Radius then
+			-- Must be initialized
+			self:InitCanvas()
+			return true
+		end
+	else
+		-- If the distance is higher than the light's radius + world's border radius
+		if Distance > self.World:GetBorderRadius() + self.Radius then
+			self:DestroyCanvas()
+			return false
+		end
+		
+	end
+	
+	return not self:GetCanvasDestroyed()
+	
+end
+
 function Light:Update()
+	
+	-- If the object shouldn't be visible
+	if not self:GetUpdateVisibility() then
+		-- Do nothing
+		return nil
+		
+	end
 	
 	if self.Transform.HasChanged then
 		
@@ -271,6 +341,18 @@ function Light:Update()
 		self.World.UpdateCanvas = true
 		
 	end
+	
+end
+
+function Light:SetWorld(World)
+	
+	self.World = World
+	
+end
+
+function Light:GetWorld()
+	
+	return self.World
 	
 end
 

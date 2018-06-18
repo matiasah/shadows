@@ -25,6 +25,8 @@ function Star:new(World, Radius)
 		self.Transform.Object = self
 		
 		self.Radius = Radius
+		self.Width = Width
+		self.Height = Height
 		self.Canvas = love.graphics.newCanvas( Width, Height )
 		self.ShadowCanvas = love.graphics.newCanvas( Width, Height )
 		
@@ -41,8 +43,9 @@ end
 function Star:GetCanvasCenter()
 	
 	local x, y, z = self.Transform:GetPosition()
+	local wx, wy, wz = self.World:GetPosition()
 	
-	return x - self.World.x, y - self.World.y, z
+	return ( x - wx ) * wz, ( y - wy ) * wz, z * wz
 	
 end
 
@@ -58,6 +61,7 @@ function Star:Update()
 	if self.Changed or self.World.Changed or self.World.UpdateStars then
 		
 		local x, y, z = self.Transform:GetPosition()
+		local wx, wy, wz = self.World:GetPosition()
 		
 		-- Generate new content for the shadow canvas
 		love.graphics.setCanvas(self.ShadowCanvas)
@@ -66,8 +70,8 @@ function Star:Update()
 		
 		-- Move all the objects so that their position are corrected
 		love.graphics.origin()
-		love.graphics.translate(-self.World.x, -self.World.y)
-		love.graphics.scale(self.World.z, self.World.z)
+		love.graphics.translate(-wx * wz, -wy * wz)
+		love.graphics.scale(wz, wz)
 		
 		self:GenerateDarkness(x, y, z)
 		
@@ -87,18 +91,18 @@ function Star:Update()
 		love.graphics.setShader()
 		love.graphics.clear()
 		love.graphics.origin()
-		love.graphics.translate(x - self.World.x - self.Radius, y - self.World.y - self.Radius)
+		--love.graphics.translate((x - wx - self.Radius) * wz, (y - wy - self.Radius) * wz)
 		
 		if self.Image then
 			-- If there's a image to be used as light texture, use it
 			love.graphics.setBlendMode("lighten", "premultiplied")
 			love.graphics.setColor(self.R / 255, self.G / 255, self.B / 255, self.A / 255)
-			love.graphics.draw(self.Image, self.Radius, self.Radius)
+			love.graphics.draw(self.Image, self.Radius * wz, self.Radius * wz)
 			
 		else
 			-- Use a shader to generate the light
-			Shadows.LightShader:send("Radius", self.Radius)
-			Shadows.LightShader:send("Center", {x - self.World.x, y - self.World.y, z})
+			Shadows.LightShader:send("Radius", self.Radius * wz)
+			Shadows.LightShader:send("Center", { self:GetCanvasCenter() })
 			
 			-- Calculate the rotation of the light
 			local Arc = math.rad(self.Arc * 0.5)
@@ -110,7 +114,7 @@ function Star:Update()
 			
 			-- Filling it with a arc is more efficient than with a rectangle for this case
 			love.graphics.setColor(self.R / 255, self.G / 255, self.B / 255, self.A / 255)
-			love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
+			love.graphics.rectangle("fill", 0, 0, self.Width, self.Height)
 			
 			-- Unset the shader
 			love.graphics.setShader()
@@ -122,9 +126,9 @@ function Star:Update()
 			-- Generate a radial blur (to make the light softer)
 			love.graphics.origin()
 			love.graphics.setShader(Shadows.RadialBlurShader)
-			Shadows.RadialBlurShader:send("Size", {self.Canvas:getDimensions()})
-			Shadows.RadialBlurShader:send("Position", {x - self.World.x, y - self.World.y})
-			Shadows.RadialBlurShader:send("Radius", self.Radius)
+			Shadows.RadialBlurShader:send("Size", { self.Canvas:getDimensions() })
+			Shadows.RadialBlurShader:send("Position", { self:GetCanvasCenter() })
+			Shadows.RadialBlurShader:send("Radius", self.Radius * wz)
 			
 		end
 		
@@ -150,6 +154,8 @@ function Star:Resize(Width, Height)
 	
 	if Width ~= w or Height ~= h then
 		
+		self.Width = Width
+		self.Height = Height
 		self.Canvas = love.graphics.newCanvas(Width, Height)
 		self.ShadowCanvas = love.graphics.newCanvas(Width, Height)
 		self.Changed = true

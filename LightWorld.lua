@@ -20,6 +20,10 @@ function LightWorld:new()
 	local Width, Height = love.graphics.getDimensions()
 	
 	self.Canvas = love.graphics.newCanvas(Width, Height)
+	self.Width = Width
+	self.Height = Height
+	self.BorderRadius = math.max(Width * 0.5, Height * 0.5)
+	
 	self.Bodies = PriorityQueue:new()	-- Bodies sorted by height
 	
 	self.BodyTracks = {}
@@ -35,6 +39,10 @@ end
 function LightWorld:Resize(Width, Height)
 	
 	self.Canvas = love.graphics.newCanvas(Width, Height)
+	self.Width = Width
+	self.Height = Height
+	self.BorderRadius = math.max(Width * 0.5, Height * 0.5)
+	
 	self.UpdateCanvas = true
 	
 	for Index, Light in pairs(self.Stars) do
@@ -55,6 +63,24 @@ function LightWorld:InitFromPhysics(PhysicsWorld)
 	
 end
 
+function LightWorld:GetBorderRadius()
+	
+	return self.BorderRadius
+	
+end
+
+function LightWorld:GetWidth()
+	
+	return self.Width
+	
+end
+
+function LightWorld:GetHeight()
+	
+	return self.Height
+	
+end
+
 function LightWorld:AddBody(Body)
 	
 	Body.World = self
@@ -68,9 +94,7 @@ end
 function LightWorld:AddLight(Light)
 	
 	local ID = #self.Lights + 1
-	Light.World = self
-	Light.Changed = true
-	Light.Moved = true
+	Light:SetWorld(self)
 	Light.ID = ID
 	
 	self.UpdateCanvas = true
@@ -83,9 +107,7 @@ end
 function LightWorld:AddStar(Star)
 	
 	local ID = #self.Stars + 1
-	Star.World = self
-	Star.Changed = true
-	Star.Moved = true
+	Star:SetWorld(self)
 	Star.ID = ID
 	
 	self.UpdateCanvas = true
@@ -123,6 +145,7 @@ end
 
 function LightWorld:Draw()
 	
+	love.graphics.origin()
 	love.graphics.setBlendMode("multiply", "premultiplied")
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.draw(self.Canvas, 0, 0)
@@ -255,14 +278,17 @@ function LightWorld:Update(dt)
 		love.graphics.setColor(1, 1, 1, 1)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		love.graphics.origin()
+		love.graphics.scale(1, 1)
 		
 		for _, Light in pairs(self.Stars) do
 			
-			love.graphics.draw(Light.Canvas, 0, 0)
+			if not Light:GetCanvasDestroyed() then
+				love.graphics.draw(Light.Canvas, 0, 0)
+			end
 			
 		end
 		
-		love.graphics.translate(-self.x, -self.y)
+		love.graphics.translate(-self.x * self.z, -self.y * self.z)
 		love.graphics.scale(self.z, self.z)
 		love.graphics.setShader(Shadows.DarkenShader)
 		love.graphics.setBlendMode("alpha", "alphamultiply")
@@ -278,14 +304,18 @@ function LightWorld:Update(dt)
 		love.graphics.setBlendMode("add", "alphamultiply")
 		
 		love.graphics.origin()
-		love.graphics.translate(-self.x, -self.y)
+		love.graphics.translate(-self.x * self.z, -self.y * self.z)
 		love.graphics.scale(self.z, self.z)
 		
 		for _, Light in pairs(self.Lights) do
 			
-			local x, y = Light:GetPosition()
-			
-			love.graphics.draw(Light.Canvas, x - Light.Radius, y - Light.Radius)
+			if not Light:GetCanvasDestroyed() then
+				
+				local x, y = Light:GetPosition()
+				
+				love.graphics.draw(Light.Canvas, x - Light.Radius, y - Light.Radius)
+				
+			end
 			
 		end
 		

@@ -260,9 +260,13 @@ Shadows.NormalShader = love.graphics.newShader [[
 
 Shadows.HeightShader = love.graphics.newShader [[
 	
-	// Position offsets
+	// Position of the light
 	extern vec3 LightPos;
+	
+	// Supposed center of the canvas
 	extern vec3 LightCenter;
+	
+	// Texture position in map
 	extern vec3 MapPos;
 	
 	// Size of the canvas
