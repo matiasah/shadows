@@ -22,7 +22,7 @@ function LightWorld:new()
 	self.Canvas = love.graphics.newCanvas(Width, Height)
 	self.Width = Width
 	self.Height = Height
-	self.BorderRadius = math.max(Width * 0.5, Height * 0.5)
+	self.BorderRadius = math.sqrt( Width * Width + Height * Height ) * 0.5
 	
 	self.Bodies = PriorityQueue:new()	-- Bodies sorted by height
 	
@@ -41,7 +41,7 @@ function LightWorld:Resize(Width, Height)
 	self.Canvas = love.graphics.newCanvas(Width, Height)
 	self.Width = Width
 	self.Height = Height
-	self.BorderRadius = math.max(Width * 0.5, Height * 0.5)
+	self.BorderRadius = math.sqrt( Width * Width + Height * Height ) * 0.5
 	
 	self.UpdateCanvas = true
 	

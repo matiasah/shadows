@@ -225,14 +225,14 @@ function Light:GetUpdateVisibility()
 	if self:GetCanvasDestroyed() then
 		
 		-- If the distance is lower than the light's radius + world's border radius
-		if Distance <= self.World:GetBorderRadius() + self.Radius then
+		if Distance <= ( self.World:GetBorderRadius() + self.Radius ) * wz then
 			-- Must be initialized
 			self:InitCanvas()
 			return true
 		end
 	else
 		-- If the distance is higher than the light's radius + world's border radius
-		if Distance > self.World:GetBorderRadius() + self.Radius then
+		if Distance > ( self.World:GetBorderRadius() + self.Radius ) * wz then
 			self:DestroyCanvas()
 			return false
 		end
