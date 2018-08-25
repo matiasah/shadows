@@ -162,10 +162,10 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			Output:Pack(Geometry)
 			Output:SetLayer(z)
 			Output:SetShader(Shadows.HeightShader)
-			Output:SendShader("LightPos", { Lx * Light.World.z, Ly * Light.World.z, Lz * Light.World.z} )
+			Output:SendShader("LightPos", { Lx, Ly, Lz } )
 			Output:SendShader("LightCenter", { Light:GetCanvasCenter() } )
-			Output:SendShader("MapPos", { x * Light.World.z, y * Light.World.z, z } )
-			Output:SendShader("Size", { self.Texture:getWidth() * Light.World.z, self.Texture:getHeight() * Light.World.z } )
+			Output:SendShader("MapPos", { x, y, z } )
+			Output:SendShader("Size", { self.Texture:getWidth(), self.Texture:getHeight() } )
 			Output:SendShader("Texture", self.Texture)
 			
 			insert(Shapes, Output)
@@ -426,10 +426,10 @@ function HeightShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Ligh
 			Output:Pack(Geometry)
 			Output:SetLayer(z)			-- Make a alternative output shadow if layer doesn't match
 			Output:SetShader(Shadows.HeightShader)
-			Output:SendShader("LightPos", { Lx * Light.World.z, Ly * Light.World.z, Lz } )
+			Output:SendShader("LightPos", { Lx, Ly, Lz } )
 			Output:SendShader("LightCenter", { Light:GetCanvasCenter() } )
-			Output:SendShader("MapPos", { x * Light.World.z, y * Light.World.z, z } )
-			Output:SendShader("Size", { self.Texture:getWidth() * Light.World.z, self.Texture:getHeight() * Light.World.z } )
+			Output:SendShader("MapPos", { x, y, z } )
+			Output:SendShader("Size", { self.Texture:getWidth(), self.Texture:getHeight() } )
 			Output:SendShader("Texture", self.Texture)
 			
 			insert(Shapes, Output)
