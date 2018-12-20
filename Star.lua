@@ -1,7 +1,7 @@
 module("shadows.Star", package.seeall)
 
 Shadows		=		require("shadows")
-Light			=		require("shadows.Light")
+Light		=		require("shadows.Light")
 Transform	=		require("shadows.Transform")
 
 Star = setmetatable( {}, Light )

@@ -331,4 +331,69 @@ Shadows.HeightShader = love.graphics.newShader [[
 	
 ]]
 
+Shadows.DropShadows = love.graphics.newShader [[
+	extern vec3	lightPosition;
+	extern number	lightRadius;
+	extern number	lightRadiusMult;
+
+	extern Image	texure;
+	extern vec2	textureSize;
+	extern number	textureZ;
+
+	vec4 effect(vec4 color, Image _t, vec2 texture_coords, vec2 screen_coords) {
+		// Calculate offset on canvas
+		number	scale		= lightPosition.z / ( lightPosition.z - textureZ );
+		number	textureOffset	= ( scale - 1.0 ) * 0.5;
+		
+		// Inverse of the texture size
+		vec2	iTextureSize	= 1.0 / textureSize;
+		
+		// Position of the pixel
+		vec3	textureCoord3	= vec3(screen_coords * iTextureSize, 0.0);
+		
+		// Alpha of the shadow
+		number	pointDarken	= 0.0;
+		number	pointCount	= 0.0;
+		
+		// Inverse of the light radius
+		number	iLightRadius	= 1.0 / lightRadius;
+		
+		// For each pixel offset on the light's position
+		for (number x = -lightRadius; x < lightRadius; x++) {
+			for (number y = -lightRadius; y < lightRadius; y++) {
+				
+				vec2	vec		= vec2(x, y);
+				number	vecLength	= length(vec);
+				
+				if ( vecLength <= lightRadius ) {
+					
+					// Which position on the light source
+					vec3 position		= lightPosition + textureOffset + vec3(vec * lightRadiusMult * iTextureSize, 0.0);
+					
+					// Direction from the pixel position, to the light position
+					vec3 direction		= normalize(position - textureCoord3);
+					
+					// Position on the texture's layer
+					vec3 point		= textureCoord3 + ( direction / direction.z ) * textureZ;
+					
+					// Color on the texture
+					vec4 pixelColor		= Texel(texure, point.xy - textureOffset);
+					
+					// Is it not a color?
+					if (pixelColor.r > 0.0 || pixelColor.g > 0.0 || pixelColor.b > 0.0 || pixelColor.a > 0.0) {
+						// Make the pixel darker
+						pointDarken += vecLength * iLightRadius;
+					}
+					
+					// Increment the number of pixels used
+					pointCount++;
+				}
+			}
+		}
+		
+		return vec4(0.0, 0.0, 0.0, pointDarken / pointCount);
+		
+	}
+]]
+
 return Shadows

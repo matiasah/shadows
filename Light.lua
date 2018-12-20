@@ -1,9 +1,9 @@
 module("shadows.Light", package.seeall)
 
-Object = require("shadows.Object")
+Object		= require("shadows.Object")
 
-Shadows = require("shadows")
-Transform = require("shadows.Transform")
+Shadows		= require("shadows")
+Transform	= require("shadows.Transform")
 
 Light = setmetatable( {}, Object )
 Light.__index = Light

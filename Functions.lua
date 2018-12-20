@@ -1,6 +1,7 @@
 module("shadows.Functions", package.seeall)
 
 Shadows = require("shadows")
+Shaders = require("shadows.Shaders")
 
 local sqrt = math.sqrt
 local min = math.min
@@ -82,5 +83,34 @@ function Shadows.Insert(Table, Index, Value)
 		Table[#Table + 1] = Index
 		
 	end
+	
+end
+
+function Shadows.newDropshadowsFromImageData(ImageData, LightX, LightY, LightZ, LightRadius, TextureZ, LightRadiusMult)
+	
+	local width, height	= ImageData:getDimensions()
+	local scale		= LightZ / ( LightZ - TextureZ )
+	local canvasWidth	= math.ceil( width * scale )
+	local canvasHeight	= math.ceil( height * scale )
+	local canvas		= love.graphics.newCanvas( canvasWidth, canvasHeight )
+	
+	Shaders.DropShadows:send("lightPosition", { LightX, LightY, LightZ })
+	Shaders.DropShadows:send("lightRadius", LightRadius)
+	Shaders.DropShadows:send("lightRadiusMult", LightRadiusMult or 2)
+	Shaders.DropShadows:send("texure", love.graphics.newImage(ImageData))
+	Shaders.DropShadows:send("textureSize", { width - 0.5, height - 0.5 })
+	Shaders.DropShadows:send("textureZ", TextureZ)
+	
+	love.graphics.setCanvas(canvas)
+	love.graphics.clear(0, 0, 0, 0)
+	
+	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.setShader(Shaders.DropShadows)
+	love.graphics.rectangle("fill", 0, 0, canvasWidth, canvasHeight)
+	
+	love.graphics.setCanvas()
+	love.graphics.setShader()
+	
+	return canvas
 	
 end

@@ -3,8 +3,8 @@ module("shadows.Body", package.seeall)
 Object = require("shadows.Object")
 
 PriorityQueue		=	require("shadows.PriorityQueue")
-Shadows				=	require("shadows")
-Transform			=	require("shadows.Transform")
+Shadows			=	require("shadows")
+Transform		=	require("shadows.Transform")
 
 CircleShadow		=	require("shadows.ShadowShapes.CircleShadow")
 PolygonShadow		=	require("shadows.ShadowShapes.PolygonShadow")
