@@ -1,0 +1,41 @@
+{
+    "version": "2.0.0",
+    "inputs": [
+        {
+            "id": "demo",
+            "type": "pickString",
+            "description": "Choose a Love demo",
+            "options": [
+                "HighDPI",
+                "Standard",
+                "HeightMap",
+                "NormalMap",
+                "Penumbra"
+            ],
+            "default": "HighDPI"
+        }
+    ],
+    "tasks": [
+        {
+            "label": "Run Love demo",
+            "type": "process",
+            "command": "love",
+            "args": [
+                "${workspaceFolder}",
+                "${input:demo}"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Capture high-DPI regression",
+            "type": "process",
+            "command": "love",
+            "args": [
+                "${workspaceFolder}",
+                "HighDPI",
+                "--capture"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

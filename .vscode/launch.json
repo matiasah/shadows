@@ -1,0 +1,60 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Love: HighDPI",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "HighDPI"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: Standard",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "Standard"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: HeightMap",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "HeightMap"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: NormalMap",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "NormalMap"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
