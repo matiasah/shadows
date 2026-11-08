@@ -1,4 +1,4 @@
---- Provides shared color, transform, and lifecycle behavior for dark rooms.
+---@module Provides shared color, transform, and lifecycle behavior for dark rooms.
 module("shadows.Room", package.seeall)
 
 Object = require("shadows.Object")
@@ -8,15 +8,17 @@ Shadows = require("shadows")
 --- @field World LightWorld? World containing this room.
 --- @field Transform Transform Transform used for room placement.
 --- @field ID any? Identifier assigned by the owning world.
---- @field R number Red color channel.
---- @field G number Green color channel.
---- @field B number Blue color channel.
---- @field A number Alpha color channel.
+--- @field R number Red color channel in the 0-1 range; defaults to 0.
+--- @field G number Green color channel in the 0-1 range; defaults to 0.
+--- @field B number Blue color channel in the 0-1 range; defaults to 0.
+--- @field A number Alpha color channel in the 0-1 range; defaults to 1.
+--- @field private __index Room Instance method lookup.
+--- @field private __type string Runtime type name.
 Room = setmetatable({}, Object)
 Room.__index = Room
 Room.__type = "Room"
 
-Room.R, Room.G, Room.B, Room.A = 0, 0, 0, 255
+Room.R, Room.G, Room.B, Room.A = 0, 0, 0, 1
 
 --- @description Creates an unregistered base room.
 --- @return Room room New base room.
@@ -25,10 +27,10 @@ function Room:new()
 end
 
 --- @description Sets the room fill color and marks the world canvas dirty when it changes.
---- @param R number Red channel.
---- @param G number Green channel.
---- @param B number Blue channel.
---- @param A number Alpha channel.
+--- @param R number Red channel in the 0-1 range.
+--- @param G number Green channel in the 0-1 range.
+--- @param B number Blue channel in the 0-1 range.
+--- @param A number Alpha channel in the 0-1 range.
 --- @return nil
 function Room:SetColor(R, G, B, A)
 	if R ~= self.R then
@@ -122,10 +124,10 @@ function Room:SetLocalRotation(Rotation)
 end
 
 --- @description Returns the room's RGBA color.
---- @return number R Red channel.
---- @return number G Green channel.
---- @return number B Blue channel.
---- @return number A Alpha channel.
+--- @return number R Red channel in the 0-1 range.
+--- @return number G Green channel in the 0-1 range.
+--- @return number B Blue channel in the 0-1 range.
+--- @return number A Alpha channel in the 0-1 range.
 function Room:GetColor()
 	return self.R, self.G, self.B, self.A
 end

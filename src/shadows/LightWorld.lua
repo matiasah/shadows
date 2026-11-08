@@ -1,4 +1,4 @@
---- Owns lights, stars, shadow bodies, rooms, and the composed scene canvas.
+---@module Owns lights, stars, shadow bodies, rooms, and the composed scene canvas.
 module("shadows.LightWorld", package.seeall)
 
 Object                                                 = require("shadows.Object")
@@ -24,15 +24,15 @@ PriorityQueue                                          = require("shadows.Priori
 --- @field x number Camera x-coordinate.
 --- @field y number Camera y-coordinate.
 --- @field z number Camera scale.
---- @field R number Ambient red channel in the 0-255 range.
---- @field G number Ambient green channel in the 0-255 range.
---- @field B number Ambient blue channel in the 0-255 range.
---- @field A number Ambient alpha channel in the 0-255 range.
+--- @field R number Ambient red channel in the 0-1 range; defaults to 0.
+--- @field G number Ambient green channel in the 0-1 range; defaults to 0.
+--- @field B number Ambient blue channel in the 0-1 range; defaults to 0.
+--- @field A number Ambient alpha channel in the 0-1 range; defaults to 1.
 LightWorld                                             = setmetatable({}, Object)
 LightWorld.__index                                     = LightWorld
 LightWorld.__type                                      = "LightWorld"
 
-LightWorld.R, LightWorld.G, LightWorld.B, LightWorld.A = 0, 0, 0, 255
+LightWorld.R, LightWorld.G, LightWorld.B, LightWorld.A = 0, 0, 0, 1
 LightWorld.x, LightWorld.y, LightWorld.z               = 0, 0, 1
 
 --- @description Creates a world and allocates its canvas at the current display size.
@@ -179,10 +179,10 @@ function LightWorld:Draw()
 end
 
 --- @description Sets the ambient RGBA color and invalidates the world canvas.
---- @param R number Red channel in the 0-255 range.
---- @param G number Green channel in the 0-255 range.
---- @param B number Blue channel in the 0-255 range.
---- @param A number Alpha channel in the 0-255 range.
+--- @param R number Red channel in the 0-1 range.
+--- @param G number Green channel in the 0-1 range.
+--- @param B number Blue channel in the 0-1 range.
+--- @param A number Alpha channel in the 0-1 range.
 --- @return nil
 function LightWorld:SetColor(R, G, B, A)
 	if R ~= self.R then
@@ -207,10 +207,10 @@ function LightWorld:SetColor(R, G, B, A)
 end
 
 --- @description Returns the world color channels in the implementation's order.
---- @return number R Red channel.
---- @return number G Green channel.
---- @return number A Alpha channel.
---- @return number B Blue channel.
+--- @return number R Red channel in the 0-1 range.
+--- @return number G Green channel in the 0-1 range.
+--- @return number A Alpha channel in the 0-1 range.
+--- @return number B Blue channel in the 0-1 range.
 function LightWorld:GetColor()
 	return self.R, self.G, self.A, self.B
 end
@@ -285,7 +285,7 @@ function LightWorld:Update(dt)
 		love.graphics.setCanvas(self.Canvas)
 		love.graphics.setShader()
 		love.graphics.setBlendMode("alpha", "alphamultiply")
-		love.graphics.clear(self.R / 255, self.G / 255, self.B / 255, self.A / 255)
+		love.graphics.clear(self.R, self.G, self.B, self.A)
 
 		love.graphics.setColor(1, 1, 1, 1)
 		love.graphics.setBlendMode("add", "alphamultiply")

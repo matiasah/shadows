@@ -1,6 +1,6 @@
 # Standard demonstration
 
-The standard demo combines a tile map, physics-imported occluders, several shadow-map types, and an interactive local light. It uses the library from `src/shadows`.
+The standard demo combines a tile map, physics-imported occluders, a circle shadow, and an interactive local light. It uses the library from `src/shadows`.
 
 ## Run
 
@@ -23,13 +23,14 @@ Run commands from the repository root with LÖVE installed.
   the next F9 snapshot. Share both files to reproduce lighting issues; the text
   records camera, mouse, light settings, window and canvas DPI, and whether the
   removable circle is present. The save path is also printed to the console.
+  Snapshot colors use normalized 0–1 channels with full numeric precision.
 - **F12** — save a screenshot through the shared capture helper and exit.
 - **Escape** — close the demo.
 
 ## What it demonstrates
 
 - Importing supported fixtures from a LÖVE physics world using `LightWorld:InitFromPhysics`.
-- Circle, normal-map, height-map, and image shadow shapes.
+- Circle shadows and physics-imported occluders.
 - Updating the world camera and local light as the scene is navigated.
 - Loading the sample tile map through the demo's bundled STI dependency.
 

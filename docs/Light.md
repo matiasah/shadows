@@ -23,7 +23,7 @@ Constructors register their result with the world and return `nil` if required a
 | `light:SetPosition(x, y, z?)` | Sets world position and optional height; returns the light. |
 | `light:GetPosition()` | Returns world `x`, `y`, and `z`. |
 | `light:SetAngle(angle)` / `light:GetAngle()` | Sets or returns rotation in degrees; setter returns the light. |
-| `light:SetColor(r, g, b, a?)` | Sets RGBA channels in the 0–255 range. Omitted alpha keeps the current value; returns the light. |
+| `light:SetColor(r, g, b, a?)` | Sets RGBA channels in the 0–1 range. Omitted alpha keeps the current value; returns the light. |
 | `light:GetColor()` | Returns `r`, `g`, `b`, and `a`. |
 | `light:SetRadius(radius)` / `light:GetRadius()` | Sets or returns the radius in world units. Setting a radius invalidates the cached light. |
 | `light:SetImage(texture)` / `light:GetImage()` | Sets or returns a custom light texture. Setting one derives the radius from its dimensions. |
@@ -38,7 +38,10 @@ distant shadows more. Positive sizes retain a minimum penumbra even for distant
 lights. Set `light.Blur = false` or `light.SizeRadius = 0` for
 hard shadows. Direct changes to either penumbra setting invalidate cached
 rendering on the next update. `SizeRadius` must be finite and nonnegative.
-`Arc` controls angular coverage in degrees. Color channels use the 0–255 range.
+`Arc` controls angular coverage in degrees. Color channels use LÖVE's 0–1 range,
+with opaque white (`1, 1, 1, 1`) as the default. Divide legacy 0–255 inputs by
+255 before calling `SetColor`; the library no longer converts them.
+Radial lights apply the RGB tint and alpha with distance falloff using premultiplied output.
 See [Penumbras](Penumbras.md) for examples and approximation limits.
 
 ## Star methods

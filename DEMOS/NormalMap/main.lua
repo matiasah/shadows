@@ -1,4 +1,4 @@
---- Runs the normal-map lighting showcase and its screenshot controls.
+---@module Runs the normal-map lighting showcase and its screenshot controls.
 local capture      = require("Capture").new("normalmap-capture.png")
 local shadows      = require("shadows")
 
@@ -14,7 +14,7 @@ function love.load()
 	newLightWorld = LightWorld:new()
 	---@type Light
 	newLight      = Light:new(newLightWorld, 400)
-	newLight:SetColor(255, 255, 255, 255)
+	newLight:SetColor(1, 1, 1, 1)
 
 	---@type Body
 	newBody = Body:new(newLightWorld)
@@ -39,7 +39,7 @@ end
 --- @description Draws the background and lit scene.
 --- @return nil
 function love.draw()
-	love.graphics.setColor(255, 255, 255, 255)
+	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.origin()
 
 	love.graphics.draw(newImage, 0, 0)

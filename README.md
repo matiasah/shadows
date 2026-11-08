@@ -20,7 +20,13 @@ for the filtering approximation, graphics requirements, and comparison demo.
 Projected shadow render targets and occluder-mask canvases request 4x MSAA to smooth diagonal
 edges, including when soft-shadow filtering is disabled.
 
-> The original author no longer maintains the project. Use the source tree and tests rather than the checked-in `.love` archives when working with the current implementation.
+## Color API migration
+
+All light, star, ambient, and room color channels now use LÖVE's **0-1 range**.
+This is a breaking change: divide legacy 0-255 arguments by 255 when updating
+callers, including alpha (`255` becomes `1`). No legacy-range detection is
+performed. For example, use `light:SetColor(1, 0.5, 0, 1)` for an orange light.
+Radial lights apply RGB tint and opacity with premultiplied distance falloff.
 
 ## Source and setup
 
@@ -42,7 +48,7 @@ local light
 function love.load()
     world = LightWorld:new()
     light = Light:new(world, 320)
-    light:SetColor(255, 240, 200, 255)
+    light:SetColor(1, 240 / 255, 200 / 255, 1)
     light:SetPosition(400, 300, 1.2)
 
     local body = Body:new(world)
@@ -102,8 +108,6 @@ On Windows, LuaRocks may need the MSVC C++ build tools to compile Busted's `luas
 ## Documentation
 
 Start with the [API and usage guide](docs/README.md), which indexes the class references and demonstrations in `docs/`.
-
-The checked-in `.love` files are self-contained archives; use the source demos for the current implementation.
 
 ## Project links
 

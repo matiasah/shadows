@@ -1,4 +1,4 @@
---- Implements a full-scene light whose canvas covers the entire world view.
+---@module Implements a full-scene light whose canvas covers the entire world view.
 module("shadows.Star", package.seeall)
 
 Shadows      = require("shadows")
@@ -88,7 +88,7 @@ function Star:Update()
 		-- Generate new content for the shadow canvas
 		love.graphics.setCanvas(self.ShadowRenderCanvas)
 		love.graphics.setShader()
-		love.graphics.clear(255, 255, 255, 255)
+		love.graphics.clear(1, 1, 1, 1)
 
 		-- Move all the objects so that their position are corrected
 		love.graphics.origin()
@@ -120,7 +120,7 @@ function Star:Update()
 		if self.Image then
 			-- If there's a image to be used as light texture, use it
 			love.graphics.setBlendMode("lighten", "premultiplied")
-			love.graphics.setColor(self.R / 255, self.G / 255, self.B / 255, self.A / 255)
+			love.graphics.setColor(self.R, self.G, self.B, self.A)
 			love.graphics.draw(self.Image, self.Radius * wz, self.Radius * wz)
 		else
 			-- Use a shader to generate the light
@@ -137,7 +137,7 @@ function Star:Update()
 			love.graphics.setBlendMode("alpha", "premultiplied")
 
 			-- Filling it with a arc is more efficient than with a rectangle for this case
-			love.graphics.setColor(self.R / 255, self.G / 255, self.B / 255, self.A / 255)
+			love.graphics.setColor(self.R, self.G, self.B, self.A)
 			love.graphics.rectangle("fill", 0, 0, self.Width, self.Height)
 
 			-- Unset the shader

@@ -1,4 +1,4 @@
---- Compiles and registers the shaders used by Shädows rendering.
+---@module Compiles and registers the shaders used by Shädows rendering.
 module("shadows.Shaders", package.seeall)
 
 ---@type Shadows
@@ -127,8 +127,8 @@ Shadows.LightShader = love.graphics.newShader [[
 		// If the distance is lower than the radius
 		if (Distance <= Radius) {
 			
-			// Return the 100% of the alpha, minus the distance from the light divided by the radius
-			return vec4( vec3(1.0), 1.0 - length( Delta / Radius ) );
+			float alpha = Color.a * (1.0 - Distance / Radius);
+			return vec4(Color.rgb * alpha, alpha);
 			
 		}
 		

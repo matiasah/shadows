@@ -1,7 +1,110 @@
---- Measures penumbra contact hardness, brightness, occluder protection, and DPI invariance.
+---@module Measures penumbra contact hardness, light colors, brightness, occluder protection, and DPI invariance.
 local Penumbra = require("shadows.Penumbra")
 local Shadows = require("shadows")
 local Regression = {}
+
+---@description Checks normalized ambient and room colors, opacity, and cache invalidation.
+---@return nil
+local function checkWorldColors()
+    local LightWorld = require("shadows.LightWorld")
+    local CircleRoom = require("shadows.Room.CircleRoom")
+    local RectangleRoom = require("shadows.Room.RectangleRoom")
+    local PolygonRoom = require("shadows.Room.PolygonRoom")
+    love.graphics.push("all")
+    local world = LightWorld:new()
+    world:Resize(128, 128)
+    assert(world.R == 0 and world.G == 0 and world.B == 0 and world.A == 1,
+        "Default ambient color must be normalized opaque black")
+    world:SetColor(0.2, 0.4, 0.6, 0.8)
+    local r, g, a, b = world:GetColor()
+    assert(r == 0.2 and g == 0.4 and b == 0.6 and a == 0.8,
+        "Ambient colors must round-trip in the existing r,g,a,b order")
+    world:Update()
+    local image = world.Canvas:newImageData()
+    r, g, b, a = image:getPixel(0, 0)
+    assert(math.abs(r - 0.2) < 0.01 and math.abs(g - 0.4) < 0.01
+        and math.abs(b - 0.6) < 0.01 and math.abs(a - 0.8) < 0.01,
+        "Ambient canvas must preserve normalized channels")
+    world:SetColor(1, 1, 1, 1)
+    local rooms = {
+        CircleRoom:new(world, 20, 20, 10),
+        RectangleRoom:new(world, 50, 10, 20, 20),
+        PolygonRoom:new(world, 90, 10, { 0, 0, 20, 0, 20, 20, 0, 20 }),
+    }
+    for _, room in ipairs(rooms) do
+        r, g, b, a = room:GetColor()
+        assert(r == 0 and g == 0 and b == 0 and a == 1,
+            "Default room color must be normalized opaque black")
+        room:SetColor(0.2, 0.4, 0.6, 0.5)
+        r, g, b, a = room:GetColor()
+        assert(r == 0.2 and g == 0.4 and b == 0.6 and a == 0.5,
+            "Room colors must round-trip without conversion")
+    end
+    world:Update()
+    image = world.Canvas:newImageData()
+    local scale = world.Canvas:getDPIScale()
+    for _, x in ipairs({ 20, 60, 100 }) do
+        r, g, b, a = image:getPixel(x * scale, 20 * scale)
+        assert(math.abs(r - 0.6) < 0.01 and math.abs(g - 0.7) < 0.01
+            and math.abs(b - 0.8) < 0.01 and math.abs(a - 1) < 0.01,
+            "Room fills must blend normalized tint and opacity over ambient color")
+    end
+    for _, room in ipairs(rooms) do room:SetColor(0, 0, 0, 1) end
+    world:Update()
+    image = world.Canvas:newImageData()
+    r, g, b = image:getPixel(20 * scale, 20 * scale)
+    assert(r == 0 and g == 0 and b == 0, "Room color changes must invalidate the world canvas")
+    love.graphics.pop()
+    print("Ambient and room color regressions passed")
+end
+
+---@description Checks radial light tint, opacity, falloff, and color cache invalidation.
+---@return nil
+local function checkLightColors()
+    local LightWorld = require("shadows.LightWorld")
+    local Light = require("shadows.Light")
+    local Star = require("shadows.Star")
+    for _, kind in ipairs({ "local", "star" }) do
+        for _, blur in ipairs({ false, true }) do
+            love.graphics.push("all")
+            local world = LightWorld:new()
+            world:Resize(128, 128)
+            local light = (kind == "local" and Light or Star):new(world, 64)
+            light:SetPosition(64, 64, 1)
+            light.Blur = blur
+            assert(light.R == 1 and light.G == 1 and light.B == 1 and light.A == 1,
+                "Default light color must be normalized opaque white")
+            for _, color in ipairs({ { 1, 0, 0, 1 }, { 0.25, 0.5, 1, 0.5 },
+                { 1, 1, 1, 1 }, { 1, 0.5, 0.25, 0 } }) do
+                light:SetColor(unpack(color))
+                local r, g, b, a = light:GetColor()
+                assert(r == color[1] and g == color[2] and b == color[3] and a == color[4],
+                    "Light colors must round-trip without conversion")
+                world:Update()
+                local image = light.Canvas:newImageData()
+                local scale = light.Canvas:getDPIScale()
+                for _, x in ipairs({ 64, 96 }) do
+                    local px, py = math.floor(x * scale), math.floor(64 * scale)
+                    local dx, dy = (px + 0.5) / scale - 64, (py + 0.5) / scale - 64
+                    local alpha = color[4] * (1 - math.sqrt(dx * dx + dy * dy + 1) / 64)
+                    local r, g, b, a = image:getPixel(px, py)
+                    for channel, actual in ipairs({ r, g, b, a }) do
+                        local expected = channel == 4 and alpha or color[channel] * alpha
+                        assert(math.abs(actual - expected) < 0.015, string.format(
+                            "%s light blur=%s channel=%d must preserve premultiplied color and falloff: %.3f vs %.3f",
+                            kind, tostring(blur), channel, actual, expected))
+                    end
+                end
+            end
+            light:SetColor(0.2, 0.3, 0.4, 0.6)
+            light:SetColor(0.5, 0.6, 0.7)
+            local _, _, _, alpha = light:GetColor()
+            assert(alpha == 0.6, "Omitted light alpha must retain the current normalized value")
+            love.graphics.pop()
+        end
+    end
+    print("Light color rendering regressions passed")
+end
 
 --- @description Reads visibility at a logical position in a rendered test canvas.
 --- @param image love.ImageData Rendered visibility samples.
@@ -187,6 +290,8 @@ end
 --- @description Runs pixel assertions at both standard and high canvas DPI scales.
 --- @return nil
 function Regression.run()
+    checkWorldColors()
+    checkLightColors()
     local widths = {}
     for _, scale in ipairs({ 1, 2 }) do
         local image = render(scale, 12, true)

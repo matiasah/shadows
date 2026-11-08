@@ -1,4 +1,4 @@
---- Implements a local light with cached shadow and illumination canvases.
+---@module Implements a local light with cached shadow and illumination canvases.
 module("shadows.Light", package.seeall)
 
 Object                             = require("shadows.Object")
@@ -14,10 +14,10 @@ Transform                          = require("shadows.Transform")
 --- @field Arc number Angular coverage in degrees.
 --- @field SizeRadius number Effective source radius for penumbras in world units; defaults to 10.
 --- @field Blur boolean Whether to apply contact-hardening penumbras; defaults to true.
---- @field R number Red color channel in the 0-255 range.
---- @field G number Green color channel in the 0-255 range.
---- @field B number Blue color channel in the 0-255 range.
---- @field A number Alpha color channel in the 0-255 range.
+--- @field R number Red color channel in the 0-1 range; defaults to 1.
+--- @field G number Green color channel in the 0-1 range; defaults to 1.
+--- @field B number Blue color channel in the 0-1 range; defaults to 1.
+--- @field A number Alpha color channel in the 0-1 range; defaults to 1.
 --- @field Image love.Texture? Optional custom light texture.
 --- @field Canvas love.Canvas? Cached light canvas.
 --- @field ShadowCanvas love.Canvas? Cached shadow canvas.
@@ -39,7 +39,7 @@ Light.Radius                       = 0
 Light.SizeRadius                   = 10
 Light.Blur                         = true
 
-Light.R, Light.G, Light.B, Light.A = 255, 255, 255, 255
+Light.R, Light.G, Light.B, Light.A = 1, 1, 1, 1
 
 halfPi                             = math.pi * 0.5
 
@@ -294,7 +294,7 @@ function Light:Update()
 		-- Generate new content for the shadow canvas
 		love.graphics.setCanvas(self.ShadowRenderCanvas)
 		love.graphics.setShader()
-		love.graphics.clear(255, 255, 255, 255)
+		love.graphics.clear(1, 1, 1, 1)
 
 		-- Move all the objects so that their position local to the light are corrected
 		love.graphics.origin()
@@ -324,7 +324,7 @@ function Light:Update()
 		if self.Image then
 			-- If there's a image to be used as light texture, use it
 			love.graphics.setBlendMode("lighten", "premultiplied")
-			love.graphics.setColor(self.R / 255, self.G / 255, self.B / 255, self.A / 255)
+			love.graphics.setColor(self.R, self.G, self.B, self.A)
 			love.graphics.draw(self.Image, self.Radius, self.Radius)
 		else
 			-- Use a shader to generate the light
@@ -341,7 +341,7 @@ function Light:Update()
 			love.graphics.setBlendMode("alpha", "premultiplied")
 
 			-- Filling it with a arc is more efficient than with a rectangle for this case
-			love.graphics.setColor(self.R / 255, self.G / 255, self.B / 255, self.A / 255)
+			love.graphics.setColor(self.R, self.G, self.B, self.A)
 			love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
 
 			-- Unset the shader
@@ -440,10 +440,10 @@ function Light:GetPosition()
 end
 
 --- @description Sets the light's RGBA color and invalidates its canvas when changed.
---- @param R number Red channel in the 0-255 range.
---- @param G number Green channel in the 0-255 range.
---- @param B number Blue channel in the 0-255 range.
---- @param A number? Alpha channel; current alpha is retained when omitted.
+--- @param R number Red channel in the 0-1 range.
+--- @param G number Green channel in the 0-1 range.
+--- @param B number Blue channel in the 0-1 range.
+--- @param A number? Alpha channel in the 0-1 range; defaults to the current alpha.
 --- @return Light light This light, for chaining.
 function Light:SetColor(R, G, B, A)
 	if R ~= self.R then
@@ -461,7 +461,7 @@ function Light:SetColor(R, G, B, A)
 		self.Changed = true
 	end
 
-	if A ~= self.A then
+	if A ~= nil and A ~= self.A then
 		self.A = A
 		self.Changed = true
 	end
@@ -470,10 +470,10 @@ function Light:SetColor(R, G, B, A)
 end
 
 --- @description Returns the light's RGBA color.
---- @return number R Red channel.
---- @return number G Green channel.
---- @return number B Blue channel.
---- @return number A Alpha channel.
+--- @return number R Red channel in the 0-1 range.
+--- @return number G Green channel in the 0-1 range.
+--- @return number B Blue channel in the 0-1 range.
+--- @return number A Alpha channel in the 0-1 range.
 function Light:GetColor()
 	return self.R, self.G, self.B, self.A
 end

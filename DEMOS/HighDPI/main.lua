@@ -1,4 +1,4 @@
---- Runs the high-DPI rendering regression scene and capture controls.
+---@module Runs the high-DPI rendering regression scene and capture controls.
 local capture = require("Capture").new("highdpi-capture.png")
 require("shadows")
 
@@ -18,7 +18,7 @@ local light
 function love.load()
     world = LightWorld:new()
     light = Light:new(world, 240)
-    light:SetColor(255, 255, 255, 255)
+    light:SetColor(1, 1, 1, 1)
     light:SetPosition(390, 280, 1.1)
 
     local body = Body:new(world)

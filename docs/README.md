@@ -27,7 +27,7 @@ function love.draw()
 end
 ```
 
-Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use degrees unless a method explicitly says radians. Light, room, and ambient color channels use the 0–255 range. Call `LightWorld:Update` during the update callback and `LightWorld:Draw` during drawing.
+Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use degrees unless a method explicitly says radians. Light, room, and ambient color channels use LÖVE's 0–1 range. This breaks legacy 0–255 callers: divide their channel values by 255, including alpha. Call `LightWorld:Update` during the update callback and `LightWorld:Draw` during drawing.
 
 ## API reference
 

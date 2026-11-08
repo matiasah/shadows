@@ -37,7 +37,7 @@ The initial canvas matches `love.graphics.getDimensions()`.
 |---|---|
 | `world:SetPosition(x, y, scale?)` | Sets the camera position and scale. The scale defaults to its current value. |
 | `world:GetPosition()` | Returns camera `x`, `y`, and scale. |
-| `world:SetColor(r, g, b, a)` | Sets ambient RGBA channels in the 0–255 range. |
+| `world:SetColor(r, g, b, a)` | Sets ambient RGBA channels in the 0–1 range; defaults to opaque black (`0, 0, 0, 1`). |
 | `world:GetColor()` | Returns the channels in the current implementation's order: `r, g, a, b`. |
 | `world:GetWidth()` / `world:GetHeight()` | Return the world canvas dimensions. |
 | `world:GetBorderRadius()` | Returns half the canvas diagonal. |

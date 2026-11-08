@@ -1,17 +1,14 @@
---- Runs the interactive map, physics-import, and shadow-type showcase.
+---@module Runs the interactive map, physics-imported occluders, and circle-shadow showcase.
 local capture       = require("Capture").new("standard-capture.png")
 local shadows       = require("shadows")
 local sti           = require("sti")
 
 local LightWorld    = require("shadows.LightWorld")
 local Light         = require("shadows.Light")
-local NormalShadow  = require("shadows.ShadowShapes.NormalShadow")
-local HeightShadow  = require("shadows.ShadowShapes.HeightShadow")
 local Star          = require("shadows.Star")
 local Body          = require("shadows.Body")
 local PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
 local CircleShadow  = require("shadows.ShadowShapes.CircleShadow")
-local ImageShadow   = require("shadows.ShadowShapes.ImageShadow")
 
 ---@type boolean
 local snapshotRequested = false
@@ -61,49 +58,21 @@ translation         = { x = 0, y = 0, z = 1 }
 
 ---@type LightWorld
 LWorld              = LightWorld:new()
-LWorld:SetColor(40, 40, 40, 255)
+LWorld:SetColor(40 / 255, 40 / 255, 40 / 255, 1)
 ---@type Light
 L = Light:new(LWorld, 500)
-L:SetColor(255, 255, 255, 255)
+L:SetColor(1, 1, 1, 1)
 L:SetPosition(400, 400, 20)
 
 --local S = Star:new(LWorld, 50000)
---S:SetColor(255, 255, 255, 255)
+--S:SetColor(1, 1, 1, 1)
 --S:SetPosition(-5000, -5000, 400)
 
 ---@type Body
 testBody = Body:new(LWorld)
 testBody:SetPosition(0, 0, 1.3)
 
----@type Body
-testBody2 = Body:new(LWorld)
-testBody2:SetPosition(0, 0, 1.3)
-
----@type Body
-testBody3 = Body:new(LWorld)
-testBody3:SetPosition(0, 0, 1.3)
-
----@type Body
-testBody4 = Body:new(LWorld)
-testBody4:SetPosition(0, 0, 1.3)
-
 CircleShadow:new(testBody, 200, 180, 50)
-
----@type NormalShadow
-nm = NormalShadow:new(testBody2, love.graphics.newImage("DEMOS/Standard/normalmap.png"))
----@type love.Image
-nm.Img = love.graphics.newImage("DEMOS/Standard/texture.png")
-nm:SetPosition(500, 600)
-
----@type HeightShadow
-hm = HeightShadow:new(testBody3, love.graphics.newImage("DEMOS/Standard/heightmap.png"))
----@type love.Image
-hm.Img = love.graphics.newImage("DEMOS/Standard/heightmaptexture.png")
-hm:SetPosition(200, 200)
-
----@type ImageShadow
-is = ImageShadow:new(testBody4, love.graphics.newImage("DEMOS/Standard/heightmap.png"))
-is:SetPosition(500, 200)
 
 --- @description Records the current rendered scene and queues its matching screenshot.
 --- @return nil
@@ -127,7 +96,7 @@ local function saveSceneSnapshot()
 		local x, y, z = light:GetPosition()
 		local r, g, b, a = light:GetColor()
 		lines[#lines + 1] = string.format(
-			"Light %d: position=%.17g,%.17g,%.17g radius=%.17g sizeRadius=%.17g blur=%s color=%d,%d,%d,%d active=%s canvasDPI=%s",
+			"Light %d: position=%.17g,%.17g,%.17g radius=%.17g sizeRadius=%.17g blur=%s color=%.17g,%.17g,%.17g,%.17g active=%s canvasDPI=%s",
 			index, x, y, z, light:GetRadius(), light.SizeRadius, tostring(light.Blur),
 			r, g, b, a, tostring(light == L),
 			light.Canvas and string.format("%.17g", light.Canvas:getDPIScale()) or "not allocated")
@@ -156,6 +125,11 @@ local function saveSceneSnapshot()
 				"Previous light position and radius must be recorded")
 			assert(text:find("Light 2:", 1, true) and text:find("active=true", 1, true),
 				"Added active light must be recorded")
+			local r, g, b, a = L:GetColor()
+			assert(r >= 0 and r <= 1 and g >= 0 and g <= 1 and b >= 0 and b <= 1 and a == 1,
+				"Added lights must use normalized random colors")
+			assert(text:find(string.format("color=%.17g,%.17g,%.17g,%.17g", r, g, b, a), 1, true),
+				"Snapshot colors must preserve normalized channels without integer truncation")
 			assert(love.filesystem.remove(base .. ".txt"))
 			assert(love.filesystem.remove(base .. ".png"))
 			print("Standard scene snapshot regression passed")
@@ -181,7 +155,6 @@ function love.load()
 	map:box2d_init(world)
 	LWorld:InitFromPhysics(world)
 
-	testBody4:Remove()
 	if verifySnapshot then
 		translation.x, translation.y, translation.z = 180, 210, 1
 		testBody:Remove()
@@ -189,7 +162,7 @@ function love.load()
 	end
 	if verifyShadow or verifyStain or verifyLines or verifyWallLines then
 		local light = Light:new(LWorld, 300)
-		light:SetColor(203, 178, 151, 255)
+		light:SetColor(203 / 255, 178 / 255, 151 / 255, 1)
 		if verifyShadow then
 			require("PenumbraRegression").run(LWorld, light)
 			translation.x, translation.y, translation.z = 259.4365, 1157.86405, 1
@@ -251,23 +224,15 @@ end
 
 love.graphics.maxFramerate = 100
 
---- @description Draws the map, sample textures, and lit scene.
+--- @description Draws the map and lit scene.
 --- @return nil
 function love.draw()
-	love.graphics.setColor(255, 255, 255, 255)
+	love.graphics.setColor(1, 1, 1, 1)
 
 	map:draw(-translation.x, -translation.y, translation.z, translation.z)
 
 	love.graphics.translate(-translation.x * translation.z, -translation.y * translation.z)
 	love.graphics.scale(translation.z, translation.z)
-
-	local x, y = nm:GetPosition()
-
-	love.graphics.draw(nm.Img, x, y)
-
-	local x, y = hm:GetPosition()
-
-	love.graphics.draw(hm.Img, x, y)
 
 	love.graphics.origin()
 	LWorld:Draw()
@@ -317,7 +282,7 @@ end
 function love.mousepressed(x, y, b)
 	if b == 1 then
 		L = Light:new(LWorld, 300)
-		L:SetColor(math.random(0, 255), math.random(0, 255), math.random(0, 255), 255)
+		L:SetColor(love.math.random(), love.math.random(), love.math.random(), 1)
 	else
 		testBody:Remove()
 	end

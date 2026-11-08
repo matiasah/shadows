@@ -31,7 +31,7 @@ Coordinates and dimensions are in logical pixels. Polygon vertices are a flat ar
 | `room:SetLocalPosition(x, y, z?)` / `room:GetLocalPosition()` | Sets or returns the position relative to the parent transform. |
 | `room:SetRotation(angle)` / `room:GetRotation()` | Sets or returns world rotation in degrees. |
 | `room:SetLocalRotation(angle)` / `room:GetLocalRotation()` | Sets or returns local rotation in degrees. |
-| `room:SetColor(r, g, b, a)` / `room:GetColor()` | Sets or returns RGBA color channels in the 0–255 range. |
+| `room:SetColor(r, g, b, a)` / `room:GetColor()` | Sets or returns RGBA color channels in the 0–1 range; defaults to opaque black (`0, 0, 0, 1`). |
 | `room:GetTransform()` | Returns the room's [`Transform`](Transform.md). |
 | `room:Remove()` | Removes the room from its world and detaches its transform. |
 
