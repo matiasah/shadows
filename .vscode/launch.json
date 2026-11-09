@@ -55,6 +55,19 @@
                 "NormalMap"
             ],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: Penumbra",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "Penumbra"
+            ],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
