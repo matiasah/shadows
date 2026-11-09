@@ -93,6 +93,19 @@ settings (`standard-scene.png` and `standard-scene.txt`) for reproducing
 lighting issues. See [Standard demonstration](docs/Standard-Demonstration.md)
 for the save location and controls.
 
+## Lighting showcase
+
+Scenes captured from the included demos, showing map lighting, contact-hardening
+penumbras, height-map shadows, and normal-map lighting.
+
+| Standard map lighting | Contact-hardening penumbras |
+| --- | --- |
+| ![A pool of light illuminating a corridor and crates in the Standard map demo](docs/images/lighting-standard-map.png) | ![Hard shadows compared with contact-hardening penumbras](docs/images/lighting-penumbra.png) |
+
+| Height-map shadows | Normal-map lighting |
+| --- | --- |
+| ![A light casting relief shadows across a stone wall](docs/images/lighting-height-map.png) | ![A light revealing surface detail on a stone wall](docs/images/lighting-normal-map.png) |
+
 ## Tests
 
 Install Busted with LuaRocks, then run the unit tests from the repository root:
