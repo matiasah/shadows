@@ -17,7 +17,7 @@ Transform    = require("shadows.Transform")
 --- @field World LightWorld Owning world.
 --- @field ID integer Index in the world's star collection.
 --- @field private Penumbra Penumbra? Cached occluder-distance filtering buffers.
---- @field Changed boolean? Whether the light canvas needs regeneration.
+--- @field Changed boolean? Whether shadow geometry and all rendering stages need regeneration.
 --- @field Width number Star canvas width.
 --- @field Height number Star canvas height.
 --- @field private __index Star Instance method lookup.
@@ -75,40 +75,21 @@ end
 --- @description Regenerates the star's shadow and illumination canvases when dirty.
 --- @return nil
 function Star:Update()
-	self:UpdatePenumbraSettings()
-	if self.Transform.HasChanged then
-		self.Transform.HasChanged = false
-		self.Changed = true
-	end
+	self:UpdateRenderSettings()
+	if self.World.UpdateStars then self.Changed = true end
 
-	if self.Changed or self.World.Changed or self.World.UpdateStars then
+	local shadowChanged = self.Changed or self.ShadowChanged or self.World.UpdateStars
+	if shadowChanged or self.AppearanceChanged or self.PenumbraChanged then
 		local x, y, z = self.Transform:GetPosition()
 		local wx, wy, wz = self.World:GetPosition()
 
-		-- Generate new content for the shadow canvas
-		love.graphics.setCanvas(self.ShadowRenderCanvas)
-		love.graphics.setShader()
-		love.graphics.clear(1, 1, 1, 1)
-
-		-- Move all the objects so that their position are corrected
-		love.graphics.origin()
-		love.graphics.translate(-wx * wz, -wy * wz)
-		love.graphics.scale(wz, wz)
-
-		self:GenerateDarkness(x, y, z)
-
-		-- Draw custom shadows
-		love.graphics.setBlendMode("subtract", "alphamultiply")
-		love.graphics.setColor(1, 1, 1, 1)
-		self.World:DrawShadows(self)
-
-		-- Draw the sprites so that shadows don't cover them
-		love.graphics.setShader(Shadows.ShapeShader)
-		love.graphics.setBlendMode("add", "alphamultiply")
-		love.graphics.setColor(1, 1, 1, 1)
-		self.World:DrawSprites(self)
-		self:ResolveShadowCanvas()
-		self:GeneratePenumbra()
+		if shadowChanged or self.PenumbraChanged then
+			love.graphics.origin()
+			love.graphics.translate(-wx * wz, -wy * wz)
+			love.graphics.scale(wz, wz)
+			if shadowChanged then self:RenderShadowCanvas(x, y, z) end
+			self:GeneratePenumbra(shadowChanged or false)
+		end
 
 		-- Now stop using the shadow canvas and generate the light
 		love.graphics.setCanvas(self.Canvas)
@@ -159,6 +140,9 @@ function Star:Update()
 
 		-- Tell the world it needs to update it's canvas
 		self.Changed = nil
+		self.ShadowChanged = nil
+		self.AppearanceChanged = nil
+		self.PenumbraChanged = nil
 		self.World.UpdateCanvas = true
 	end
 end
@@ -186,7 +170,7 @@ end
 --- @return nil
 function Star:Remove()
 	self.World.Stars[self.ID] = nil
-	self.World.Changed = true
+	self.World.UpdateCanvas = true
 
 	self.Transform:SetParent(nil)
 end

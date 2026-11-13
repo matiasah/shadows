@@ -1,4 +1,4 @@
---- Represents a height-sorted collection of shadow shapes in a light world.
+---@module Represents a height-sorted collection of shadow shapes in a light world.
 module("shadows.Body", package.seeall)
 
 Object        = require("shadows.Object")
@@ -16,6 +16,8 @@ PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
 --- @field Shapes PriorityQueue Shadow shapes attached to the body.
 --- @field TrackBody love.Body? Optional physics body followed during updates.
 --- @field Changed boolean? Whether this body's geometry needs regeneration.
+--- @field private __index Body Instance method lookup.
+--- @field private __type string Runtime type name.
 Body          = setmetatable({}, Object)
 Body.__index  = Body
 Body.__type   = "Body"
@@ -96,9 +98,8 @@ function Body:Update()
 			return nil
 		end
 
-		if self.Transform:SetPosition(self.TrackBody:getPosition()) or self.Transform:SetRotation(math.deg(self.TrackBody:getAngle())) then
-			self.World.Changed = true
-		end
+		self.Transform:SetPosition(self.TrackBody:getPosition())
+		self.Transform:SetRotation(math.deg(self.TrackBody:getAngle()))
 	end
 
 	for i = 1, self.Shapes:GetLength() do
@@ -189,9 +190,7 @@ end
 --- @param z number? Height; preserves the current height when omitted.
 --- @return Body body This body, for chaining.
 function Body:SetPosition(x, y, z)
-	if self.Transform:SetPosition(x, y, z) then
-		self.World.Changed = true
-	end
+	self.Transform:SetPosition(x, y, z)
 
 	return self
 end
@@ -215,7 +214,6 @@ end
 function Body:Remove()
 	if self.World then
 		self.World.Bodies:Remove(self)
-		self.World.Changed = true
 		self.World = nil
 
 		self.Transform:SetParent(nil)

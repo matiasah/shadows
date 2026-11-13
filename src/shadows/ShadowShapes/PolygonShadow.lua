@@ -1,4 +1,4 @@
---- Implements a polygonal occluder and projects its visible edges as a shadow.
+---@module Implements a polygonal occluder and projects its visible edges as a shadow.
 module("shadows.ShadowShapes.PolygonShadow", package.seeall)
 
 Shadows = require("shadows")
@@ -9,12 +9,16 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 
 --- @class PolygonShadow: Shadow
 --- @field Vertices number[] Centered local vertices as alternating x/y values.
+--- @field private Triangles number[][] Triangulated centered vertices for drawing concave polygons.
+--- @field private Convex boolean Whether the polygon can be projected as a single silhouette.
 --- @field CentroidTransform Transform Transform positioned at the polygon centroid.
 --- @field Radius number Bounding radius.
 --- @field SqrRadius number Squared bounding radius.
 --- @field World LightWorld Owning light world.
 --- @field Body Body Owning body.
 --- @field Transform Transform Shape transform relative to its body.
+--- @field private __index PolygonShadow Instance method lookup.
+--- @field private __type string Runtime type name.
 PolygonShadow = setmetatable({}, Shadow)
 PolygonShadow.__index = PolygonShadow
 PolygonShadow.__type = "PolygonShadow"
@@ -58,7 +62,13 @@ function PolygonShadow:Draw(Lz)
 	local x, y, z = self.Transform:GetPosition()
 
 	if Lz > z then
-		love.graphics.polygon("fill", self:GetVertices())
+		if self.Convex then
+			love.graphics.polygon("fill", self:GetVertices())
+		else
+			for _, Triangle in ipairs(self.Triangles) do
+				love.graphics.polygon("fill", self.CentroidTransform:ToWorldPoints(Triangle))
+			end
+		end
 	end
 end
 
@@ -105,7 +115,6 @@ function PolygonShadow:SetVertices(...)
 
 	self.Radius = 0
 	self.SqrRadius = 0
-	self.World.Changed = true
 	self.Changed = true
 
 	for i = 1, #Vertices, 2 do
@@ -122,6 +131,8 @@ function PolygonShadow:SetVertices(...)
 	end
 
 	self.Radius = sqrt(self.SqrRadius)
+	self.Convex = love.math.isConvex(self.Vertices)
+	self.Triangles = self.Convex and {} or love.math.triangulate(self.Vertices)
 end
 
 --- @description Returns polygon vertices transformed to world coordinates.
@@ -130,16 +141,17 @@ function PolygonShadow:GetVertices()
 	return self.CentroidTransform:ToWorldPoints(self.Vertices)
 end
 
---- @description Appends projected polygon-shadow geometry to the supplied draw-call list.
+--- @description Projects one convex silhouette, including a triangle of a concave polygon.
+--- @param self PolygonShadow Shape supplying projection bounds.
 --- @param Shapes table Destination list of OutputShadow objects.
 --- @param Body Body Owning body.
 --- @param DeltaX number X offset from the light canvas origin.
 --- @param DeltaY number Y offset from the light canvas origin.
 --- @param DeltaZ number Height offset from the light canvas origin.
 --- @param Light Light Light or star producing the shadow.
+--- @param Vertices number[] World-space convex polygon vertices.
 --- @return nil
-function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
-	local Vertices = self:GetVertices()
+local function GenerateConvexShadows(self, Shapes, Body, DeltaX, DeltaY, DeltaZ, Light, Vertices)
 	local VerticesLength = #Vertices
 	local VisibleEdge = {}
 
@@ -249,25 +261,11 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 		end
 
 		if FirstVertex then
-			for Index = FirstVertex, 1, -1 do
-				local PrevIndex = Index - 1
-
-				if PrevIndex <= 0 then
-					PrevIndex = VisibleEdges + PrevIndex
-				end
-
-				if (Lz > Bz and not VisibleEdge[Index] and not VisibleEdge[PrevIndex]) or (Lz <= Bz and VisibleEdge[Index] and VisibleEdge[PrevIndex]) then
-					insert(Geometry, Vertices[Index * 2 - 1])
-					insert(Geometry, Vertices[Index * 2])
-				end
-			end
-
-			for Index = VisibleEdges, FirstVertex, -1 do
-				local PrevIndex = Index - 1
-
-				if PrevIndex <= 0 then
-					PrevIndex = VisibleEdges + PrevIndex
-				end
+			-- Follow the near silhouette in boundary order; reversing it below the caster crosses edges.
+			local StepDirection = Lz > Bz and -1 or 1
+			for Step = 1, VisibleEdges - 1 do
+				local Index = (FirstVertex - 1 + Step * StepDirection) % VisibleEdges + 1
+				local PrevIndex = (Index - 2) % VisibleEdges + 1
 
 				if (Lz > Bz and not VisibleEdge[Index] and not VisibleEdge[PrevIndex]) or (Lz <= Bz and VisibleEdge[Index] and VisibleEdge[PrevIndex]) then
 					insert(Geometry, Vertices[Index * 2 - 1])
@@ -397,13 +395,29 @@ function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Lig
 
 		if #Geometry > 0 then
 			-- Triangulation is necessary, otherwise rays will be intersecting
-			local Ok, Triangles = pcall(love.math.triangulate, Geometry)
-
-			if Ok then
-				for i = 1, #Triangles do
-					insert(Shapes, OutputShadow:new("polygon", "fill", unpack(Triangles[i])))
-				end
+			local Triangles = love.math.triangulate(Geometry)
+			for i = 1, #Triangles do
+				insert(Shapes, OutputShadow:new("polygon", "fill", unpack(Triangles[i])))
 			end
+		end
+	end
+end
+
+---@description Appends a convex silhouette or the union of a concave polygon's projected triangles.
+---@param Shapes table Destination list of OutputShadow objects.
+---@param Body Body Owning body.
+---@param DeltaX number X offset from the light canvas origin.
+---@param DeltaY number Y offset from the light canvas origin.
+---@param DeltaZ number Height offset from the light canvas origin.
+---@param Light Light Light or star producing the shadow.
+---@return nil
+function PolygonShadow:GenerateShadows(Shapes, Body, DeltaX, DeltaY, DeltaZ, Light)
+	if self.Convex then
+		GenerateConvexShadows(self, Shapes, Body, DeltaX, DeltaY, DeltaZ, Light, self:GetVertices())
+	else
+		for _, Triangle in ipairs(self.Triangles) do
+			GenerateConvexShadows(self, Shapes, Body, DeltaX, DeltaY, DeltaZ, Light,
+				self.CentroidTransform:ToWorldPoints(Triangle))
 		end
 	end
 end

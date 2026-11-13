@@ -23,11 +23,21 @@ Transform                          = require("shadows.Transform")
 --- @field ShadowCanvas love.Canvas? Cached shadow canvas.
 --- @field private ShadowRenderCanvas love.Canvas? Multisampled shadow render target.
 --- @field Shapes table? Cached projected shadow draw calls.
---- @field Changed boolean? Whether the light canvas needs regeneration.
+--- @field Changed boolean? Whether shadow geometry and all rendering stages need regeneration.
+--- @field ShadowChanged boolean? Whether shadow pixels changed without invalidating all cached geometry.
+--- @field protected AppearanceChanged boolean? Whether illumination needs recompositing.
+--- @field protected PenumbraChanged boolean? Whether the filter radius needs updating.
+--- @field Star boolean? Whether this light uses a full-scene canvas.
 --- @field Moved boolean? Whether the light has moved.
 --- @field private Penumbra Penumbra? Cached occluder-distance filtering buffers.
 --- @field private PreviousBlur boolean? Last rendered blur setting.
 --- @field private PreviousSizeRadius number? Last rendered effective source radius.
+--- @field private PreviousRadius number? Last updated light radius.
+--- @field private PreviousArc number? Last updated angular coverage.
+--- @field private PreviousAngle number? Last updated world rotation.
+--- @field private PreviousX number? Last updated world x-coordinate.
+--- @field private PreviousY number? Last updated world y-coordinate.
+--- @field private PreviousZ number? Last updated world height.
 --- @field private __index Light Instance method lookup.
 --- @field private __type string Runtime type name.
 Light                              = setmetatable({}, Object)
@@ -91,6 +101,7 @@ end
 --- @description Releases references to the cached light and shadow canvases.
 --- @return nil
 function Light:DestroyCanvas()
+	if self.Canvas and self.World then self.World.UpdateCanvas = true end
 	self.Canvas = nil
 	self.ShadowCanvas = nil
 	self.ShadowRenderCanvas = nil
@@ -146,9 +157,7 @@ function Light:GenerateShadows(x, y, z, Layer)
 
 					Shape:GenerateShadows(ShadowList, Body, 0, 0, dz, self)
 
-					if #ShadowList > 0 then
-						newBodyShapes[Shape] = ShadowList
-					end
+					newBodyShapes[Shape] = ShadowList
 				else
 					newBodyShapes[Shape] = preBodyShapes[Shape]
 				end
@@ -195,7 +204,7 @@ end
 --- @return nil
 function Light:GenerateDarkness(x, y, z)
 	local newShapes = {}
-	local MinAltitude = 0
+	local MinAltitude = 0.0
 	local MinAltitudeLast
 
 	while MinAltitude ~= MinAltitudeLast and MinAltitude and MinAltitude < z do
@@ -273,47 +282,46 @@ function Light:GetUpdateVisibility()
 	return not self:GetCanvasDestroyed()
 end
 
+---@description Rebuilds shadow pixels with the caller's world-to-canvas transform.
+---@param x number Light world x-coordinate.
+---@param y number Light world y-coordinate.
+---@param z number Light height.
+---@return nil
+function Light:RenderShadowCanvas(x, y, z)
+	love.graphics.setCanvas(self.ShadowRenderCanvas)
+	love.graphics.setShader()
+	love.graphics.clear(1, 1, 1, 1)
+	self:GenerateDarkness(x, y, z)
+	love.graphics.setBlendMode("subtract", "alphamultiply")
+	love.graphics.setColor(1, 1, 1, 1)
+	self.World:DrawShadows(self)
+	love.graphics.setShader(Shadows.ShapeShader)
+	love.graphics.setBlendMode("add", "alphamultiply")
+	love.graphics.setColor(1, 1, 1, 1)
+	self.World:DrawSprites(self)
+	self:ResolveShadowCanvas()
+end
+
 --- @description Updates cached canvases when the light or its world has changed.
 --- @return nil
 function Light:Update()
-	self:UpdatePenumbraSettings()
+	self:UpdateRenderSettings()
 	-- If the object shouldn't be visible
 	if not self:GetUpdateVisibility() then
 		-- Do nothing
 		return nil
 	end
 
-	if self.Transform.HasChanged then
-		self.Transform.HasChanged = false
-		self.Changed = true
-	end
-
-	if self.Changed or self.World.Changed then
+	local shadowChanged = self.Changed or self.ShadowChanged
+	if shadowChanged or self.AppearanceChanged or self.PenumbraChanged then
 		local x, y, z = self.Transform:GetPosition()
 
-		-- Generate new content for the shadow canvas
-		love.graphics.setCanvas(self.ShadowRenderCanvas)
-		love.graphics.setShader()
-		love.graphics.clear(1, 1, 1, 1)
-
-		-- Move all the objects so that their position local to the light are corrected
-		love.graphics.origin()
-		love.graphics.translate(self.Radius - x, self.Radius - y)
-
-		self:GenerateDarkness(x, y, z)
-
-		-- Draw custom shadows
-		love.graphics.setBlendMode("subtract", "alphamultiply")
-		love.graphics.setColor(1, 1, 1, 1)
-		self.World:DrawShadows(self)
-
-		-- Draw the sprites so that shadows don't cover them
-		love.graphics.setShader(Shadows.ShapeShader)
-		love.graphics.setBlendMode("add", "alphamultiply")
-		love.graphics.setColor(1, 1, 1, 1)
-		self.World:DrawSprites(self)
-		self:ResolveShadowCanvas()
-		self:GeneratePenumbra()
+		if shadowChanged or self.PenumbraChanged then
+			love.graphics.origin()
+			love.graphics.translate(self.Radius - x, self.Radius - y)
+			if shadowChanged then self:RenderShadowCanvas(x, y, z) end
+			self:GeneratePenumbra(shadowChanged or false)
+		end
 
 		-- Now stop using the shadow canvas and generate the light
 		love.graphics.setCanvas(self.Canvas)
@@ -363,8 +371,33 @@ function Light:Update()
 
 		-- Tell the world it needs to update it's canvas
 		self.Changed = nil
+		self.ShadowChanged = nil
+		self.AppearanceChanged = nil
+		self.PenumbraChanged = nil
 		self.World.UpdateCanvas = true
 	end
+end
+
+---@description Separates geometry, illumination, and filter-setting invalidation.
+---@return nil
+function Light:UpdateRenderSettings()
+	self:UpdatePenumbraSettings()
+	local x, y, z = self:GetPosition()
+	local angle = self:GetAngle()
+	if self.PreviousRadius ~= self.Radius then
+		if self.PreviousRadius and not self.Star then self:DestroyCanvas() end
+		self.PreviousRadius = self.Radius
+		self.Changed = true
+	end
+	if self.PreviousX ~= x or self.PreviousY ~= y or self.PreviousZ ~= z or self.World.Changed then
+		self.Changed = true
+	end
+	if self.PreviousAngle ~= angle or self.PreviousArc ~= self.Arc then
+		self.AppearanceChanged = true
+	end
+	self.PreviousX, self.PreviousY, self.PreviousZ = x, y, z
+	self.PreviousAngle, self.PreviousArc = angle, self.Arc
+	self.Transform.HasChanged = false
 end
 
 --- @description Invalidates cached rendering when public penumbra settings change.
@@ -375,18 +408,24 @@ function Light:UpdatePenumbraSettings()
 	if self.PreviousBlur ~= self.Blur or self.PreviousSizeRadius ~= self.SizeRadius then
 		self.PreviousBlur = self.Blur
 		self.PreviousSizeRadius = self.SizeRadius
-		self.Changed = true
+		self.PenumbraChanged = true
 	end
 end
 
 --- @description Builds occluder-distance buffers using the current shadow rendering transform.
+--- @param Rebuild boolean? Whether shadow pixels changed; defaults to true.
 --- @return nil
-function Light:GeneratePenumbra()
+function Light:GeneratePenumbra(Rebuild)
 	if self.Blur and self.SizeRadius > 0 then
 		if not self.Penumbra then
 			self.Penumbra = require("shadows.Penumbra"):new(self.ShadowCanvas)
+			Rebuild = true
 		end
-		self.Penumbra:Update(self)
+		if Rebuild ~= false then
+			self.Penumbra:Update(self)
+		else
+			self.Penumbra:UpdateRadius(self)
+		end
 	else
 		self.Penumbra = nil
 	end
@@ -448,22 +487,22 @@ end
 function Light:SetColor(R, G, B, A)
 	if R ~= self.R then
 		self.R = R
-		self.Changed = true
+		self.AppearanceChanged = true
 	end
 
 	if G ~= self.G then
 		self.G = G
-		self.Changed = true
+		self.AppearanceChanged = true
 	end
 
 	if B ~= self.B then
 		self.B = B
-		self.Changed = true
+		self.AppearanceChanged = true
 	end
 
 	if A ~= nil and A ~= self.A then
 		self.A = A
-		self.Changed = true
+		self.AppearanceChanged = true
 	end
 
 	return self
@@ -487,7 +526,7 @@ function Light:SetImage(Image)
 
 		self.Image = Image
 		self.Radius = math.sqrt(Width * Width + Height * Height) * 0.5
-		self.Changed = true
+		self.AppearanceChanged = true
 	end
 end
 
@@ -518,7 +557,7 @@ end
 function Light:Remove()
 	if self.World then
 		self.World.Lights[self.ID] = nil
-		self.World.Changed = true
+		self.World.UpdateCanvas = true
 		self.World = nil
 		self.ID = nil
 

@@ -58,8 +58,12 @@ Stars have public `Width` and `Height` fields. Their position, radius, color, te
 
 - Local-light canvas dimensions are twice the radius. Soft shadows additionally use an occluder mask, two floating-point distance-field buffers, a floating-point radius buffer, and shadow-mask mipmaps.
 - Star canvas dimensions follow the world canvas and are independent of radius.
-- Canvases are cached and regenerated when scene objects, light settings, or world state changes.
-- `LightWorld:DrawShadows(lightOrStar)` and `LightWorld:DrawSprites(lightOrStar)` are invoked while each light's offscreen buffers are rendered.
+- Projected shadow geometry is cached per shape and height layer, including empty shadow lists. Editing a shape preserves unchanged siblings' geometry; moving its body invalidates all its shapes.
+- Local shadow canvases rebuild only for shapes intersecting the light's range at their previous or current bounds. Movement, radius changes, removal, and texture replacement are tracked on the next world update. Stars conservatively redraw for any scene geometry change.
+- Affected shadow canvases are cleared and fully redrawn, rather than painting only changed shapes, so overlaps and height layers remain correct.
+- Color, direct `Arc` changes, and light rotation only recompose illumination. Source-size changes update the penumbra radius field without rebuilding shadow pixels or occluder-distance fields. Disabling filtering releases its buffers; enabling it rebuilds them.
+- Light position and radius changes rebuild shadow geometry. Radius changes also recreate local-light canvases at the new size. Star camera changes rebuild view-dependent geometry and rendering.
+- `LightWorld:DrawShadows(lightOrStar)` and `LightWorld:DrawSprites(lightOrStar)` run during shadow-buffer rebuilds, not appearance-only recomposition. Call `world:ForceUpdate()` if their output depends on changed light appearance or external state, or if texture pixels are edited in place.
 - When penumbras are enabled, `DrawSprites` is also invoked for the occluder mask. Keep this callback limited to drawing; do not update simulation state inside it.
 
 See the [standard demonstration](Standard-Demonstration.md) for a complete interactive scene.

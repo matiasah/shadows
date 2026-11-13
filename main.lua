@@ -1,10 +1,12 @@
---- Selects and launches one repository demo with its required module paths and window size.
+---@module Selects and launches one repository demo with its required module paths and window size.
 local demos = {
     HighDPI = "DEMOS/HighDPI/main.lua",
     Standard = "DEMOS/Standard/main.lua",
     HeightMap = "DEMOS/HeightMap/main.lua",
     NormalMap = "DEMOS/NormalMap/main.lua",
     Penumbra = "DEMOS/Penumbra/main.lua",
+    MovingObjects = "DEMOS/MovingObjects/main.lua",
+    RotatingObjects = "DEMOS/RotatingObjects/main.lua",
 }
 
 local demoName = "HighDPI"
@@ -23,6 +25,8 @@ local windowSizes = {
     HeightMap = { 1024, 1024 },
     NormalMap = { 1024, 720 },
     Penumbra = { 1000, 480 },
+    MovingObjects = { 1000, 640 },
+    RotatingObjects = { 1000, 700 },
 }
 
 local requirePath = love.filesystem.getRequirePath()

@@ -20,6 +20,25 @@ for the filtering approximation, graphics requirements, and comparison demo.
 Projected shadow render targets and occluder-mask canvases request 4x MSAA to smooth diagonal
 edges, including when soft-shadow filtering is disabled.
 
+## Cached updates
+
+Lights retain a shared shadow canvas and cache projected geometry per shape and
+height layer. Shape edits rebuild only that shape's geometry; moving a body
+rebuilds its shapes. Local lights redraw shadows only when their influence
+intersects a changed shape's previous or current bounds. Full-scene stars
+redraw on scene changes. Affected canvases are still redrawn completely to
+preserve overlapping shadows and height ordering.
+
+Color, angular coverage, and light rotation changes reuse shadow pixels.
+Changing `SizeRadius` reuses the occluder-distance field and updates only filter
+radii and illumination. Changing the light position or radius rebuilds shadows;
+local-light canvases resize with the radius.
+
+Call `world:ForceUpdate()` when custom shadow/sprite callback output changes or
+an existing texture's pixels change in place. Custom callbacks are not invoked
+for appearance-only recomposition; force an update if they depend on light color,
+arc, or rotation. See [Light](docs/Light.md) for rendering details.
+
 ## Color API migration
 
 All light, star, ambient, and room color channels now use LÖVE's **0-1 range**.
@@ -77,6 +96,10 @@ The high-DPI regression scene can also be run from the repository root:
 love . HighDPI
 love . HighDPI --capture
 love . Penumbra --capture --verify
+love . MovingObjects
+love . MovingObjects --capture --verify
+love . RotatingObjects
+love . RotatingObjects --capture --verify
 ```
 
 Capture mode renders the scene to offscreen canvases at DPI scale 2, saves a screenshot using `love.graphics.captureScreenshot`, and exits. Press `F12` to capture an image interactively; press `Escape` to close the demo.
@@ -87,6 +110,43 @@ use `+` and `-` to adjust the source radius and the arrow keys to move the light
 at different source sizes and light distances, brightness preservation,
 hard-shadow behavior, and DPI scales 1 and 2. Capture failures print a traceback and exit with a
 nonzero status instead of opening an interactive error screen.
+The same command checks granular cache work counts and exact pixel equality
+between incremental updates and forced full rebuilds, including movement,
+resizing, removal, texture replacement, tracked parents, and camera changes.
+
+The `MovingObjects` demo continuously moves five circle/polygon objects,
+including a concave 7-shaped polygon, back and forth under three fixed lights
+at different positions, colored orange, blue, and green. Motion paths and light
+markers show the scene layout; a counter reports
+shadow-canvas redraws. Press `Space` to pause, `R` to restart, and `B` to switch
+between hard and soft shadows. Capture mode uses a deterministic animation pose.
+`--verify` checks both directions of motion, a complete loop, shadows from every
+light, cache reuse while stationary, and pixel equality with forced rebuilds.
+It also checks the seven's top bar, diagonal stem, and open notch throughout
+its movement cycle, including hard-shadow rendering and unobstructed notch visibility.
+Concave polygons are triangulated for silhouette drawing and shadow projection,
+so the seven retains its open notch instead of being filled as a convex shape.
+
+The `RotatingObjects` demo spins a rectangle, triangle, and pentagon in both
+directions under three colored lights. A fourth example rotates only a polygon
+inside its body while its circle sibling stays fixed. Pivot markers show
+orientation. Press `Space` to pause, `R` to restart, `Up`/`Down` to adjust speed,
+and `B` to toggle hard/soft shadows. `--verify` checks signed rotation angles,
+full-loop periodicity, the fixed sibling, shadows from all three lights, and
+pixel equality with full rebuilds for both hard and soft shadows.
+Polygon shadow contours follow silhouette boundary order for lights below the
+caster, preventing crossed triangles and missing shadow wedges as objects rotate.
+The rotating-demo regression also checks the recorded pentagon defect at
+89.706888 degrees and interior occlusion throughout a complete rotation.
+Click **Snapshot scene [F9]** or press `F9` to pause and save a matching
+`rotating-scene.png` and `rotating-scene.txt` without closing the demo. The text
+records animation time, exact body/shape rotations, local and world polygon
+vertices, all light settings, and window/canvas DPI. Both files are written to
+the LÖVE save directory (on Windows, `%APPDATA%\LOVE\shadows`); the full path is
+printed to the console. Share both files to reproduce an issue. The next
+snapshot overwrites them; press `Space` to resume. Run
+`love . RotatingObjects --capture --snapshot-verify` to validate the button and
+matching screenshot/state output using temporary files.
 
 In the `Standard` demo, press `F9` to save a matching screenshot and scene
 settings (`standard-scene.png` and `standard-scene.txt`) for reproducing
@@ -96,7 +156,8 @@ for the save location and controls.
 ## Lighting showcase
 
 Scenes captured from the included demos, showing map lighting, contact-hardening
-penumbras, height-map shadows, and normal-map lighting.
+penumbras, height-map shadows, normal-map lighting, and moving/rotating occluders under
+multiple colored lights.
 
 | Standard map lighting | Contact-hardening penumbras |
 | --- | --- |
@@ -105,6 +166,22 @@ penumbras, height-map shadows, and normal-map lighting.
 | Height-map shadows | Normal-map lighting |
 | --- | --- |
 | ![A light casting relief shadows across a stone wall](docs/images/lighting-height-map.png) | ![A light revealing surface detail on a stone wall](docs/images/lighting-normal-map.png) |
+
+### Moving objects and multiple lights
+
+Five objects, including a 7-shaped polygon, oscillate back and forth under three
+fixed, colored lights in the
+[`MovingObjects` demo](DEMOS/MovingObjects/main.lua).
+
+![Moving circles, rectangles, and a 7-shaped polygon casting shadows under orange, blue, and green lights](docs/images/lighting-moving-objects.png)
+
+### Rotating polygons
+
+Clockwise and counterclockwise polygons cast changing shadows, with a separate
+shape-local rotor and stationary circle in the
+[`RotatingObjects` demo](DEMOS/RotatingObjects/main.lua).
+
+![Rotating rectangle, triangle, pentagon, and local rotor casting shadows from three colored lights](docs/images/lighting-rotating-objects.png)
 
 ## Tests
 

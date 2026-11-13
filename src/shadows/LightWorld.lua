@@ -8,6 +8,13 @@ Body                                                   = require("shadows.Body")
 BodyTransform                                          = require("shadows.BodyTransform")
 PriorityQueue                                          = require("shadows.PriorityQueue")
 
+---@class ShadowBounds
+---@field x number World-space centroid x-coordinate.
+---@field y number World-space centroid y-coordinate.
+---@field z number World-space centroid height.
+---@field radius number Shape bounding radius.
+---@field angle number World-space rotation in degrees.
+
 --- @class LightWorld: Object
 --- @field Canvas love.Canvas Composited world canvas.
 --- @field Width number Canvas width.
@@ -15,10 +22,11 @@ PriorityQueue                                          = require("shadows.Priori
 --- @field BorderRadius number Half-diagonal of the world canvas.
 --- @field Bodies PriorityQueue Bodies ordered by height.
 --- @field BodyTracks table Physics-body-following transforms.
---- @field Rooms table Registered dark rooms.
---- @field Lights table Registered local lights.
---- @field Stars table Registered full-scene lights.
---- @field Changed boolean Whether body or light geometry changed.
+--- @field Rooms Room[] Registered dark rooms.
+--- @field Lights Light[] Registered local lights.
+--- @field Stars Star[] Registered full-scene lights.
+--- @field Changed boolean Whether all shadow caches need rebuilding.
+--- @field private ShapeBounds table<Shadow, ShadowBounds> Last updated shape bounds, including removed shapes until the next update.
 --- @field UpdateCanvas boolean? Whether the composed canvas needs redrawing.
 --- @field UpdateStars boolean? Whether stars need updating.
 --- @field x number Camera x-coordinate.
@@ -28,6 +36,8 @@ PriorityQueue                                          = require("shadows.Priori
 --- @field G number Ambient green channel in the 0-1 range; defaults to 0.
 --- @field B number Ambient blue channel in the 0-1 range; defaults to 0.
 --- @field A number Ambient alpha channel in the 0-1 range; defaults to 1.
+--- @field private __index LightWorld Instance method lookup.
+--- @field private __type string Runtime type name.
 LightWorld                                             = setmetatable({}, Object)
 LightWorld.__index                                     = LightWorld
 LightWorld.__type                                      = "LightWorld"
@@ -52,6 +62,7 @@ function LightWorld:new()
 	self.Rooms = {}
 	self.Lights = {}
 	self.Stars = {}
+	self.ShapeBounds = {}
 	self.Changed = true
 
 	return self
@@ -107,9 +118,55 @@ end
 function LightWorld:AddBody(Body)
 	Body.World = self
 
-	self.Changed = true
 	self.UpdateCanvas = true
 	self.Bodies:Insert(Body)
+end
+
+---@description Invalidates local lights intersecting shape bounds and all full-scene stars.
+---@param Bounds ShadowBounds Previous or current shape bounds.
+---@return nil
+function LightWorld:InvalidateBounds(Bounds)
+	for _, Light in pairs(self.Lights) do
+		local x, y = Light:GetPosition()
+		local radius = Light.Radius + Bounds.radius
+		if (Bounds.x - x)^2 + (Bounds.y - y)^2 <= radius^2 then
+			Light.ShadowChanged = true
+		end
+	end
+	for _, Star in pairs(self.Stars) do
+		Star.ShadowChanged = true
+	end
+end
+
+---@description Tracks shape changes and invalidates lights using both old and new bounds.
+---@return nil
+function LightWorld:UpdateShapeBounds()
+	local current = {}
+	for i = 1, self.Bodies:GetLength() do
+		local body = self.Bodies:Get(i)
+		local shapes = body:GetShapes()
+		for j = 1, shapes:GetLength() do
+			local shape = shapes:Get(j)
+			local x, y, z = shape:GetCentroid()
+			local radius = shape:GetRadius()
+			local angle = shape:GetTransform():GetRotation()
+			local previous = self.ShapeBounds[shape]
+			if body:GetChanged() or shape:GetChanged() or not previous
+				or previous.x ~= x or previous.y ~= y or previous.z ~= z
+				or previous.radius ~= radius or previous.angle ~= angle then
+				shape:SetChanged(true)
+				if previous then self:InvalidateBounds(previous) end
+				current[shape] = { x = x, y = y, z = z, radius = radius, angle = angle }
+				self:InvalidateBounds(current[shape])
+			else
+				current[shape] = previous
+			end
+		end
+	end
+	for shape, previous in pairs(self.ShapeBounds) do
+		if not current[shape] then self:InvalidateBounds(previous) end
+	end
+	self.ShapeBounds = current
 end
 
 --- @description Registers a local light with this world.
@@ -254,13 +311,16 @@ end
 --- @param dt number? Elapsed time in seconds; currently unused.
 --- @return nil
 function LightWorld:Update(dt)
+	for Index, Transform in pairs(self.BodyTracks) do
+		Transform:Update()
+	end
+
 	for Index, Body in pairs(self.Bodies:GetArray()) do
 		Body:Update()
 	end
 
-	for Index, Transform in pairs(self.BodyTracks) do
-		Transform:Update()
-	end
+	Shadows.insertionSort(self.Bodies:GetArray())
+	self:UpdateShapeBounds()
 
 	for Index, Light in pairs(self.Lights) do
 		Light:Update()
@@ -277,8 +337,6 @@ function LightWorld:Update(dt)
 	self.Changed = false
 
 	if self.UpdateCanvas then
-		Shadows.insertionSort(self.Bodies:GetArray())
-
 		self.UpdateCanvas = nil
 		self.UpdateStars = nil
 
@@ -325,16 +383,15 @@ function LightWorld:Update(dt)
 
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		love.graphics.origin()
+	end
 
-		for i = 1, self.Bodies:GetLength() do
-			local Body = self.Bodies:Get(i)
-			local Shapes = Body:GetShapes()
+	for i = 1, self.Bodies:GetLength() do
+		local Body = self.Bodies:Get(i)
+		local Shapes = Body:GetShapes()
 
-			Body:SetChanged(false)
-
-			for j = 1, Shapes:GetLength() do
-				Shapes:Get(j):SetChanged(false)
-			end
+		Body:SetChanged(false)
+		for j = 1, Shapes:GetLength() do
+			Shapes:Get(j):SetChanged(false)
 		end
 	end
 

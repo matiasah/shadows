@@ -30,13 +30,18 @@ Coordinates are local to the body. Polygon vertices are passed as alternating `x
 | `shape:Remove()` | Removes the shape from its body and detaches its transform. |
 
 `Update`, `Draw`, and `GenerateShadows` are renderer hooks called by the body and light world.
+Shape-local changes invalidate only that shape's projected geometry and local
+lights intersecting its previous or current bounds. Body movement invalidates
+all attached shapes. Removal clears the old shadow on the next world update.
+For custom geometry changes, use `shape:SetChanged(true)`; use
+`world:ForceUpdate()` for custom callbacks or textures whose pixels change in place.
 
 ## CircleShadow
 
 | Method | Description |
 |---|---|
 | `CircleShadow:new(body, x, y, radius)` | Creates and attaches a circle occluder. |
-| `shape:SetRadius(radius)` / `shape:GetRadius()` | Sets or returns the radius. Setting it marks the scene geometry changed. |
+| `shape:SetRadius(radius)` / `shape:GetRadius()` | Sets or returns the radius. Setting it invalidates this shape and lights intersecting its old or new bounds. |
 | `shape:SetPosition(x, y)` | Sets local position through the shared shape API. |
 
 ## PolygonShadow
@@ -49,6 +54,13 @@ Coordinates are local to the body. Polygon vertices are passed as alternating `x
 | `shape:GetCentroid()` | Returns the polygon centroid in world space. |
 
 Polygon input is expected to contain at least three coordinate pairs. Shape transforms can also be parented to other transforms; see [Transform](Transform.md).
+Simple concave polygons, such as the seven in the `MovingObjects` demo, are
+triangulated when vertices change. Their triangles are used for silhouette
+drawing and projected-shadow coverage; convex polygons retain the single-contour
+path. Self-intersecting polygons and polygons with holes are not supported.
+Projected contours preserve silhouette boundary order as polygons rotate,
+including when a light is below the caster. Invalid projected geometry raises
+a triangulation error rather than silently dropping the shadow.
 
 ## Textured shapes
 

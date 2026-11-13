@@ -1,4 +1,4 @@
---- Implements a circular occluder and projects its shadow for a light.
+---@module Implements a circular occluder and projects its shadow for a light.
 module("shadows.ShadowShapes.CircleShadow", package.seeall)
 
 Shadows = require("shadows")
@@ -11,6 +11,8 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 --- @field Radius number Circle radius.
 --- @field Body Body Owning body.
 --- @field Transform Transform Shape transform relative to its body.
+--- @field private __index CircleShadow Instance method lookup.
+--- @field private __type string Runtime type name.
 CircleShadow = setmetatable({}, Shadow)
 CircleShadow.__index = CircleShadow
 CircleShadow.__type = "CircleShadow"
@@ -57,7 +59,6 @@ function CircleShadow:SetRadius(Radius)
 	if self.Radius ~= Radius then
 		self.Radius = Radius
 		self.Changed = true
-		self.Body.World.Changed = true
 	end
 end
 

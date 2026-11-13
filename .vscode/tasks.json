@@ -10,7 +10,9 @@
                 "Standard",
                 "HeightMap",
                 "NormalMap",
-                "Penumbra"
+                "Penumbra",
+                "MovingObjects",
+                "RotatingObjects"
             ],
             "default": "HighDPI"
         }

@@ -18,7 +18,7 @@ The initial canvas matches `love.graphics.getDimensions()`.
 | `world:Update(dt?)` | Updates bodies, tracked physics transforms, lights, stars, rooms, and the composed canvas. Call from `love.update`. `dt` is currently unused. |
 | `world:Draw()` | Draws the composed canvas at the origin. Call from `love.draw`. |
 | `world:Resize(width, height)` | Recreates the world canvas and resizes registered stars. Call after resizing the LÖVE window. |
-| `world:ForceUpdate()` | Marks the world changed to force shadow regeneration. |
+| `world:ForceUpdate()` | Forces every light and star to rebuild shadow geometry and rendering on its next visible update. |
 | `world:InitFromPhysics(physicsWorld)` | Imports supported bodies and fixtures from a LÖVE physics world once. |
 
 ## Scene objects
@@ -62,6 +62,17 @@ With [penumbras](Penumbras.md) enabled, `DrawSprites` also runs while building
 the occluder silhouette mask. Keep these callbacks drawing-only, without
 simulation side effects. Custom shadow geometry needs a corresponding body or
 sprite silhouette for contact-aware filtering.
+
+The world tracks each shape's previous and current centroid, bounding radius,
+height, rotation, and geometry-dirty flag. Only intersecting local lights are
+invalidated; stars conservatively redraw for all scene geometry changes.
+Tracked parent transforms are synchronized before bodies and lights so changes
+take effect in the same frame.
+
+Callbacks are skipped when only light color, arc, rotation, or source size
+changes. Call `world:ForceUpdate()` when callback output changes independently
+of registered shapes, depends on those light settings, or uses textures edited
+in place. Replacing a shape texture through `SetTexture` is tracked automatically.
 
 ## Example
 

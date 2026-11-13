@@ -1,4 +1,4 @@
---- Tests public penumbra settings, invalidation, and hard-shadow buffer cleanup.
+---@module Tests public penumbra settings, invalidation, and hard-shadow buffer cleanup.
 ---@diagnostic disable: undefined-global
 package.path = "src/?.lua;src/?/init.lua;" .. package.path
 
@@ -40,10 +40,11 @@ describe("Light penumbra settings",
                 local light = newLight()
                 light:UpdatePenumbraSettings()
                 assert.equals(10, light.PreviousSizeRadius)
-                assert.is_true(light.Changed)
-                light.Changed = nil
-                light:UpdatePenumbraSettings()
+                assert.is_true(light.PenumbraChanged)
                 assert.is_nil(light.Changed)
+                light.PenumbraChanged = nil
+                light:UpdatePenumbraSettings()
+                assert.is_nil(light.PenumbraChanged)
             end)
 
         it("invalidates when blur is toggled directly",
@@ -52,10 +53,11 @@ describe("Light penumbra settings",
             function()
                 local light = newLight()
                 light:UpdatePenumbraSettings()
-                light.Changed = nil
+                light.PenumbraChanged = nil
                 light.Blur = false
                 light:UpdatePenumbraSettings()
-                assert.is_true(light.Changed)
+                assert.is_true(light.PenumbraChanged)
+                assert.is_nil(light.Changed)
                 assert.is_false(light.PreviousBlur)
             end)
 
@@ -65,10 +67,11 @@ describe("Light penumbra settings",
             function()
                 local light = newLight()
                 light:UpdatePenumbraSettings()
-                light.Changed = nil
+                light.PenumbraChanged = nil
                 light.SizeRadius = 24
                 light:UpdatePenumbraSettings()
-                assert.is_true(light.Changed)
+                assert.is_true(light.PenumbraChanged)
+                assert.is_nil(light.Changed)
                 assert.equals(24, light.PreviousSizeRadius)
             end)
 

@@ -1,4 +1,4 @@
---- Implements a normal-map occluder used to shade light projected onto a body.
+---@module Implements a normal-map occluder used to shade light projected onto a body.
 module("shadows.ShadowShapes.NormalShadow", package.seeall)
 
 Shadows = require("shadows")
@@ -13,6 +13,8 @@ Shadow = require("shadows.ShadowShapes.Shadow")
 --- @field Height number? Optional rendered height; defaults to texture height.
 --- @field Body Body Owning body.
 --- @field Transform Transform Shape transform relative to its body.
+--- @field private __index NormalShadow Instance method lookup.
+--- @field private __type string Runtime type name.
 NormalShadow = setmetatable({}, Shadow)
 NormalShadow.__index = NormalShadow
 NormalShadow.__type = "NormalShadow"
@@ -46,11 +48,12 @@ function NormalShadow:new(Body, Texture, Width, Height)
 	end
 end
 
---- @description Replaces the normal map texture.
+--- @description Replaces the normal map texture and invalidates cached shading.
 --- @param Texture love.Texture New normal map.
 --- @return nil
 function NormalShadow:SetTexture(Texture)
 	self.Texture = Texture
+	self.Changed = true
 end
 
 --- @description Returns the normal map texture.

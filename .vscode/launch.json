@@ -68,6 +68,32 @@
                 "Penumbra"
             ],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: MovingObjects",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "MovingObjects"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: RotatingObjects",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "RotatingObjects"
+            ],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

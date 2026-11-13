@@ -1,4 +1,4 @@
---- Defines shared update, transform, sorting, and removal behavior for shadow shapes.
+---@module Defines shared update, transform, sorting, and removal behavior for shadow shapes.
 module("shadows.ShadowShapes.Shadow", package.seeall)
 
 Object = require("shadows.Object")
@@ -7,17 +7,19 @@ Object = require("shadows.Object")
 --- @field Body Body? Body that owns this shape.
 --- @field Transform Transform? Shape transform relative to its body.
 --- @field Changed boolean? Whether the shape needs shadow regeneration.
+--- @field private __index Shadow Instance method lookup.
+--- @field private __type string Runtime type name.
 Shadow = setmetatable({}, Object)
 Shadow.__index = Shadow
 Shadow.__type = "Shadow"
 
---- @description Propagates transform changes to the owning body.
+--- @description Invalidates only this shape when its transform or an ancestor changes.
 --- @return nil
 function Shadow:Update()
 	if self.Transform then
 		if self.Transform.HasChanged then
 			self.Transform.HasChanged = false
-			self.Body:GetTransform().HasChanged = true
+			self.Changed = true
 		end
 	end
 end
@@ -54,7 +56,6 @@ end
 --- @return nil
 function Shadow:SetPosition(x, y)
 	if self.Transform:SetLocalPosition(x, y) then
-		self.Body.World.Changed = true
 		self.Changed = true
 	end
 end
@@ -92,7 +93,6 @@ end
 function Shadow:Remove()
 	if self.Body then
 		self.Body:GetShapes():Remove(self)
-		self.Body.World.Changed = true
 		self.Body = nil
 
 		self.Transform:SetParent(nil)

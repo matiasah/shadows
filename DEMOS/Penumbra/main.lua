@@ -1,4 +1,4 @@
---- Shows hard and contact-hardening shadows side by side with adjustable source size.
+---@module Shows hard and contact-hardening shadows side by side with adjustable source size.
 local capture = require("Capture").new("penumbra-capture.png")
 local LightWorld = require("shadows.LightWorld")
 local Star = require("shadows.Star")
@@ -20,6 +20,7 @@ function love.load()
         if argument == "--verify" then
             require("Regression").run()
             require("AntialiasRegression").run()
+            require("CacheRegression").run()
         end
     end
     for i = 1, 2 do

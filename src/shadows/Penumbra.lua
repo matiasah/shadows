@@ -93,6 +93,17 @@ function Penumbra:Update(Light, Scale)
     end
     love.graphics.setShader()
     Light.ShadowCanvas:generateMipmaps()
+    self:UpdateRadius(Light, Scale)
+end
+
+---@description Rebuilds filter radii without regenerating the cached occluder-distance field.
+---@param Light Light|Star Light whose source radius or filtering settings changed.
+---@param Scale number? World-to-canvas scale; defaults to the star camera scale or 1.
+---@return nil
+function Penumbra:UpdateRadius(Light, Scale)
+    love.graphics.origin()
+    love.graphics.setBlendMode("replace", "premultiplied")
+    love.graphics.setColor(1, 1, 1, 1)
     local scale = Scale or (Light.Star and select(3, Light.World:GetPosition())) or 1
     self.Scale = scale
     local x, y = Light:GetCanvasCenter()

@@ -50,6 +50,8 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 - [Standard interactive demonstration](Standard-Demonstration.md)
 - [High-DPI regression scene](../DEMOS/HighDPI/main.lua)
 - [Hard-shadow and penumbra comparison](../DEMOS/Penumbra/main.lua)
+- [Oscillating objects and multiple colored lights](../DEMOS/MovingObjects/main.lua)
+- [Rotating polygons and shape-local rotation](../DEMOS/RotatingObjects/main.lua)
 
 ## Notes
 
