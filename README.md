@@ -176,8 +176,8 @@ for the save location and controls.
 ## Lighting showcase
 
 Scenes captured from the included demos, showing map lighting, contact-hardening
-penumbras, height-map shadows, normal-map lighting, and moving/rotating occluders under
-multiple colored lights.
+penumbras, height-map shadows, normal-map lighting, moving/rotating occluders under
+multiple colored lights, and upright image casters.
 
 | Standard map lighting | Contact-hardening penumbras |
 | --- | --- |
@@ -202,6 +202,14 @@ shape-local rotor and stationary circle in the
 [`RotatingObjects` demo](DEMOS/RotatingObjects/main.lua).
 
 ![Rotating rectangle, triangle, pentagon, and local rotor casting shadows from three colored lights](docs/images/lighting-rotating-objects.png)
+
+### Upright trees casting and receiving shadows
+
+Seventeen pixel-art trees project their alpha silhouettes onto the grass, become
+dark when backlit, and receive shadows from other trees in the
+[`CastImage` demo](DEMOS/CastImage/main.lua).
+
+![A pixel-art forest with long ground shadows, illuminated foliage, and dark backlit trees](docs/images/lighting-cast-image.png)
 
 ## Tests
 
