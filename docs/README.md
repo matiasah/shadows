@@ -39,6 +39,7 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 | [Body](Body.md) | Height-aware groups of shadow shapes and physics integration. |
 | [Shadow shapes](Shadow.md) | Circle and polygon occluders, plus shared shape behavior. |
 | [ImageShadow](ImageShadow.md) | Texture-based shadow occluders. |
+| [CastImageShadow](CastImageShadow.md) | Upright alpha-image casters with ground projection and mutually shaded sprites. |
 | [NormalShadow](NormalShadow.md) | Normal-map lighting and shadow occluders. |
 | [HeightShadow](HeightShadow.md) | Height-map shadow occluders. |
 | [Rooms](Room.md) | Circle, rectangle, and polygon ambient-darkening regions. |
@@ -52,6 +53,7 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 - [Hard-shadow and penumbra comparison](../DEMOS/Penumbra/main.lua)
 - [Oscillating objects and multiple colored lights](../DEMOS/MovingObjects/main.lua)
 - [Rotating polygons and shape-local rotation](../DEMOS/RotatingObjects/main.lua)
+- [Upright trees casting and receiving shadows](../DEMOS/CastImage/main.lua)
 
 ## Notes
 

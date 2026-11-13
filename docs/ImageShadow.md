@@ -2,6 +2,9 @@
 
 `ImageShadow` draws a texture as an occluder. Its silhouette casts a shadow; lighter texture pixels produce darker shadow coverage in the resulting image.
 
+For upright trees or other sprites that project their alpha silhouette away
+from the light and receive lighting themselves, use [CastImageShadow](CastImageShadow.md).
+
 ## Import and construction
 
 ```lua

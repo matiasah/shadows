@@ -7,6 +7,8 @@ local demos = {
     Penumbra = "DEMOS/Penumbra/main.lua",
     MovingObjects = "DEMOS/MovingObjects/main.lua",
     RotatingObjects = "DEMOS/RotatingObjects/main.lua",
+    ImageShadow = "DEMOS/ImageShadow/main.lua",
+    CastImage = "DEMOS/CastImage/main.lua",
 }
 
 local demoName = "HighDPI"
@@ -27,6 +29,8 @@ local windowSizes = {
     Penumbra = { 1000, 480 },
     MovingObjects = { 1000, 640 },
     RotatingObjects = { 1000, 700 },
+    ImageShadow = { 900, 640 },
+    CastImage = { 1060, 660 },
 }
 
 local requirePath = love.filesystem.getRequirePath()

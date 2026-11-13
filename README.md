@@ -100,6 +100,10 @@ love . MovingObjects
 love . MovingObjects --capture --verify
 love . RotatingObjects
 love . RotatingObjects --capture --verify
+love . ImageShadow
+love . ImageShadow --capture
+love . CastImage
+love . CastImage --capture --verify
 ```
 
 Capture mode renders the scene to offscreen canvases at DPI scale 2, saves a screenshot using `love.graphics.captureScreenshot`, and exits. Press `F12` to capture an image interactively; press `Escape` to close the demo.
@@ -147,6 +151,22 @@ printed to the console. Share both files to reproduce an issue. The next
 snapshot overwrites them; press `Space` to resume. Run
 `love . RotatingObjects --capture --snapshot-verify` to validate the button and
 matching screenshot/state output using temporary files.
+
+The `ImageShadow` demo casts the silhouette and colors of a transparent flower
+image onto a softly lit surface. Move the mouse to reposition the light, press
+`B` to toggle soft shadows, `F12` to capture a screenshot, or `Escape` to exit.
+
+The `CastImage` demo recreates a forest lighting scene with 17 original pixel-art
+trees. Each upright tree casts an alpha-silhouette ground shadow, becomes dark
+when backlit, and receives shadows from other trees. Press `M` to follow the
+mouse with the light, `R` to reset it, or `B` to toggle soft ground shadows.
+`--verify` checks every tree rather than a single representative caster.
+
+Use [`CastImageShadow`](docs/CastImageShadow.md) for upright sprites, rather than
+the flat textured mask provided by `ImageShadow`. Its bottom-center anchor is
+the body's ground position; its height is measured in world units. Draw sprites
+with `shape:DrawSprite()` in ground-depth order **after** `world:Draw()`, so
+their illumination is not multiplied by their own ground shadows.
 
 In the `Standard` demo, press `F9` to save a matching screenshot and scene
 settings (`standard-scene.png` and `standard-scene.txt`) for reproducing

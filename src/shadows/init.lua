@@ -1,4 +1,4 @@
---- Loads the Shädows package modules and registers their LÖVE filesystem loaders.
+---@module Loads the Shädows package modules and registers their LÖVE filesystem loaders.
 local Path = (...):gsub("%.", "/")
 if love.filesystem.getInfo("src/" .. Path .. "/Object.lua") then
     Path = "src/" .. Path
@@ -45,6 +45,8 @@ package.preload["shadows.ShadowShapes.HeightShadow"]  = assert(love.filesystem.l
     "/ShadowShapes/HeightShadow.lua"))
 package.preload["shadows.ShadowShapes.ImageShadow"]   = assert(love.filesystem.load(Path ..
     "/ShadowShapes/ImageShadow.lua"))
+package.preload["shadows.ShadowShapes.CastImageShadow"] = assert(love.filesystem.load(Path ..
+    "/ShadowShapes/CastImageShadow.lua"))
 package.preload["shadows.ShadowShapes.NormalShadow"]  = assert(love.filesystem.load(Path ..
     "/ShadowShapes/NormalShadow.lua"))
 package.preload["shadows.ShadowShapes.PolygonShadow"] = assert(love.filesystem.load(Path ..

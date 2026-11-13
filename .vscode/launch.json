@@ -94,6 +94,32 @@
                 "RotatingObjects"
             ],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: CastImage",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "CastImage"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: ImageShadow",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "ImageShadow"
+            ],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

@@ -65,3 +65,5 @@ a triangulation error rather than silently dropping the shadow.
 ## Textured shapes
 
 For texture-driven occluders, see [ImageShadow](ImageShadow.md), [NormalShadow](NormalShadow.md), and [HeightShadow](HeightShadow.md).
+For upright sprites that cast alpha silhouettes onto the ground and receive
+light and shadows from other sprites, see [CastImageShadow](CastImageShadow.md).

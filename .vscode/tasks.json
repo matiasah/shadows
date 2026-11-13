@@ -12,7 +12,9 @@
                 "NormalMap",
                 "Penumbra",
                 "MovingObjects",
-                "RotatingObjects"
+                "RotatingObjects",
+                "ImageShadow",
+                "CastImage"
             ],
             "default": "HighDPI"
         }
