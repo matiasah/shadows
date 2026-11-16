@@ -21,6 +21,19 @@
     ],
     "tasks": [
         {
+            "label": "Run Busted tests",
+            "type": "process",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\spec\\run.ps1"
+            ],
+            "problemMatcher": []
+        },
+        {
             "label": "Run Love demo",
             "type": "process",
             "command": "love",

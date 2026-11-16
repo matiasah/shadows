@@ -16,9 +16,9 @@
 
 ## Testing
 
-- The project runner is `love`. Run validation from the repository root with `love . <DemoName>`; use `--capture` for automated rendering checks and `--verify` when the demo supports regression assertions (for example, `love . Penumbra --capture --verify`).
-- Use LÖVE as the primary validation runtime, not standalone Lua or Busted. Do not install Busted or native build dependencies just to validate the project. Keep focused unit tests under `spec/` supplemental when their runner is already available.
-- Keep LÖVE rendering and end-to-end checks in the demos rather than duplicating runtime setup in unit tests.
+- Run the Busted suite inside LÖVE with `powershell -NoProfile -ExecutionPolicy Bypass -File spec\run.ps1`. See `BUSTED.md` for the matching x64 LuaJIT/LuaRocks setup; reuse an existing compatible installation rather than reinstalling dependencies.
+- Keep focused unit tests under `spec/` and graphics-dependent specs under `spec/love/`. Reuse the test bootstrap and configuration in `spec/busted-love/`; do not use `busted --lua love`.
+- Keep demo end-to-end checks supplemental rather than duplicating entire demo scenarios in unit tests. Run them from the repository root with `love . <DemoName> --capture --verify` when supported (for example, `love . Penumbra --capture --verify`).
 - Use the existing demos and VS Code tasks when validating LÖVE behavior. For DPI-sensitive changes, run the HighDPI demo, including capture mode when relevant.
 
 ## README and API documentation

@@ -213,15 +213,30 @@ dark when backlit, and receive shadows from other trees in the
 
 ## Tests
 
-Install Busted with LuaRocks, then run the unit tests from the repository root:
+Run Busted **inside LÖVE** from the repository root, using an x64 LuaJIT-compatible
+rocks tree:
 
 ```powershell
-luarocks install busted --local
-busted
-busted spec/DPI_spec.lua spec/PenumbraSettings_spec.lua
+powershell -NoProfile -ExecutionPolicy Bypass -File spec\run.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File spec\run.ps1 -Specs spec\love\Lighting_spec.lua
 ```
 
-On Windows, LuaRocks may need the MSVC C++ build tools to compile Busted's `luasystem` dependency.
+See [BUSTED.md](BUSTED.md) for reproducible Windows x64 setup with LuaRocks,
+LOVE's matching LuaJIT, MSVC, native-DLL verification, focused standalone unit
+tests, and launcher options. An existing compatible `%LOCALAPPDATA%\LuaRocks-love`
+installation can be reused. VS Code also provides a **Run Busted tests** task.
+
+Focused specs under `spec/` cover DPI lookup, penumbra settings, hierarchical
+transforms, and equal-height queue ordering. `spec/love/` adds actual rendering
+checks for first-update shadows, color-only cache reuse, moved-body incremental
+versus forced rebuilds, and soft-shadow radius changes. The test game saves
+`%APPDATA%\LOVE\shadows-tests\screenshots\first-update-shadow.png` before its
+pixel assertions. Its configuration and bootstrap live in `spec/busted-love/`;
+the launcher assembles a temporary game without changing the demos or library.
+
+Use the launcher for the complete suite, not `busted --lua love` or standalone
+`busted`. The existing demo capture/verification commands remain supplemental
+end-to-end checks.
 
 ## Documentation
 
