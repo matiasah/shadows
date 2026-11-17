@@ -2,6 +2,10 @@
 
 `Light` renders a localized light with radius-sized canvases. `Star` is a full-scene light whose canvases match the world view. Both types cast shadows from registered bodies and support custom shadow/sprite callbacks through [`LightWorld`](LightWorld.md).
 
+For dynamic illumination drawn by a native LÖVE particle system, use
+[`ParticleLight`](ParticleLight.md), a local-light subclass that inherits
+position, tint, radius, and shadow settings.
+
 ## Import and construction
 
 ```lua

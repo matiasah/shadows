@@ -329,32 +329,7 @@ function Light:Update()
 		love.graphics.clear()
 		love.graphics.origin()
 
-		if self.Image then
-			-- If there's a image to be used as light texture, use it
-			love.graphics.setBlendMode("lighten", "premultiplied")
-			love.graphics.setColor(self.R, self.G, self.B, self.A)
-			love.graphics.draw(self.Image, self.Radius, self.Radius)
-		else
-			-- Use a shader to generate the light
-			Shadows.LightShader:send("DpiScale", require("shadows.DPI").getCanvasScale(self.Canvas))
-			Shadows.LightShader:send("Radius", self.Radius)
-			Shadows.LightShader:send("Center", { self.Radius, self.Radius, z })
-
-			-- Calculate the rotation of the light
-			local Arc = math.rad(self.Arc * 0.5)
-			local Angle = self.Transform:GetRadians(-halfPi)
-
-			-- Set the light shader
-			love.graphics.setShader(Shadows.LightShader)
-			love.graphics.setBlendMode("alpha", "premultiplied")
-
-			-- Filling it with a arc is more efficient than with a rectangle for this case
-			love.graphics.setColor(self.R, self.G, self.B, self.A)
-			love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
-
-			-- Unset the shader
-			love.graphics.setShader()
-		end
+		self:DrawLight(z)
 
 		if self.Penumbra then
 			self.Penumbra:Apply(self)
@@ -375,6 +350,38 @@ function Light:Update()
 		self.AppearanceChanged = nil
 		self.PenumbraChanged = nil
 		self.World.UpdateCanvas = true
+	end
+end
+
+---@description Draws unshadowed illumination into the active local-light canvas.
+---@param z number Light height.
+---@return nil
+function Light:DrawLight(z)
+	if self.Image then
+		-- If there's a image to be used as light texture, use it
+		love.graphics.setBlendMode("lighten", "premultiplied")
+		love.graphics.setColor(self.R, self.G, self.B, self.A)
+		love.graphics.draw(self.Image, self.Radius, self.Radius)
+	else
+		-- Use a shader to generate the light
+		Shadows.LightShader:send("DpiScale", require("shadows.DPI").getCanvasScale(self.Canvas))
+		Shadows.LightShader:send("Radius", self.Radius)
+		Shadows.LightShader:send("Center", { self.Radius, self.Radius, z })
+
+		-- Calculate the rotation of the light
+		local Arc = math.rad(self.Arc * 0.5)
+		local Angle = self.Transform:GetRadians(-halfPi)
+
+		-- Set the light shader
+		love.graphics.setShader(Shadows.LightShader)
+		love.graphics.setBlendMode("alpha", "premultiplied")
+
+		-- Filling it with a arc is more efficient than with a rectangle for this case
+		love.graphics.setColor(self.R, self.G, self.B, self.A)
+		love.graphics.arc("fill", self.Radius, self.Radius, self.Radius, Angle - Arc, Angle + Arc)
+
+		-- Unset the shader
+		love.graphics.setShader()
 	end
 end
 

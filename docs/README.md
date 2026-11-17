@@ -35,6 +35,7 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 |---|---|
 | [LightWorld](LightWorld.md) | Scene lifecycle, camera, ambient color, and extension callbacks. |
 | [Light](Light.md) | Local lights and full-scene stars. |
+| [ParticleLight](ParticleLight.md) | Animated particle-system illumination with emitter-centered shadows. |
 | [Penumbras](Penumbras.md) | Contact-hardening shadow filtering, source size, and rendering limits. |
 | [Body](Body.md) | Height-aware groups of shadow shapes and physics integration. |
 | [Shadow shapes](Shadow.md) | Circle and polygon occluders, plus shared shape behavior. |
@@ -54,6 +55,7 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 - [Oscillating objects and multiple colored lights](../DEMOS/MovingObjects/main.lua)
 - [Rotating polygons and shape-local rotation](../DEMOS/RotatingObjects/main.lua)
 - [Upright trees casting and receiving shadows](../DEMOS/CastImage/main.lua)
+- [Particle-system fire, water spray, and sparks](../DEMOS/ParticleLights/main.lua)
 
 ## Notes
 

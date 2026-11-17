@@ -109,6 +109,19 @@
             "cwd": "${workspaceFolder}"
         },
         {
+            "name": "Love: ParticleLights",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "ParticleLights"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
             "name": "Love: ImageShadow",
             "type": "lua-local",
             "request": "launch",

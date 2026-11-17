@@ -2,6 +2,13 @@
 
 Shädows is a dynamic lighting and shadow library for LÖVE. It supports height-aware polygon and circle occluders, textured shadows, ambient-darkening rooms, and normal- and height-map effects.
 
+[`ParticleLight`](docs/ParticleLight.md) adds dynamic illumination from a native
+LÖVE `ParticleSystem`, including its texture, motion, colors, and alpha. Particles
+light the scene additively through emitter-centered hard or soft shadows while
+reusing cached shadow geometry. Pass `dt` to `world:Update(dt)` to animate them;
+omit it when updating emitters yourself. See the `ParticleLights` demo for fire,
+water spray, and sparks.
+
 Soft shadows use contact-hardening penumbras: edges stay sharp near the casting
 shape and soften with distance from its silhouette. A minimum softness keeps
 penumbras visible for positive source sizes even when the light is far from the
@@ -104,9 +111,20 @@ love . ImageShadow
 love . ImageShadow --capture
 love . CastImage
 love . CastImage --capture --verify
+love . ParticleLights
+love . ParticleLights --capture --verify
 ```
 
 Capture mode renders the scene to offscreen canvases at DPI scale 2, saves a screenshot using `love.graphics.captureScreenshot`, and exits. Press `F12` to capture an image interactively; press `Escape` to close the demo.
+
+The `ParticleLights` demo uses three independent particle systems as actual
+light sources, not just decorative particles over a radial light. Press `Space`
+to pause or `B` to toggle soft shadows. Its verification checks changing
+illumination while shadow pixels remain cached. Shadows originate at each
+emitter, not at every particle. Particle randomness remains native to LÖVE;
+capture mode uses a fixed simulation warm-up duration.
+The blue water spray uses tapered droplet textures, velocity-aligned rotation,
+and gravity-driven arcs; verification also measures its rising and falling light.
 
 The `Penumbra` demo compares hard and soft polygon/circle shadows side by side;
 use `+` and `-` to adjust the source radius and the arrow keys to move the light.
@@ -177,7 +195,7 @@ for the save location and controls.
 
 Scenes captured from the included demos, showing map lighting, contact-hardening
 penumbras, height-map shadows, normal-map lighting, moving/rotating occluders under
-multiple colored lights, and upright image casters.
+multiple colored lights, upright image casters, and animated particle lights.
 
 | Standard map lighting | Contact-hardening penumbras |
 | --- | --- |
@@ -210,6 +228,14 @@ dark when backlit, and receive shadows from other trees in the
 [`CastImage` demo](DEMOS/CastImage/main.lua).
 
 ![A pixel-art forest with long ground shadows, illuminated foliage, and dark backlit trees](docs/images/lighting-cast-image.png)
+
+### Animated particle lights
+
+Fire, gravity-driven water droplets, and green sparks illuminate a tiled surface
+through cached emitter-centered shadows in the
+[`ParticleLights` demo](DEMOS/ParticleLights/main.lua).
+
+![Animated fire, blue water spray, and green sparks lighting a tiled surface around circle and polygon casters](docs/images/lighting-particle-lights.gif)
 
 ## Tests
 

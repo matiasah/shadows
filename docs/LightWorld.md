@@ -15,7 +15,7 @@ The initial canvas matches `love.graphics.getDimensions()`.
 
 | Method | Description and return values |
 |---|---|
-| `world:Update(dt?)` | Updates bodies, tracked physics transforms, lights, stars, rooms, and the composed canvas. Call from `love.update`. `dt` is currently unused. |
+| `world:Update(dt?)` | Updates bodies, tracked physics transforms, lights, stars, rooms, and the composed canvas. Call from `love.update`. When supplied, `dt` advances particle-light emitters in seconds; omit it for external particle simulation. |
 | `world:Draw()` | Draws the composed canvas at the origin. Call from `love.draw`. |
 | `world:Resize(width, height)` | Recreates the world canvas and resizes registered stars. Call after resizing the LÖVE window. |
 | `world:ForceUpdate()` | Forces every light and star to rebuild shadow geometry and rendering on its next visible update. |
@@ -30,6 +30,10 @@ The initial canvas matches `love.graphics.getDimensions()`.
 | `world:AddStar(star)` | Registers a star and returns it. Normally called by `Star:new(world, radius)`. |
 | `world:AddRoom(room)` | Registers a room and returns it. Normally called by a room constructor. |
 | `world:TrackBody(physicsBody)` | Creates and returns a [`BodyTransform`](BodyTransform.md) that follows a LÖVE physics body. |
+
+[`ParticleLight`](ParticleLight.md) also registers as a local light. Its emitter
+advances even while offscreen; animation recomposes illumination without
+invalidating stationary shadow geometry.
 
 ## Camera and ambient color
 

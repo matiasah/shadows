@@ -308,7 +308,7 @@ function LightWorld:GetPosition()
 end
 
 --- @description Updates scene objects, lights, stars, rooms, and the world canvas.
---- @param dt number? Elapsed time in seconds; currently unused.
+--- @param dt number? Elapsed time in seconds; omitted dt skips particle simulation.
 --- @return nil
 function LightWorld:Update(dt)
 	for Index, Transform in pairs(self.BodyTracks) do
@@ -323,7 +323,7 @@ function LightWorld:Update(dt)
 	self:UpdateShapeBounds()
 
 	for Index, Light in pairs(self.Lights) do
-		Light:Update()
+		Light:Update(dt)
 	end; love.graphics.setCanvas()
 
 	for Index, Star in pairs(self.Stars) do
