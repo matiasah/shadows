@@ -21,7 +21,8 @@ The filter searches toward the light for a relevant blocker to avoid abrupt
 softness changes where an unrelated nearby wall becomes the nearest silhouette,
 including bright streaks along walls adjacent to a penumbra. It blends
 candidate footprints and smooths the estimated blur radius to reduce bright
-lines when the search crosses surfaces.
+lines when the search crosses surfaces. Filtering excludes caster-covered
+samples so lit walls do not bleed into shadows where they meet.
 This applies to local lights and full-scene stars. See [Penumbras](docs/Penumbras.md)
 for the filtering approximation, graphics requirements, and comparison demo.
 Projected shadow render targets and occluder-mask canvases request 4x MSAA to smooth diagonal
@@ -196,10 +197,12 @@ the body's ground position; its height is measured in world units. Draw sprites
 with `shape:DrawSprite()` in ground-depth order **after** `world:Draw()`, so
 their illumination is not multiplied by their own ground shadows.
 
-In the `Standard` demo, press `F9` to save a matching screenshot and scene
-settings (`standard-scene.png` and `standard-scene.txt`) for reproducing
-lighting issues. See [Standard demonstration](docs/Standard-Demonstration.md)
-for the save location and controls.
+In the `Standard` demo, click **Snapshot scene [F9]** or press `F9` to save a
+matching screenshot and scene settings (`standard-scene.png` and
+`standard-scene.txt`) for reproducing lighting issues. See
+[Standard demonstration](docs/Standard-Demonstration.md) for the save location
+and controls. The demo aligns its lighting camera with the tile renderer's
+pixel-snapped translation so shadows stay attached to the visible walls.
 
 ## Lighting showcase
 

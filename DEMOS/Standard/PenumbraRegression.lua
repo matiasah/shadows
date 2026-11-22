@@ -1,4 +1,4 @@
---- Reproduces and checks a shadow edge near adjacent map occluders.
+---@module Reproduces and checks shadow edges near Standard map occluders.
 local Regression = {}
 
 --- @description Checks continuity where the nearest silhouette changes from a wall to a casting crate.
@@ -115,6 +115,82 @@ function Regression.checkWallLines(world, light)
             y, dpi, firstValue, lastValue))
     end
     print(string.format("Standard wall-edge penumbra regression passed at DPI %.1f", dpi))
+end
+
+--- @description Checks wall contact at the saved square wall scene at two DPI scales.
+--- @param world LightWorld Standard demo world containing the imported map.
+--- @param light Light Active light whose shadow is checked.
+--- @return nil
+function Regression.checkContact(world, light)
+    world:SetPosition(125.091, 759.1683, 1)
+    light:SetPosition(521.091, 1031.1683, 20)
+    for _, dpi in ipairs({ 1, 2 }) do
+        light:DestroyCanvas()
+        light.Canvas = love.graphics.newCanvas(1000, 1000, { dpiscale = dpi })
+        light.ShadowCanvas = love.graphics.newCanvas(1000, 1000, { dpiscale = dpi, mipmaps = "manual" })
+        light.ShadowCanvas:setMipmapFilter("linear")
+        light.ShadowRenderCanvas = love.graphics.newCanvas(1000, 1000, { dpiscale = dpi, msaa = 4 })
+        light.Shapes = {}
+        light.Blur = false
+        world:ForceUpdate()
+        world:Update()
+        local hard = light.Canvas:newImageData()
+        light.Blur = true
+        world:Update()
+        local soft = light.Canvas:newImageData()
+        for _, point in ipairs({
+            { 565, 425 }, { 580, 425 }, { 595, 425 }, { 610, 425 }, { 625, 425 },
+            { 643, 340 }, { 643, 355 }, { 643, 370 }, { 643, 385 }, { 643, 400 },
+        }) do
+            local px = math.floor((point[1] + 104) * dpi)
+            local py = math.floor((point[2] + 228) * dpi)
+            local hardValue, softValue = hard:getPixel(px, py), soft:getPixel(px, py)
+            assert(hardValue < 0.02 and softValue < 0.03, string.format(
+                "Wall contact must remain dark at (%d,%d), DPI %d: hard %.3f soft %.3f",
+                point[1], point[2], dpi, hardValue, softValue))
+        end
+        local casterX, casterY = math.floor((580 + 104) * dpi), math.floor((420 + 228) * dpi)
+        assert(math.abs(hard:getPixel(casterX, casterY) - soft:getPixel(casterX, casterY)) < 0.01,
+            "The lit wall surface must retain its original brightness")
+        local clearX, clearY = math.floor((580 + 104) * dpi), math.floor((435 + 228) * dpi)
+        assert(soft:getPixel(clearX, clearY) > 0.2, "The shadow's distant edge must still soften")
+    end
+    print("Standard wall-contact regression passed at DPI 1 and 2")
+end
+
+---@description Checks the composed map for light leaking outside the pixel-aligned wall.
+---@param world LightWorld Standard world with the camera and light synchronized.
+---@param light Light Active light in the captured scene.
+---@param map table Loaded STI tile map.
+---@return nil
+function Regression.checkCameraAlignment(world, light, map)
+    local x, y, zoom = world:GetPosition()
+    local output = love.graphics.newCanvas(1000, 600, { dpiscale = 1 })
+    love.graphics.push("all")
+    for _, blur in ipairs({ false, true }) do
+        light.Blur = blur
+        world:Update()
+        love.graphics.setCanvas(output)
+        love.graphics.origin()
+        love.graphics.setColor(1, 1, 1, 1)
+        map:draw(-x, -y, zoom, zoom)
+        love.graphics.setCanvas()
+        local diffuse = output:newImageData()
+        love.graphics.setCanvas(output)
+        world:Draw()
+        love.graphics.setCanvas()
+        local composed = output:newImageData()
+        for _, point in ipairs({ { 580, 450 }, { 642, 380 } }) do
+            local r = diffuse:getPixel(point[1], point[2])
+            local lit = composed:getPixel(point[1], point[2])
+            assert(math.abs(lit - r * world.R) < 0.01, string.format(
+                "The floor beside the wall must be shadowed at (%d,%d), blur=%s: %.3f vs %.3f",
+                point[1], point[2], tostring(blur), lit, r * world.R))
+        end
+    end
+    love.graphics.setCanvas()
+    love.graphics.pop()
+    print("Standard map and shadow camera-alignment regression passed")
 end
 
 return Regression

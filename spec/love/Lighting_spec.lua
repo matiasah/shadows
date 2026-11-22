@@ -5,6 +5,7 @@ local Light = require("shadows.Light")
 local Star = require("shadows.Star")
 local Body = require("shadows.Body")
 local CircleShadow = require("shadows.ShadowShapes.CircleShadow")
+local PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
 
 describe("LOVE lighting",
     ---@description Defines first-update rendering and incremental cache regressions.
@@ -118,6 +119,38 @@ describe("LOVE lighting",
                 light.SizeRadius = 0
                 world:Update(0)
                 assert.is_nil(light.Penumbra)
+            end)
+
+        it("keeps soft shadows attached to polygon casters for local lights and stars",
+            ---@description Compares hard and soft visibility at the caster contact and on the lit face.
+            ---@return nil
+            function()
+                body:GetShapes():Get(1):Remove()
+                PolygonShadow:new(body, -10, -10, 10, -10, 10, 10, -10, 10)
+                local star = Star:new(world, 112)
+                star:SetPosition(80, 96, 2)
+                star.Blur = false
+                world:Update(0)
+                local localHard = light.Canvas:newImageData()
+                local starHard = star.Canvas:newImageData()
+                light.Blur, star.Blur = true, true
+                world:Update(0)
+                local localSoft = light.Canvas:newImageData()
+                local starSoft = star.Canvas:newImageData()
+
+                for _, sample in ipairs({
+                    { localHard, localSoft, 155, 112 },
+                    { starHard, starSoft, 123, 96 },
+                }) do
+                    local hard = sample[1]:getPixel(sample[3], sample[4])
+                    local soft = sample[2]:getPixel(sample[3], sample[4])
+                    assert.is_true(hard < 0.01 and soft < 0.01,
+                        string.format("Shadow contact must remain dark: hard %.3f soft %.3f", hard, soft))
+                    local hardFace = sample[1]:getPixel(sample[3] - 5, sample[4])
+                    local softFace = sample[2]:getPixel(sample[3] - 5, sample[4])
+                    assert.is_true(hardFace > 0.1 and math.abs(hardFace - softFace) < 0.01,
+                        "Filtering must preserve the illuminated caster face")
+                end
             end)
 
         it("applies quality presets and per-world overrides to rendering buffers",

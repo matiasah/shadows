@@ -12,6 +12,8 @@ local CircleShadow  = require("shadows.ShadowShapes.CircleShadow")
 
 ---@type boolean
 local snapshotRequested = false
+---@type boolean
+local snapshotSaving = false
 ---@type string?
 local snapshotMessage
 ---@type number
@@ -28,8 +30,37 @@ local verifyStain = false
 local verifyLines = false
 ---@type boolean
 local verifyWallLines = false
+---@type boolean
+local verifyContact = false
 ---@type string[]
 local qualityPresets = { "high", "medium", "low" }
+
+---@description Returns the snapshot button bounds in logical window coordinates.
+---@return number x Button left edge.
+---@return number y Button top edge.
+---@return number width Button width.
+---@return number height Button height.
+local function snapshotButton()
+	return love.graphics.getWidth() - 190, 12, 170, 30
+end
+
+---@description Checks whether a window position is inside the snapshot button.
+---@param x number Window x-coordinate in logical pixels.
+---@param y number Window y-coordinate in logical pixels.
+---@return boolean inside Whether the position is inside the button.
+local function overSnapshotButton(x, y)
+	local bx, by, width, height = snapshotButton()
+	return x >= bx and x <= bx + width and y >= by and y <= by + height
+end
+
+---@description Requests one screenshot and matching scene state.
+---@return nil
+local function requestSnapshot()
+	if not snapshotRequested and not snapshotSaving then
+		snapshotRequested = true
+		snapshotMessage = nil
+	end
+end
 
 for _, argument in ipairs(arg or {}) do
 	if argument == "--verify" then verifySnapshot = true end
@@ -37,9 +68,10 @@ for _, argument in ipairs(arg or {}) do
 	if argument == "--stain-verify" then verifyStain = true end
 	if argument == "--line-verify" then verifyLines = true end
 	if argument == "--wall-line-verify" then verifyWallLines = true end
+	if argument == "--contact-verify" then verifyContact = true end
 end
 
-if verifySnapshot or verifyShadow or verifyStain or verifyLines or verifyWallLines then
+if verifySnapshot or verifyShadow or verifyStain or verifyLines or verifyWallLines or verifyContact then
 	--- @description Reports automated snapshot failures and exits with a failure status.
 	--- @param message string Error message.
 	--- @return function quit Function returning the failing process exit code.
@@ -91,6 +123,18 @@ testBody:SetPosition(0, 0, 1.3)
 
 CircleShadow:new(testBody, 200, 180, 50)
 
+---@description Synchronizes lighting with the tile renderer's pixel-aligned camera translation.
+---@param mouseX number Mouse x-coordinate in logical window pixels.
+---@param mouseY number Mouse y-coordinate in logical window pixels.
+---@return nil
+local function updateRenderCamera(mouseX, mouseY)
+	local cameraX, cameraY = math.ceil(translation.x), math.ceil(translation.y)
+	if not overSnapshotButton(mouseX, mouseY) then
+		L:SetPosition(cameraX + mouseX / translation.z, cameraY + mouseY / translation.z)
+	end
+	LWorld:SetPosition(cameraX, cameraY, translation.z)
+end
+
 --- @description Records the current rendered scene and queues its matching screenshot.
 --- @return nil
 local function saveSceneSnapshot()
@@ -99,7 +143,7 @@ local function saveSceneSnapshot()
 	local width, height = love.graphics.getDimensions()
 	local pixelWidth, pixelHeight = love.graphics.getPixelDimensions()
 	local major, minor, revision = love.getVersion()
-	local quality = LWorld.Settings:GetQuality()
+	local quality, shadowScale, msaa, penumbraScale = LWorld.Settings:GetQuality()
 	local lines = {
 		"Standard demo scene snapshot",
 		string.format("LÖVE version: %d.%d.%d", major, minor, revision),
@@ -107,6 +151,9 @@ local function saveSceneSnapshot()
 		string.format("Window pixel size: %d x %d", pixelWidth, pixelHeight),
 		string.format("World canvas DPI scale: %.17g", LWorld.Canvas:getDPIScale()),
 		string.format("Rendering quality: %s", quality),
+		string.format("Quality shadowScale=%.17g shadowMSAA=%d penumbraScale=%.17g",
+			shadowScale, msaa, penumbraScale),
+		string.format("Ambient color: %.17g %.17g %.17g %.17g", LWorld.R, LWorld.G, LWorld.B, LWorld.A),
 		string.format("Camera x y zoom: %.17g %.17g %.17g", cameraX, cameraY, zoom),
 		string.format("Mouse x y: %.17g %.17g", mouseX, mouseY),
 		string.format("Circle sample removed: %s", tostring(testBody.World == nil)),
@@ -115,13 +162,16 @@ local function saveSceneSnapshot()
 		local x, y, z = light:GetPosition()
 		local r, g, b, a = light:GetColor()
 		lines[#lines + 1] = string.format(
-			"Light %d: position=%.17g,%.17g,%.17g radius=%.17g sizeRadius=%.17g blur=%s color=%.17g,%.17g,%.17g,%.17g active=%s canvasDPI=%s",
+			"Light %d: position=%.17g,%.17g,%.17g radius=%.17g sizeRadius=%.17g blur=%s color=%.17g,%.17g,%.17g,%.17g active=%s canvasDPI=%s angle=%.17g arc=%.17g shadowMSAA=%s",
 			index, x, y, z, light:GetRadius(), light.SizeRadius, tostring(light.Blur),
 			r, g, b, a, tostring(light == L),
-			light.Canvas and string.format("%.17g", light.Canvas:getDPIScale()) or "not allocated")
+			light.Canvas and string.format("%.17g", light.Canvas:getDPIScale()) or "not allocated",
+			light:GetAngle(), light.Arc,
+			light.ShadowRenderCanvas and tostring(light.ShadowRenderCanvas:getMSAA()) or "not allocated")
 	end
 	local text = table.concat(lines, "\n") .. "\n"
 	local base = verifySnapshot and ("standard-scene-verify-" .. tostring(love.timer.getTime())) or "standard-scene"
+	snapshotSaving = true
 	--- @description Writes the screenshot and state from the same rendered frame.
 	--- @param image love.ImageData Captured window pixels.
 	--- @return nil
@@ -133,6 +183,7 @@ local function saveSceneSnapshot()
 		snapshotMessage = "Saved standard-scene.png and standard-scene.txt in the LOVE save directory"
 		snapshotMessageUntil = love.timer.getTime() + 5
 		snapshotRequested = false
+		snapshotSaving = false
 		if verifySnapshot then
 			assert(love.filesystem.read(base .. ".txt") == text, "Scene snapshot text did not round-trip")
 			assert(love.filesystem.getInfo(base .. ".png", "file"), "Scene snapshot screenshot was not saved")
@@ -140,6 +191,9 @@ local function saveSceneSnapshot()
 				"Scene screenshot dimensions must match the captured window")
 			assert(text:find("Camera x y zoom: 180 210 1", 1, true), "Camera state must be recorded")
 			assert(text:find("Rendering quality: high", 1, true), "Default rendering quality must be recorded")
+			assert(text:find("Quality shadowScale=1 shadowMSAA=4 penumbraScale=1", 1, true),
+				"Effective quality settings must be recorded")
+			assert(text:find(" arc=360 shadowMSAA=", 1, true), "Actual light MSAA must be recorded")
 			assert(text:find("Circle sample removed: true", 1, true), "Removed sample must be recorded")
 			assert(text:find("Light 1: position=400,400,20 radius=500", 1, true),
 				"Previous light position and radius must be recorded")
@@ -175,8 +229,23 @@ function love.load()
 	map:box2d_init(world)
 	LWorld:InitFromPhysics(world)
 
+	if verifyContact then
+		translation.x, translation.y, translation.z = 125.07625, 733.28895, 1
+		updateRenderCamera(498, 312)
+		require("PenumbraRegression").checkCameraAlignment(LWorld, L, map)
+		require("PenumbraRegression").checkContact(LWorld, L)
+		updateRenderCamera(498, 312)
+		L:DestroyCanvas()
+		LWorld:ForceUpdate()
+		LWorld:Update()
+		return
+	end
 	if verifySnapshot then
 		translation.x, translation.y, translation.z = 180, 210, 1
+		local bx, by = snapshotButton()
+		love.mousepressed(bx + 5, by + 5, 2)
+		assert(not snapshotRequested and testBody.World == LWorld,
+			"Non-left button clicks on the snapshot control must not remove the sample")
 		testBody:Remove()
 		love.mousepressed(0, 0, 1)
 	end
@@ -203,7 +272,8 @@ end
 --- @param dt number Elapsed frame time in seconds.
 --- @return nil
 function love.update(dt)
-	if verifyShadow or verifyStain or verifyLines or verifyWallLines then return end
+	if verifyShadow or verifyStain or verifyLines or verifyWallLines or verifyContact then return end
+	if snapshotRequested or snapshotSaving then return end
 	if love.keyboard.isDown("w") then
 		translation.y = translation.y - 500 * love.timer.getDelta()
 	elseif love.keyboard.isDown("s") then
@@ -222,13 +292,21 @@ function love.update(dt)
 
 	map:update(dt)
 
-	L:SetPosition(translation.x + love.mouse.getX() / translation.z, translation.y + love.mouse.getY() / translation.z)
-	LWorld:SetPosition(translation.x, translation.y, translation.z)
+	local mouseX, mouseY = love.mouse.getPosition()
+	updateRenderCamera(mouseX, mouseY)
 
 	LWorld:Update()
 	if verifySnapshot and not verifyStarted then
 		verifyStarted = true
 		love.keypressed("f9")
+		assert(snapshotRequested, "F9 must request a snapshot")
+		snapshotRequested = false
+		local bx, by = snapshotButton()
+		local active = L
+		local count = #LWorld.Lights
+		love.mousepressed(bx + 5, by + 5, 1)
+		assert(snapshotRequested and L == active and #LWorld.Lights == count,
+			"Snapshot button must request capture without adding a light")
 	end
 end
 
@@ -237,6 +315,7 @@ end
 --- @param direction number Wheel y delta in this legacy callback signature.
 --- @return nil
 function love.wheelmoved(id, direction)
+	if snapshotRequested or snapshotSaving then return end
 	if id == 0 then
 		translation.z = translation.z - direction / 20
 	end
@@ -256,14 +335,15 @@ function love.draw()
 
 	love.graphics.origin()
 	LWorld:Draw()
-	if verifyShadow or verifyStain or verifyLines or verifyWallLines then
+	if verifyShadow or verifyStain or verifyLines or verifyWallLines or verifyContact then
 		--- @description Saves the verified wall-and-crate scene and exits.
 		--- @param image love.ImageData Captured window pixels.
 		--- @return nil
 		love.graphics.captureScreenshot(function(image)
-			local filename = verifyShadow and "standard-shadow-verify.png" or
+			local filename = verifyContact and "standard-contact-verify.png" or
+				(verifyShadow and "standard-shadow-verify.png" or
 				(verifyStain and "standard-stain-verify.png" or
-				(verifyLines and "standard-line-verify.png" or "standard-wall-line-verify.png"))
+				(verifyLines and "standard-line-verify.png" or "standard-wall-line-verify.png")))
 			assert(love.filesystem.write(filename, image:encode("png")))
 			print("Saved shadow regression screenshot to " ..
 				love.filesystem.getSaveDirectory() .. "/" .. filename)
@@ -271,14 +351,8 @@ function love.draw()
 		end)
 		return
 	end
-	if snapshotRequested then
+	if snapshotRequested and not snapshotSaving then
 		saveSceneSnapshot()
-	end
-	if not snapshotRequested and snapshotMessage and love.timer.getTime() < snapshotMessageUntil then
-		love.graphics.setColor(0, 0, 0, 0.8)
-		love.graphics.rectangle("fill", 0, 0, 760, 24)
-		love.graphics.setColor(1, 1, 1, 1)
-		love.graphics.print(snapshotMessage, 6, 4)
 	end
 	if not snapshotRequested then
 		local quality = LWorld.Settings:GetQuality()
@@ -286,16 +360,28 @@ function love.draw()
 		love.graphics.rectangle("fill", 0, 0, 220, 24)
 		love.graphics.setColor(1, 1, 1, 1)
 		love.graphics.print("Quality: " .. quality .. " | Q: change", 6, 4)
+		local bx, by, width, height = snapshotButton()
+		love.graphics.setColor(0.18, 0.32, 0.45, 1)
+		love.graphics.rectangle("fill", bx, by, width, height, 4, 4)
+		love.graphics.setColor(1, 1, 1, 1)
+		love.graphics.printf("Snapshot scene [F9]", bx, by + 7, width, "center")
+		if snapshotMessage and love.timer.getTime() < snapshotMessageUntil then
+			love.graphics.setColor(0, 0, 0, 0.8)
+			love.graphics.rectangle("fill", 0, 48, 760, 24)
+			love.graphics.setColor(1, 1, 1, 1)
+			love.graphics.print(snapshotMessage, 6, 52)
+		end
 	end
 	capture.draw()
 end
 
---- @description Requests a scene snapshot or forwards shared screenshot controls.
+--- @description Requests a scene snapshot, changes quality, or forwards shared screenshot controls.
 --- @param key string Pressed key name.
 --- @return nil
 function love.keypressed(key)
+	if snapshotRequested or snapshotSaving then return end
 	if key == "f9" then
-		if not snapshotRequested then snapshotRequested = true end
+		requestSnapshot()
 	elseif key == "q" then
 		cycleQuality()
 	else
@@ -303,12 +389,17 @@ function love.keypressed(key)
 	end
 end
 
---- @description Adds a random light on left click or removes a sample body otherwise.
+--- @description Requests a snapshot on the button, adds a light, or removes a sample body.
 --- @param x number Mouse x-coordinate.
 --- @param y number Mouse y-coordinate.
 --- @param b integer Mouse button.
 --- @return nil
 function love.mousepressed(x, y, b)
+	if overSnapshotButton(x, y) then
+		if b == 1 then requestSnapshot() end
+		return
+	end
+	if snapshotRequested or snapshotSaving then return end
 	if b == 1 then
 		L = Light:new(LWorld, 300)
 		L:SetColor(love.math.random(), love.math.random(), love.math.random(), 1)

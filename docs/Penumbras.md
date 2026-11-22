@@ -54,6 +54,10 @@ Gaussian transition. Larger sources and closer lights can add more softness.
 Star camera zoom scales this minimum along with the source size.
 The ratio is capped at four to bound the source-dependent filtering near the light and at large separations. A normalized
 Gaussian filter preserves constant visibility and dark umbra interiors.
+Visibility samples with any caster coverage are excluded from the blur and
+the remaining weights are normalized, preventing the lit caster from bleeding
+into its own shadow at contact. If every sample is covered, the filter falls
+back to the unmasked weighted result before blending with the original pixel.
 The estimated radius is stored in a separate canvas and smoothed over nearby
 uncovered pixels before filtering visibility, avoiding sharp bands when
 neighboring pixels calculate different footprints. This may slightly soften
@@ -64,8 +68,8 @@ Mipmapped sampling avoids visible sample bands in wide penumbras. Filtering
 applies only to shadow visibility, not the light's color or radial falloff.
 Occluder silhouettes retain their original unfiltered visibility, including
 normal-map shading; partially covered edge pixels blend with the filtered result.
-Projected shadow render targets and occluder-mask canvases request 4x MSAA to
-antialias diagonal edges, independently of the slightly tighter filter.
+Projected shadow render targets and occluder-mask canvases request 4x MSAA by
+default to antialias diagonal edges; world quality settings can change this.
 Projected shadows are resolved into a separate mipmapped canvas before filtering.
 
 This is a **silhouette-based approximation**, not a physical area-light
@@ -95,8 +99,8 @@ canvas mipmaps, as provided by compatible LÖVE 11 graphics backends. Unsupporte
 shader or canvas creation fails explicitly; there is no silent fallback.
 
 Each light uses an additional shadow render target, and that target and the
-silhouette mask request 4x multisampling, increasing graphics memory use; the
-actual sample count depends on backend support.
+silhouette mask request multisampling (4x by default), increasing graphics
+memory use; the actual sample count depends on backend support.
 Each soft light allocates a silhouette mask and three floating-point buffers
 matching its shadow canvas dimensions and DPI. The distance field, radius field,
 and mipmaps are rebuilt only when the light or scene changes. Disabling filtering discards
@@ -119,6 +123,7 @@ love . Standard --line-verify
 love . Standard --line-verify --capture
 love . Standard --wall-line-verify
 love . Standard --wall-line-verify --capture
+lovec . Standard --contact-verify
 love . HighDPI --capture
 busted spec/DPI_spec.lua spec/PenumbraSettings_spec.lua
 ```
@@ -152,3 +157,5 @@ The line regression measures a zoomed crate's visible penumbra, and the
 synthetic strip checks both shadow edges for bright seams.
 The wall-line regression checks a captured vertical wall penumbra for an
 internal brightness spike at both DPI scales.
+The wall-contact regression reproduces the captured square wall scene and
+checks shadow contact and caster brightness at DPI scales 1 and 2.

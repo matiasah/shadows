@@ -279,20 +279,29 @@ Shadows.PenumbraShader = love.graphics.newShader [[
 		float lod = max(log2(max(radius * DpiScale / 4.0, 1.0)), 0.0);
 		vec4 sum = vec4(0.0);
 		float weights = 0.0;
+		vec4 fallbackSum = vec4(0.0);
+		float fallbackWeights = 0.0;
 		for (int x = -4; x <= 4; x++) {
 			for (int y = -4; y <= 4; y++) {
 				vec2 offset = vec2(x, y) / 4.0;
 				float weight = exp(-2.0 * dot(offset, offset));
 				vec2 sampleCoord = tc + offset * radius / Size;
 				vec4 sampleColor = vec4(1.0);
+				float coverage = 0.0;
 				if (sampleCoord.x >= 0.0 && sampleCoord.y >= 0.0 &&
-					sampleCoord.x < 1.0 && sampleCoord.y < 1.0)
+					sampleCoord.x < 1.0 && sampleCoord.y < 1.0) {
+					coverage = Texel(Occluders, sampleCoord).a;
 					sampleColor = textureLod(Texture, sampleCoord, lod);
+				}
+				fallbackSum += sampleColor * weight;
+				fallbackWeights += weight;
+				if (coverage > 0.0) weight = 0.0;
 				sum += sampleColor * weight;
 				weights += weight;
 			}
 		}
-		return mix(sum / weights, original, occluderCoverage) * color;
+		vec4 filtered = weights > 0.0 ? sum / weights : fallbackSum / fallbackWeights;
+		return mix(filtered, original, occluderCoverage) * color;
 	}
 ]]
 
