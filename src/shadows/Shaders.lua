@@ -138,6 +138,27 @@ Shadows.LightShader = love.graphics.newShader [[
 	
 ]]
 
+Shadows.CookieShader = love.graphics.newShader [[
+	extern Image Cookie;
+	extern bool CookiePremultiplied;
+	extern float DpiScale;
+	extern vec2 CookieCenter;
+	extern vec2 CookieSize;
+	extern vec2 CookieRotation;
+
+	vec4 effect(vec4 color, Image texture, vec2 tc, vec2 pc) {
+		vec2 delta = pc / DpiScale - CookieCenter;
+		vec2 localPosition = vec2(
+			dot(delta, CookieRotation),
+			dot(delta, vec2(-CookieRotation.y, CookieRotation.x)));
+		vec2 uv = localPosition / CookieSize + vec2(0.5);
+		if (uv.x < 0.0 || uv.y < 0.0 || uv.x >= 1.0 || uv.y >= 1.0)
+			return vec4(0.0, 0.0, 0.0, 1.0);
+		vec4 mask = Texel(Cookie, uv);
+		return vec4(CookiePremultiplied ? mask.rgb : mask.rgb * mask.a, 1.0);
+	}
+]]
+
 Shadows.OccluderSeedShader = love.graphics.newShader [[
 	vec4 effect(vec4 color, Image texture, vec2 tc, vec2 pc) {
 		return Texel(texture, tc).a > 0.0 ? vec4(tc, 1.0, 1.0) : vec4(0.0);

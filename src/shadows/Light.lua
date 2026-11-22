@@ -20,6 +20,12 @@ Transform                          = require("shadows.Transform")
 --- @field B number Blue color channel in the 0-1 range; defaults to 1.
 --- @field A number Alpha color channel in the 0-1 range; defaults to 1.
 --- @field Image love.Texture? Optional custom light texture.
+--- @field Cookie love.Texture? Optional RGB/alpha illumination mask; defaults to nil, configured through SetCookie.
+--- @field CookieX number Cookie center offset along the light's local x-axis; defaults to 0.
+--- @field CookieY number Cookie center offset along the light's local y-axis; defaults to 0.
+--- @field CookieAngle number Cookie rotation relative to the light in degrees; defaults to 0.
+--- @field CookieScaleX number Positive horizontal multiplier on the diameter-fitted texture; defaults to 1.
+--- @field CookieScaleY number Positive vertical multiplier on the diameter-fitted texture; defaults to 1.
 --- @field Canvas love.Canvas? Cached light canvas.
 --- @field ShadowCanvas love.Canvas? Cached shadow canvas.
 --- @field private ShadowRenderCanvas love.Canvas? Multisampled shadow render target.
@@ -57,6 +63,8 @@ Light.Arc                          = 360
 Light.Radius                       = 0
 Light.SizeRadius                   = 10
 Light.Blur                         = true
+Light.CookieX, Light.CookieY, Light.CookieAngle = 0, 0, 0
+Light.CookieScaleX, Light.CookieScaleY = 1, 1
 Light.ShadowRenderCount             = 0
 Light.GeometryRebuildCount          = 0
 Light.ShadowDrawCount               = 0
@@ -375,6 +383,7 @@ function Light:Update()
 		love.graphics.origin()
 
 		self:DrawLight(z)
+		self:ApplyCookie()
 
 		if self.Penumbra then
 			self.Penumbra:Apply(self)
@@ -395,6 +404,34 @@ function Light:Update()
 		self.AppearanceChanged = nil
 		self.PenumbraChanged = nil
 	end
+end
+
+---@description Multiplies illumination by a centered cookie without changing its existing alpha or shadow buffers.
+---@return nil
+function Light:ApplyCookie()
+	if not self.Cookie then return end
+	local width, height = self.Cookie:getDimensions()
+	local zoom = (self.Star and select(3, self.Camera:GetPosition())) or 1
+	local x, y = self:GetCanvasCenter()
+	local angle = math.rad(self:GetAngle())
+	local c, s = math.cos(angle), math.sin(angle)
+	local rotation = math.rad(self:GetAngle() + self.CookieAngle)
+	local fit = self.Radius * 2 / math.max(width, height) * zoom
+	local shader = Shadows.CookieShader
+	shader:send("Cookie", self.Cookie)
+	shader:send("CookiePremultiplied", self.Cookie:typeOf("Canvas"))
+	shader:send("DpiScale", require("shadows.DPI").getCanvasScale(self.Canvas))
+	shader:send("CookieCenter", {
+		x + (c * self.CookieX - s * self.CookieY) * zoom,
+		y + (s * self.CookieX + c * self.CookieY) * zoom,
+	})
+	shader:send("CookieSize", { width * fit * self.CookieScaleX, height * fit * self.CookieScaleY })
+	shader:send("CookieRotation", { math.cos(rotation), math.sin(rotation) })
+	love.graphics.setShader(shader)
+	love.graphics.setBlendMode("multiply", "premultiplied")
+	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.rectangle("fill", 0, 0, self.Canvas:getDimensions())
+	love.graphics.setShader()
 end
 
 ---@description Draws unshadowed illumination into the active local-light canvas.
@@ -587,6 +624,65 @@ end
 --- @return love.Texture? image Custom texture, if configured.
 function Light:GetImage()
 	return self.Image
+end
+
+---@description Sets or clears an illumination cookie without changing the light radius or rebuilding shadows.
+---@param Texture love.Texture? Two-dimensional Image or Canvas mask; nil disables cookies. Canvas pixels are premultiplied.
+---@return Light light This light, for chaining.
+function Light:SetCookie(Texture)
+	assert(Texture == nil or (type(Texture) == "userdata" and Texture:typeOf("Texture")
+		and Texture:getTextureType() == "2d"), "Cookie must be a two-dimensional texture or nil")
+	assert(Texture == nil or Texture ~= self.Canvas, "Cookie cannot sample the light's own illumination canvas")
+	if self.Cookie ~= Texture then
+		self.Cookie = Texture
+		self.AppearanceChanged = true
+	end
+	return self
+end
+
+---@description Returns the optional illumination mask.
+---@return love.Texture? texture Cookie texture, or nil when disabled.
+function Light:GetCookie()
+	return self.Cookie
+end
+
+---@description Sets light-relative cookie placement, rotation, and positive scale multipliers without rebuilding shadows.
+---@param x number? Local x-offset in world units; defaults to 0.
+---@param y number? Local y-offset in world units; defaults to 0.
+---@param angle number? Rotation relative to the light in degrees; defaults to 0.
+---@param scaleX number? Positive horizontal scale; defaults to 1.
+---@param scaleY number? Positive vertical scale; defaults to scaleX.
+---@return Light light This light, for chaining.
+function Light:SetCookieTransform(x, y, angle, scaleX, scaleY)
+	if x == nil then x = 0 end
+	if y == nil then y = 0 end
+	if angle == nil then angle = 0 end
+	if scaleX == nil then scaleX = 1 end
+	if scaleY == nil then scaleY = scaleX end
+	assert(type(x) == "number" and x > -math.huge and x < math.huge
+		and type(y) == "number" and y > -math.huge and y < math.huge
+		and type(angle) == "number" and angle > -math.huge and angle < math.huge,
+		"Cookie offsets and angle must be finite numbers")
+	assert(type(scaleX) == "number" and scaleX > 0 and scaleX < math.huge
+		and type(scaleY) == "number" and scaleY > 0 and scaleY < math.huge,
+		"Cookie scales must be finite positive numbers")
+	if self.CookieX ~= x or self.CookieY ~= y or self.CookieAngle ~= angle
+		or self.CookieScaleX ~= scaleX or self.CookieScaleY ~= scaleY then
+		self.CookieX, self.CookieY, self.CookieAngle = x, y, angle
+		self.CookieScaleX, self.CookieScaleY = scaleX, scaleY
+		self.AppearanceChanged = true
+	end
+	return self
+end
+
+---@description Returns the light-relative cookie offset, rotation, and scale multipliers.
+---@return number x Local x-offset in world units.
+---@return number y Local y-offset in world units.
+---@return number angle Rotation relative to the light in degrees.
+---@return number scaleX Horizontal scale multiplier.
+---@return number scaleY Vertical scale multiplier.
+function Light:GetCookieTransform()
+	return self.CookieX, self.CookieY, self.CookieAngle, self.CookieScaleX, self.CookieScaleY
 end
 
 --- @description Sets the light radius and invalidates its canvas when changed.

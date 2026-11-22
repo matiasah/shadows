@@ -180,4 +180,35 @@ describe("Particle lights",
                 assert.equals(before, primary.Canvas:newImageData():getString())
                 assert.equals(0, camera.FrameMetrics.CompositionMs)
             end)
+
+        it("masks particle illumination with cookies while retaining simulation and shadow caches",
+            ---@description Measures cookie opacity and footprint clipping without advancing particles or rebuilding shadows.
+            ---@return nil
+            function()
+                world:Update(0)
+                local original = world.Canvas:newImageData():getString()
+                local before = world.Canvas:newImageData():getPixel(80, 140)
+                local data = love.image.newImageData(8, 8)
+                data:mapPixel(
+                    ---@description Supplies a half-intensity white cookie.
+                    ---@param x number Pixel x-coordinate.
+                    ---@param y number Pixel y-coordinate.
+                    ---@return number r Red channel.
+                    ---@return number g Green channel.
+                    ---@return number b Blue channel.
+                    ---@return number a Alpha channel.
+                    function(x, y) return 1, 1, 1, 0.5 end)
+                light:SetCookie(love.graphics.newImage(data))
+                world:Update(0)
+                assert.near(before * 0.5, world.Canvas:newImageData():getPixel(80, 140), 0.01)
+                light:SetCookieTransform(0, 0, 0, 0.2)
+                world:Update(0)
+                assert.equals(0, world.Canvas:newImageData():getPixel(80, 140))
+                assert.equals(1, particles:getCount())
+                assert.equals(1, shadowRenders)
+                assert.equals(0, world.FrameMetrics.CanvasAllocations)
+                light:SetCookie(nil)
+                world:Update(0)
+                assert.equals(original, world.Canvas:newImageData():getString())
+            end)
     end)

@@ -113,6 +113,8 @@ function Star:UpdateViews()
 			view.Radius, view.Arc = self.Radius, self.Arc
 			view.Blur, view.SizeRadius = self.Blur, self.SizeRadius
 			view:SetColor(self.R, self.G, self.B, self.A)
+			view:SetCookie(self.Cookie)
+			view:SetCookieTransform(self:GetCookieTransform())
 			if view.Image ~= self.Image then
 				view.Image = self.Image
 				view.AppearanceChanged = true
@@ -185,6 +187,7 @@ function Star:Update()
 			love.graphics.setShader()
 		end
 
+		self:ApplyCookie()
 		if self.Penumbra then
 			self.Penumbra:Apply(self)
 		end

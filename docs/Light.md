@@ -34,6 +34,9 @@ Constructors register their result with the world and return `nil` if required a
 | `light:GetColor()` | Returns `r`, `g`, `b`, and `a`. |
 | `light:SetRadius(radius)` / `light:GetRadius()` | Sets or returns the radius in world units. Setting a radius invalidates the cached light. |
 | `light:SetImage(texture)` / `light:GetImage()` | Sets or returns a custom light texture. Setting one derives the radius from its dimensions. |
+| `light:SetCookie(texture?)` / `light:GetCookie()` | Sets, clears, or returns a 2D illumination mask without changing radius; setter returns the light. |
+| `light:SetCookieTransform(x?, y?, angle?, scaleX?, scaleY?)` | Sets light-local offsets, relative rotation, and positive scale multipliers; returns the light. Defaults: `0, 0, 0, 1, scaleX`. |
+| `light:GetCookieTransform()` | Returns `x, y, angle, scaleX, scaleY`. |
 | `light:GetWorld()` / `light:SetWorld(world)` | Gets or sets the owning world. `SetWorld` is used by world registration. |
 | `light:GetTransform()` | Returns the light's [`Transform`](Transform.md). |
 | `light:GetDebugCounts()` | Returns cumulative completed shadow redraws and shape/layer geometry rebuilds for this renderer. |
@@ -51,6 +54,46 @@ with opaque white (`1, 1, 1, 1`) as the default. Divide legacy 0–255 inputs by
 255 before calling `SetColor`; the library no longer converts them.
 Radial lights apply the RGB tint and alpha with distance falloff using premultiplied output.
 See [Penumbras](Penumbras.md) for examples and approximation limits.
+
+## Light cookies
+
+Cookies multiply existing illumination rather than replacing it. Use them for
+window panes, patterned cones/gobos, or colored moving projections:
+
+```lua
+light:SetCookie(love.graphics.newImage("window-mask.png"))
+light:SetCookieTransform(12, -8, 20, 0.8, 1.2)
+light:SetCookie(nil) -- restore unmasked illumination
+```
+
+An opaque white texel leaves illumination unchanged; RGB modulates color and
+alpha attenuates intensity once. Transparent or black texels block light.
+Cookies preserve the existing falloff, cone, tint, and hard/soft shadows.
+The texture is centered on the light and fitted, preserving aspect ratio, so
+its longest side spans the light diameter. Scale multipliers stretch that
+footprint; offsets are in world units along the light's rotated local axes,
+and the cookie angle is relative to the light's world rotation.
+Outside the transformed texture footprint, illumination is black even if the
+texture uses repeat wrapping. Cookies do not enlarge a local light's canvas or
+shadow influence radius.
+
+Use the setters to change cookie appearance; these changes recompose lighting
+without regenerating shadow geometry or allocating additional canvases.
+The optional texture must be a two-dimensional LÖVE texture; Canvas cookies
+use the premultiplied RGB produced by normal LÖVE rendering, while Image cookies
+use straight RGB and alpha. A light's own illumination canvas cannot be its
+cookie because that would read from the active render target.
+The texture's filtering is retained. Editing texture
+pixels in place requires `world:ForceUpdate()`, as with legacy light images.
+
+`Star` shares cookies and their transforms across its independent camera views,
+accounting for each camera's position and zoom. `ParticleLight` inherits cookie
+masking for its particle illumination. Legacy `SetImage` remains unchanged:
+it replaces procedural illumination and derives the radius, whereas `SetCookie`
+only masks whichever illumination renderer is already active.
+
+Run the [LightCookies demo](../DEMOS/LightCookies/main.lua) with
+`love . LightCookies --capture --verify` for window, cone/gobo, and ripple masks.
 
 ## Star methods
 

@@ -10,6 +10,18 @@ local Body = require("shadows.Body")
 local CircleShadow = require("shadows.ShadowShapes.CircleShadow")
 local PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
 
+---@description Builds a small nearest-filtered cookie from deterministic pixels.
+---@param pixels fun(x: number, y: number): number, number, number, number Cookie RGBA generator.
+---@return love.Image image Cookie texture.
+local function newCookie(pixels)
+    local data = love.image.newImageData(8, 8)
+    data:mapPixel(pixels)
+    local image = love.graphics.newImage(data)
+    image:setFilter("nearest", "nearest")
+    image:setWrap("repeat", "repeat")
+    return image
+end
+
 describe("LOVE lighting",
     ---@description Defines first-update rendering and incremental cache regressions.
     ---@return nil
@@ -830,6 +842,208 @@ describe("LOVE lighting",
                 debug:Draw()
                 assert.same(before, debug:GetFrameStats().Camera,
                     "Drawing diagnostics must not reset, time, or modify the sampled frame")
+            end)
+
+        it("masks light RGB and cookie alpha once while preserving falloff and cached shadows",
+            ---@description Checks image/canvas opacity, disabling, and actual DPI-1/2 cookie rendering without new buffers.
+            ---@return nil
+            function()
+                local cookie = newCookie(
+                    ---@description Supplies fractional RGB and alpha to detect double opacity multiplication.
+                    ---@param x number Pixel x-coordinate.
+                    ---@param y number Pixel y-coordinate.
+                    ---@return number r Red channel.
+                    ---@return number g Green channel.
+                    ---@return number b Blue channel.
+                    ---@return number a Alpha channel.
+                    function(x, y) return 0.5, 1, 0.25, 0.5 end)
+                for _, scale in ipairs({ 1, 2 }) do
+                    light:SetCookie(nil)
+                    light:DestroyCanvas()
+                    light:InitCanvas()
+                    light.Canvas = love.graphics.newCanvas(224, 224, { dpiscale = scale })
+                    world:Update(0)
+                    local original = world.Canvas:newImageData():getString()
+                    local before = light.Canvas:newImageData():getPixel(112 * scale, 168 * scale)
+                    local shadows = light.ShadowCanvas:newImageData():getString()
+                    local geometry, redraws = light.Shapes, shadowRenders
+                    local radius = light.Radius
+                    light:SetCookie(cookie)
+                    world:Update(0)
+                    local r, g, b = light.Canvas:newImageData():getPixel(112 * scale, 168 * scale)
+                    assert.near(before * 0.25, r, 0.01)
+                    assert.near(before * 0.5, g, 0.01)
+                    assert.near(before * 0.125, b, 0.01)
+                    assert.equals(radius, light.Radius)
+                    assert.equals(redraws, shadowRenders)
+                    assert.equals(geometry, light.Shapes)
+                    assert.equals(shadows, light.ShadowCanvas:newImageData():getString())
+                    assert.equals(0, world.FrameMetrics.CanvasAllocations)
+
+                    local canvasCookie = love.graphics.newCanvas(8, 8, { dpiscale = 1 })
+                    love.graphics.setCanvas(canvasCookie)
+                    love.graphics.clear()
+                    love.graphics.setBlendMode("alpha", "alphamultiply")
+                    love.graphics.setColor(0.5, 1, 0.25, 0.5)
+                    love.graphics.rectangle("fill", 0, 0, 8, 8)
+                    love.graphics.setCanvas()
+                    light:SetCookie(canvasCookie)
+                    world:Update(0)
+                    local cr, cg, cb = light.Canvas:newImageData():getPixel(112 * scale, 168 * scale)
+                    assert.near(r, cr, 0.01)
+                    assert.near(g, cg, 0.01)
+                    assert.near(b, cb, 0.01)
+                    love.graphics.setCanvas(canvasCookie)
+                    love.graphics.clear(0, 0, 0, 1)
+                    love.graphics.setColor(1, 1, 1, 1)
+                    love.graphics.rectangle("fill", 0, 0, 8, 4)
+                    love.graphics.setCanvas()
+                    light:SetCookie(love.graphics.newImage(canvasCookie:newImageData()))
+                    world:Update(0)
+                    local imagePattern = world.Canvas:newImageData():getString()
+                    light:SetCookie(canvasCookie)
+                    world:Update(0)
+                    assert.equals(imagePattern, world.Canvas:newImageData():getString(),
+                        "Canvas cookies must use the same top-left orientation as Image cookies")
+                    light:SetCookie(nil)
+                    world:Update(0)
+                    assert.equals(original, world.Canvas:newImageData():getString())
+                end
+            end)
+
+        it("transforms cookies relative to lights and clips their footprint without texture repetition",
+            ---@description Measures cookie offset, rotation, scale, cone masking, cache reuse, and invalid input errors.
+            ---@return nil
+            function()
+                local cookie = newCookie(
+                    ---@description Makes the left half opaque white and the right half black.
+                    ---@param x number Pixel x-coordinate.
+                    ---@param y number Pixel y-coordinate.
+                    ---@return number r Red channel.
+                    ---@return number g Green channel.
+                    ---@return number b Blue channel.
+                    ---@return number a Alpha channel.
+                    function(x, y)
+                        local value = x < 4 and 1 or 0
+                        return value, value, value, 1
+                    end)
+                light:SetCookie(cookie)
+                world:Update(0)
+                assert.is_true(world.Canvas:newImageData():getPixel(72, 130) > 0.1)
+                assert.equals(0, world.Canvas:newImageData():getPixel(96, 140))
+                light:SetCookieTransform(40, 0)
+                world:Update(0)
+                assert.is_true(world.Canvas:newImageData():getPixel(96, 140) > 0.1)
+                light:SetCookieTransform(0, 0, 90)
+                world:Update(0)
+                assert.equals(0, world.Canvas:newImageData():getPixel(72, 130))
+                assert.is_true(world.Canvas:newImageData():getPixel(72, 62) > 0.1)
+                light:SetCookieTransform(0, 0, 0, 0.5, 0.75)
+                world:Update(0)
+                assert.equals(0, world.Canvas:newImageData():getPixel(16, 96),
+                    "Repeat-wrapped cookies must still be black outside their transformed footprint")
+                light:SetCookieTransform()
+                light:SetAngle(90)
+                world:Update(0)
+                assert.equals(0, world.Canvas:newImageData():getPixel(72, 130))
+                assert.is_true(world.Canvas:newImageData():getPixel(72, 62) > 0.1)
+                assert.equals(1, shadowRenders)
+                assert.equals(0, world.FrameMetrics.GeometryRebuilds)
+
+                light:SetCookie(nil)
+                light:SetAngle(0)
+                light.Arc = 90
+                world:Update(0)
+                local cone = world.Canvas:newImageData():getString()
+                light:SetCookie(newCookie(
+                    ---@description Supplies an identity mask to verify the existing cone and falloff are preserved.
+                    ---@param x number Pixel x-coordinate.
+                    ---@param y number Pixel y-coordinate.
+                    ---@return number r Red channel.
+                    ---@return number g Green channel.
+                    ---@return number b Blue channel.
+                    ---@return number a Alpha channel.
+                    function(x, y) return 1, 1, 1, 1 end))
+                world:Update(0)
+                assert.equals(cone, world.Canvas:newImageData():getString())
+                assert.has_error(
+                    ---@description Rejects a non-texture cookie.
+                    ---@return nil
+                    function() light:SetCookie("invalid") end)
+                assert.has_error(
+                    ---@description Rejects a cookie that would read from its active render target.
+                    ---@return nil
+                    function() light:SetCookie(light.Canvas) end)
+                assert.has_error(
+                    ---@description Rejects a non-finite cookie offset.
+                    ---@return nil
+                    function() light:SetCookieTransform(0 / 0) end)
+                assert.has_error(
+                    ---@description Rejects an infinite cookie angle.
+                    ---@return nil
+                    function() light:SetCookieTransform(0, 0, math.huge) end)
+                assert.has_error(
+                    ---@description Rejects a zero cookie scale.
+                    ---@return nil
+                    function() light:SetCookieTransform(0, 0, 0, 0) end)
+            end)
+
+        it("shares cookie appearance across translated and zoomed star views without rebuilding shadows",
+            ---@description Checks per-view projection, transform propagation, matching-view equality, and stable shadow caches.
+            ---@return nil
+            function()
+                light:Remove()
+                world:Resize(192, 192)
+                local camera = LightCamera:new(world, 192, 192)
+                camera:SetPosition(20, 10, 2)
+                local star = Star:new(world, 160)
+                star.Blur = false
+                star:SetPosition(80, 96, 2)
+                world:Update(0)
+                local baseline = world.Canvas:newImageData():getPixel(64, 64)
+                local secondary = camera.Canvas:newImageData():getPixel(88, 108)
+                star:SetCookie(newCookie(
+                    ---@description Supplies a uniform fractional mask for camera-independent attenuation.
+                    ---@param x number Pixel x-coordinate.
+                    ---@param y number Pixel y-coordinate.
+                    ---@return number r Red channel.
+                    ---@return number g Green channel.
+                    ---@return number b Blue channel.
+                    ---@return number a Alpha channel.
+                    function(x, y) return 0.5, 0.5, 0.5, 1 end))
+                star:SetCookieTransform(8, -4, 30, 0.8, 1.2)
+                world:Update(0)
+                assert.near(baseline * 0.5, world.Canvas:newImageData():getPixel(64, 64), 0.01)
+                assert.near(secondary * 0.5, camera.Canvas:newImageData():getPixel(88, 108), 0.01)
+                assert.equals(0, world:GetCamera().FrameMetrics.ShadowRedraws)
+                assert.equals(0, camera.FrameMetrics.ShadowRedraws)
+                assert.equals(0, camera.FrameMetrics.CanvasAllocations)
+                star:SetCookie(newCookie(
+                    ---@description Supplies a directional half mask to verify world-space projection across different cameras.
+                    ---@param x number Pixel x-coordinate.
+                    ---@param y number Pixel y-coordinate.
+                    ---@return number r Red channel.
+                    ---@return number g Green channel.
+                    ---@return number b Blue channel.
+                    ---@return number a Alpha channel.
+                    function(x, y)
+                        local value = x < 4 and 1 or 0
+                        return value, value, value, 1
+                    end))
+                world:Update(0)
+                assert.near(baseline, world.Canvas:newImageData():getPixel(64, 64), 0.01)
+                assert.near(secondary, camera.Canvas:newImageData():getPixel(88, 108), 0.01)
+                assert.equals(0, world.Canvas:newImageData():getPixel(112, 64))
+                assert.equals(0, camera.Canvas:newImageData():getPixel(184, 108))
+                assert.equals(0, camera.FrameMetrics.ShadowRedraws)
+                camera:SetPosition(0, 0, 1)
+                world:Update(0)
+                assert.equals(world.Canvas:newImageData():getString(), camera.Canvas:newImageData():getString())
+                assert.equals(0, world:GetCamera().FrameMetrics.CompositionMs)
+                star:SetCookie(nil)
+                world:Update(0)
+                assert.near(baseline, world.Canvas:newImageData():getPixel(64, 64), 0.01)
+                assert.equals(0, camera.FrameMetrics.ShadowRedraws)
             end)
 
         it("counts camera and penumbra allocations in the next completed update without charging other views",

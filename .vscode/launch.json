@@ -159,6 +159,19 @@
                 "ImageShadow"
             ],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: LightCookies",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "LightCookies"
+            ],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

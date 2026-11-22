@@ -56,6 +56,17 @@ resolution together. `world:SetQuality(...)` remains a shorthand. The default
 `high` preset preserves full-resolution, 4x MSAA rendering. See the
 [LightWorld API](docs/LightWorld.md) for preset values and usage.
 
+## Light cookies
+
+Use `light:SetCookie(texture)` to mask illumination with a centered RGB/alpha
+texture while preserving falloff, cones, tint, and shadows.
+`light:SetCookieTransform(x?, y?, angle?, scaleX?, scaleY?)` controls light-local
+offsets, relative rotation, and scale; the default aspect-preserving footprint
+fits the light diameter. `SetCookie(nil)` disables the mask. Cookie changes
+reuse shadow geometry and buffers, work with stars and particle lights, and do
+not change the light radius or legacy `SetImage` behavior. See
+[Light and Star](docs/Light.md#light-cookies) for mask semantics and texture updates.
+
 ## Multiple lighting views
 
 [`LightCamera`](docs/LightCamera.md) provides independent position, zoom, and
@@ -183,6 +194,8 @@ love . LightCameras
 love . LightCameras --capture --verify
 love . DebugOverlay
 love . DebugOverlay --capture --verify
+love . LightCookies
+love . LightCookies --capture --verify
 ```
 
 Capture mode renders the scene to offscreen canvases at DPI scale 2, saves a screenshot using `love.graphics.captureScreenshot`, and exits. Press `F12` to capture an image interactively; press `Escape` to close the demo.
@@ -208,6 +221,15 @@ and overview. Press `1`-`4` to toggle categories, `D` to hide them all, `T` to
 append/hide cumulative totals, `Space`
 to pause caster motion, `C` for tint-only changes, `B` for hard/soft shadows,
 or `R` to force a rebuild. Use arrows to pan the main camera.
+
+The `LightCookies` demo uses original procedural window, cone/gobo, and ripple
+masks on two local lights and a star. Press `Tab` to select a source, arrows to
+offset its mask, `A`/`D` to rotate, `+`/`-` to scale, `C` to toggle the cookie,
+`B` for hard/soft shadows, `Q` for quality, `R` to reset its transform, or `Space`
+to pause pattern animation. Verification checks actual masking, transforms,
+shadow-cache reuse, and exact pixel equality with full rebuilds.
+The green gobo uses a 512-pixel, supersampled and mipmapped mask with gently
+feathered apertures to avoid blocky projection edges without blurring shadows.
 
 The `Penumbra` demo compares hard and soft polygon/circle shadows side by side;
 press `Q` to change the shared quality preset in both scenes, use `+` and `-`

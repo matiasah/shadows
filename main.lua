@@ -12,6 +12,7 @@ local demos = {
     ParticleLights = "DEMOS/ParticleLights/main.lua",
     LightCameras = "DEMOS/LightCameras/main.lua",
     DebugOverlay = "DEMOS/DebugOverlay/main.lua",
+    LightCookies = "DEMOS/LightCookies/main.lua",
 }
 
 local demoName = "HighDPI"
@@ -37,6 +38,7 @@ local windowSizes = {
     ParticleLights = { 960, 560 },
     LightCameras = { 960, 560 },
     DebugOverlay = { 1100, 680 },
+    LightCookies = { 1000, 640 },
 }
 
 local requirePath = love.filesystem.getRequirePath()

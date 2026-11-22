@@ -17,7 +17,8 @@
                 "CastImage",
                 "ParticleLights",
                 "LightCameras",
-                "DebugOverlay"
+                "DebugOverlay",
+                "LightCookies"
             ],
             "default": "HighDPI"
         }
