@@ -2,6 +2,7 @@
 ---@diagnostic disable: undefined-global
 local LightWorld = require("shadows.LightWorld")
 local Light = require("shadows.Light")
+local Star = require("shadows.Star")
 local Body = require("shadows.Body")
 local CircleShadow = require("shadows.ShadowShapes.CircleShadow")
 
@@ -117,5 +118,76 @@ describe("LOVE lighting",
                 light.SizeRadius = 0
                 world:Update(0)
                 assert.is_nil(light.Penumbra)
+            end)
+
+        it("applies quality presets and per-world overrides to rendering buffers",
+            ---@description Checks shadow resolution, MSAA, and penumbra-buffer resolution.
+            ---@return nil
+            function()
+                light.Blur = true
+                assert.equals(world.Settings, light.Settings)
+                assert.equals(world.Settings, world:GetSettings())
+                local otherWorld = LightWorld:new()
+                assert.is_true(otherWorld.Settings ~= world.Settings)
+                world.Settings:SetQuality("low")
+                local otherQuality, otherScale = otherWorld.Settings:GetQuality()
+                assert.equals("high", otherQuality)
+                assert.equals(1, otherScale)
+                world:Update(0)
+
+                assert.equals(0.5, world.Canvas:getDPIScale())
+                assert.equals(0.5, light.ShadowCanvas:getDPIScale())
+                assert.equals(0, light.ShadowRenderCanvas:getMSAA())
+                assert.equals(0.25, light.Penumbra.Mask:getDPIScale())
+
+                world:SetQuality("medium", {
+                    ShadowScale = 1,
+                    ShadowMSAA = 4,
+                    PenumbraScale = 0.5,
+                })
+                world:Update(0)
+
+                assert.equals(1, world.Canvas:getDPIScale())
+                assert.equals(1, light.ShadowCanvas:getDPIScale())
+                assert.equals(4, light.ShadowRenderCanvas:getMSAA())
+                assert.equals(0.5, light.Penumbra.Mask:getDPIScale())
+            end)
+
+        it("rejects invalid quality overrides without changing the current settings",
+            ---@description Verifies invalid per-world settings fail before reallocating canvases.
+            ---@return nil
+            function()
+                local canvas = world.Canvas
+                assert.has_error(function()
+                    world:SetQuality("low", { ShadowScale = 0 })
+                end, "ShadowScale must be a finite number greater than 0 and at most 1")
+                assert.has_error(function()
+                    world:SetQuality("high", { ShadowMSAA = 1.5 })
+                end, "ShadowMSAA must be a finite nonnegative integer")
+                local quality, shadowScale = world.Settings:GetQuality()
+                assert.equals("high", quality)
+                assert.equals(1, shadowScale)
+                assert.equals(canvas, world.Canvas)
+            end)
+
+        it("recreates full-scene star buffers when quality changes",
+            ---@description Checks star canvas resolution and penumbra quality invalidation.
+            ---@return nil
+            function()
+                local star = Star:new(world, 200)
+                local originalCanvas = star.Canvas
+                assert.equals(world.Settings, star.Settings)
+
+                world:SetQuality("low")
+                assert.is_true(originalCanvas ~= star.Canvas)
+                assert.equals(0.5, star.Canvas:getDPIScale())
+                assert.equals(0, star.ShadowRenderCanvas:getMSAA())
+                world:Update(0)
+
+                local lowCanvas = star.Canvas
+                world:SetQuality("low", { PenumbraScale = 0.25 })
+                assert.is_true(lowCanvas ~= star.Canvas)
+                assert.equals(0.25, star.RenderPenumbraScale)
+                world:Update(0)
             end)
     end)

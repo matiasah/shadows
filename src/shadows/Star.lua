@@ -15,11 +15,15 @@ Transform    = require("shadows.Transform")
 --- @field private ShadowRenderCanvas love.Canvas Multisampled shadow render target.
 --- @field Shapes table Cached projected shadow draw calls.
 --- @field World LightWorld Owning world.
+--- @field Settings Settings Shared settings object from the owning world.
 --- @field ID integer Index in the world's star collection.
 --- @field private Penumbra Penumbra? Cached occluder-distance filtering buffers.
 --- @field Changed boolean? Whether shadow geometry and all rendering stages need regeneration.
 --- @field Width number Star canvas width.
 --- @field Height number Star canvas height.
+--- @field private RenderScale number Resolution scale used by the current canvases.
+--- @field private RenderMSAA integer MSAA sample count used by the current shadow canvas.
+--- @field private RenderPenumbraScale number Resolution scale used by current penumbra buffers.
 --- @field private __index Star Instance method lookup.
 --- @field private __type string Runtime type name.
 Star         = setmetatable({}, Light)
@@ -41,6 +45,8 @@ function Star:new(World, Radius)
 		local self = setmetatable({}, Star)
 		local Width, Height = World.Canvas:getDimensions()
 
+		self.World = World
+		self.Settings = World.Settings
 		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(0, 0, 1)
 		self.Transform.Object = self
@@ -48,12 +54,15 @@ function Star:new(World, Radius)
 		self.Radius = Radius
 		self.Width = Width
 		self.Height = Height
-		self.Canvas = love.graphics.newCanvas(Width, Height)
-		self.ShadowCanvas = love.graphics.newCanvas(Width, Height, { mipmaps = "manual" })
+		self.Canvas = self:NewCanvas(Width, Height)
+		self.ShadowCanvas = self:NewCanvas(Width, Height, { mipmaps = "manual" })
 		self.ShadowCanvas:setMipmapFilter("linear")
-		self.ShadowRenderCanvas = love.graphics.newCanvas(Width, Height, { msaa = 4 })
+		self.ShadowRenderCanvas = self:NewCanvas(Width, Height, { msaa = World.Settings.ShadowMSAA })
 
 		self.Shapes = {}
+		self.RenderScale = World.Settings.ShadowScale
+		self.RenderMSAA = World.Settings.ShadowMSAA
+		self.RenderPenumbraScale = World.Settings.PenumbraScale
 
 		World:AddStar(self)
 
@@ -154,15 +163,20 @@ end
 function Star:Resize(Width, Height)
 	local w, h = self.Canvas:getDimensions()
 
-	if Width ~= w or Height ~= h then
+	if Width ~= w or Height ~= h or self.RenderScale ~= self.Settings.ShadowScale
+		or self.RenderMSAA ~= self.Settings.ShadowMSAA
+		or self.RenderPenumbraScale ~= self.Settings.PenumbraScale then
 		self.Width = Width
 		self.Height = Height
-		self.Canvas = love.graphics.newCanvas(Width, Height)
-		self.ShadowCanvas = love.graphics.newCanvas(Width, Height, { mipmaps = "manual" })
+		self.Canvas = self:NewCanvas(Width, Height)
+		self.ShadowCanvas = self:NewCanvas(Width, Height, { mipmaps = "manual" })
 		self.ShadowCanvas:setMipmapFilter("linear")
-		self.ShadowRenderCanvas = love.graphics.newCanvas(Width, Height, { msaa = 4 })
+		self.ShadowRenderCanvas = self:NewCanvas(Width, Height, { msaa = self.Settings.ShadowMSAA })
 		self.Penumbra = nil
 		self.Changed = true
+		self.RenderScale = self.Settings.ShadowScale
+		self.RenderMSAA = self.Settings.ShadowMSAA
+		self.RenderPenumbraScale = self.Settings.PenumbraScale
 	end
 end
 

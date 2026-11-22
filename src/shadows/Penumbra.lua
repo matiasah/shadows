@@ -11,22 +11,28 @@ local FILTER_RADIUS_SCALE = 0.9
 ---@field private Scratch love.Canvas Jump-flood ping-pong target.
 ---@field private Radius love.Canvas Per-pixel shadow filter radius.
 ---@field private Scale number World-to-canvas scale used for filtering.
+---@field private QualityScale number Penumbra-buffer resolution scale.
 ---@field private __index Penumbra Instance method lookup.
 local Penumbra = {}
 Penumbra.__index = Penumbra
 
----@description Allocates filtering buffers with the shadow canvas dimensions and DPI.
+---@description Allocates filtering buffers at the requested fraction of shadow resolution.
 ---@param Canvas love.Canvas Shadow canvas whose dimensions and DPI are matched.
+---@param QualityScale number? Penumbra buffer resolution factor; defaults to 1.
+---@param MSAA integer? Silhouette antialiasing sample count; defaults to 4.
 ---@return Penumbra penumbra New filtering buffers.
-function Penumbra:new(Canvas)
+function Penumbra:new(Canvas, QualityScale, MSAA)
     local width, height = Canvas:getDimensions()
     local scale = DPI.getCanvasScale(Canvas)
+    QualityScale = QualityScale or 1
+    MSAA = MSAA == nil and 4 or MSAA
     local self = setmetatable({}, Penumbra)
-    self.Mask = love.graphics.newCanvas(width, height, { dpiscale = scale, msaa = 4 })
-    self.Field = love.graphics.newCanvas(width, height, { dpiscale = scale, format = "rgba16f" })
-    self.Scratch = love.graphics.newCanvas(width, height, { dpiscale = scale, format = "rgba16f" })
-    self.Radius = love.graphics.newCanvas(width, height, { dpiscale = scale, format = "rgba16f" })
+    self.Mask = love.graphics.newCanvas(width, height, { dpiscale = scale * QualityScale, msaa = MSAA })
+    self.Field = love.graphics.newCanvas(width, height, { dpiscale = scale * QualityScale, format = "rgba16f" })
+    self.Scratch = love.graphics.newCanvas(width, height, { dpiscale = scale * QualityScale, format = "rgba16f" })
+    self.Radius = love.graphics.newCanvas(width, height, { dpiscale = scale * QualityScale, format = "rgba16f" })
     self.Scale = 1
+    self.QualityScale = QualityScale
     self.Field:setFilter("nearest", "nearest")
     self.Scratch:setFilter("nearest", "nearest")
     return self

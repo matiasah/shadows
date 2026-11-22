@@ -46,6 +46,15 @@ an existing texture's pixels change in place. Custom callbacks are not invoked
 for appearance-only recomposition; force an update if they depend on light color,
 arc, or rotation. See [Light](docs/Light.md) for rendering details.
 
+## Rendering quality
+
+Each world exposes a shared `world.Settings` object used by all its lights and
+stars. Call `world.Settings:SetQuality("low" | "medium" | "high", overrides?)`
+to adjust shadow resolution, projected-edge MSAA, and penumbra-buffer
+resolution together. `world:SetQuality(...)` remains a shorthand. The default
+`high` preset preserves full-resolution, 4x MSAA rendering. See the
+[LightWorld API](docs/LightWorld.md) for preset values and usage.
+
 ## Color API migration
 
 All light, star, ambient, and room color channels now use LÖVE's **0-1 range**.
@@ -127,7 +136,8 @@ The blue water spray uses tapered droplet textures, velocity-aligned rotation,
 and gravity-driven arcs; verification also measures its rising and falling light.
 
 The `Penumbra` demo compares hard and soft polygon/circle shadows side by side;
-use `+` and `-` to adjust the source radius and the arrow keys to move the light.
+press `Q` to change the shared quality preset in both scenes, use `+` and `-`
+to adjust the source radius, and use the arrow keys to move the light.
 `--verify` checks measured contact and distant transition widths, minimum softness
 at different source sizes and light distances, brightness preservation,
 hard-shadow behavior, and DPI scales 1 and 2. Capture failures print a traceback and exit with a

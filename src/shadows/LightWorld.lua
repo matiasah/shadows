@@ -7,6 +7,7 @@ Shadows                                                = require("shadows")
 Body                                                   = require("shadows.Body")
 BodyTransform                                          = require("shadows.BodyTransform")
 PriorityQueue                                          = require("shadows.PriorityQueue")
+Settings                                               = require("shadows.Settings")
 
 ---@class ShadowBounds
 ---@field x number World-space centroid x-coordinate.
@@ -27,6 +28,7 @@ PriorityQueue                                          = require("shadows.Priori
 --- @field Stars Star[] Registered full-scene lights.
 --- @field Changed boolean Whether all shadow caches need rebuilding.
 --- @field private ShapeBounds table<Shadow, ShadowBounds> Last updated shape bounds, including removed shapes until the next update.
+--- @field Settings Settings Shared rendering settings for this world's lights and stars.
 --- @field UpdateCanvas boolean? Whether the composed canvas needs redrawing.
 --- @field UpdateStars boolean? Whether stars need updating.
 --- @field x number Camera x-coordinate.
@@ -45,13 +47,23 @@ LightWorld.__type                                      = "LightWorld"
 LightWorld.R, LightWorld.G, LightWorld.B, LightWorld.A = 0, 0, 0, 1
 LightWorld.x, LightWorld.y, LightWorld.z               = 0, 0, 1
 
+---@description Allocates a world canvas at the requested shadow resolution.
+---@param Width number Canvas width in logical pixels.
+---@param Height number Canvas height in logical pixels.
+---@param ShadowScale number Resolution scale from 0 to 1.
+---@return love.Canvas canvas New world canvas.
+local function newWorldCanvas(Width, Height, ShadowScale)
+	return love.graphics.newCanvas(Width, Height, { dpiscale = ShadowScale })
+end
+
 --- @description Creates a world and allocates its canvas at the current display size.
 --- @return LightWorld world New light world.
 function LightWorld:new()
 	local self = setmetatable({}, LightWorld)
 	local Width, Height = love.graphics.getDimensions()
 
-	self.Canvas = love.graphics.newCanvas(Width, Height)
+	self.Settings = Settings:new(self)
+	self.Canvas = newWorldCanvas(Width, Height, self.Settings.ShadowScale)
 	self.Width = Width
 	self.Height = Height
 	self.BorderRadius = math.sqrt(Width * Width + Height * Height) * 0.5
@@ -73,7 +85,7 @@ end
 --- @param Height number New canvas height.
 --- @return nil
 function LightWorld:Resize(Width, Height)
-	self.Canvas = love.graphics.newCanvas(Width, Height)
+	self.Canvas = newWorldCanvas(Width, Height, self.Settings.ShadowScale)
 	self.Width = Width
 	self.Height = Height
 	self.BorderRadius = math.sqrt(Width * Width + Height * Height) * 0.5
@@ -83,6 +95,34 @@ function LightWorld:Resize(Width, Height)
 	for Index, Light in pairs(self.Stars) do
 		Light:Resize(Width, Height)
 	end
+end
+
+--- @description Applies a quality preset and optional per-world setting overrides.
+--- @param Preset string Preset name: "low", "medium", or "high".
+--- @param Overrides table? Optional ShadowScale, ShadowMSAA, and PenumbraScale overrides.
+--- @return nil
+function LightWorld:SetQuality(Preset, Overrides)
+	self.Settings:SetQuality(Preset, Overrides)
+end
+
+---@description Rebuilds world-owned canvases after shared rendering quality changes.
+---@return nil
+function LightWorld:OnQualityChanged()
+	self.Canvas = newWorldCanvas(self.Width, self.Height, self.Settings.ShadowScale)
+	self.UpdateCanvas = true
+	self.UpdateStars = true
+	for _, Light in pairs(self.Lights) do
+		Light:DestroyCanvas()
+	end
+	for _, Star in pairs(self.Stars) do
+		Star:Resize(self.Width, self.Height)
+	end
+end
+
+---@description Returns the settings object shared by this world's lights and stars.
+---@return Settings settings Shared world settings.
+function LightWorld:GetSettings()
+	return self.Settings
 end
 
 --- @description Copies the bodies and supported fixtures from a LÖVE physics world.

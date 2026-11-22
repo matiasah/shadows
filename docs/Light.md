@@ -62,6 +62,7 @@ Stars have public `Width` and `Height` fields. Their position, radius, color, te
 
 - Local-light canvas dimensions are twice the radius. Soft shadows additionally use an occluder mask, two floating-point distance-field buffers, a floating-point radius buffer, and shadow-mask mipmaps.
 - Star canvas dimensions follow the world canvas and are independent of radius.
+- Rendering resolution, shadow-edge MSAA, and penumbra-buffer resolution are controlled per world with `LightWorld:SetQuality`; changing settings reallocates the relevant caches.
 - Projected shadow geometry is cached per shape and height layer, including empty shadow lists. Editing a shape preserves unchanged siblings' geometry; moving its body invalidates all its shapes.
 - Local shadow canvases rebuild only for shapes intersecting the light's range at their previous or current bounds. Movement, radius changes, removal, and texture replacement are tracked on the next world update. Stars conservatively redraw for any scene geometry change.
 - Affected shadow canvases are cleared and fully redrawn, rather than painting only changed shapes, so overlaps and height layers remain correct.

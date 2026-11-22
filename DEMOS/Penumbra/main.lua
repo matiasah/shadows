@@ -12,6 +12,31 @@ local worlds = {}
 local lights = {}
 --- @type number
 local lightX = 80
+--- @type string[]
+local qualityPresets = { "high", "medium", "low" }
+
+--- @description Applies the selected preset to both comparison worlds.
+--- @param Preset string Rendering preset name.
+--- @return nil
+local function setQuality(Preset)
+	for _, world in ipairs(worlds) do
+		world.Settings:SetQuality(Preset)
+	end
+end
+
+--- @description Cycles both comparison worlds through the available presets.
+--- @return nil
+local function cycleQuality()
+	local current = worlds[1].Settings:GetQuality()
+	local index = 1
+	for i, preset in ipairs(qualityPresets) do
+		if current == preset then
+			index = i
+			break
+		end
+	end
+	setQuality(qualityPresets[index % #qualityPresets + 1])
+end
 
 --- @description Creates matching hard and soft polygon/circle shadow scenes.
 --- @return nil
@@ -60,11 +85,12 @@ function love.draw()
         love.graphics.print(i == 1 and "Hard shadows" or "Contact-hardening penumbras", 12, 12)
         love.graphics.pop()
     end
+        local quality = worlds[1].Settings:GetQuality()
     love.graphics.setColor(0, 0, 0, 0.7)
     love.graphics.rectangle("fill", 0, 454, 1000, 26)
     love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.print(string.format("Source radius: %.0f | Light x: %.0f | +/- size | Left/Right move light | F12 capture | Esc exit",
-        lights[2].SizeRadius, lightX), 12, 460)
+        love.graphics.print(string.format("Quality: %s | Q quality | Source radius: %.0f | Light x: %.0f | +/- size | Left/Right move light | F12 capture | Esc exit",
+            quality, lights[2].SizeRadius, lightX), 12, 460)
     capture.draw()
 end
 
@@ -72,7 +98,9 @@ end
 --- @param key string Pressed key name.
 --- @return nil
 function love.keypressed(key)
-    if key == "=" or key == "+" or key == "kp+" then
+    if key == "q" then
+        cycleQuality()
+    elseif key == "=" or key == "+" or key == "kp+" then
         lights[2].SizeRadius = lights[2].SizeRadius + 2
     elseif key == "-" or key == "kp-" then
         lights[2].SizeRadius = math.max(0, lights[2].SizeRadius - 2)

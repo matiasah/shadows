@@ -16,6 +16,7 @@ Run commands from the repository root with LÖVE installed.
 
 - **W/A/S/D** — move the camera.
 - **Mouse wheel** — zoom in or out.
+- **Q** — cycle the shared world rendering quality through high, medium, and low.
 - **Left mouse button** — add a randomly colored local light at the current light position.
 - **Other mouse buttons** — remove the first sample body.
 - **F9** — save `standard-scene.png` and `standard-scene.txt` together in the

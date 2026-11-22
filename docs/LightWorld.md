@@ -21,6 +21,43 @@ The initial canvas matches `love.graphics.getDimensions()`.
 | `world:ForceUpdate()` | Forces every light and star to rebuild shadow geometry and rendering on its next visible update. |
 | `world:InitFromPhysics(physicsWorld)` | Imports supported bodies and fixtures from a LÖVE physics world once. |
 
+## Rendering quality
+
+Each world owns one `Settings` object, shared by its lights and stars. Access it
+with `world.Settings` or `world:GetSettings()`, then use
+`settings:SetQuality(preset, overrides?)` to select a rendering preset and
+optional per-world overrides. `world:SetQuality(...)` remains a shorthand for
+the same shared object. The default is `high`, which preserves full canvas
+resolution, 4x shadow-edge MSAA, and full-resolution penumbra buffers.
+
+| Preset | Shadow scale | Shadow MSAA | Penumbra scale |
+|---|---:|---:|---:|
+| `low` | 0.5 | 0 | 0.5 |
+| `medium` | 0.75 | 2 | 0.75 |
+| `high` | 1 | 4 | 1 |
+
+Scales are fractions of the normal canvas resolution. For example, a shadow
+scale of `0.5` uses half the pixel width and height. MSAA must be a
+nonnegative integer; the graphics device must support the requested sample
+count.
+
+```lua
+world.Settings:SetQuality("medium")
+world:GetSettings():SetQuality("high", {
+    ShadowScale = 0.8,
+    ShadowMSAA = 2,
+    PenumbraScale = 0.5,
+})
+```
+
+Changing the effective settings recreates affected canvases and cached shadow
+buffers. Local lights rebuild lazily when next visible; stars rebuild on the
+next update. Invalid presets or overrides raise an error. Values are per-world,
+so different worlds can use different quality settings. `light.Settings` and
+`star.Settings` reference the exact same object as their owning world's
+`Settings`; changes made through it affect all lights and stars in that world.
+Use `settings:GetQuality()` to retrieve the preset name and effective settings.
+
 ## Scene objects
 
 | Method | Description and return values |

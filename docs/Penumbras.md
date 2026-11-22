@@ -125,7 +125,8 @@ busted spec/DPI_spec.lua spec/PenumbraSettings_spec.lua
 
 The comparison demo shows matching polygon and circle casters with hard shadows
 on the left and penumbras on the right. `+` and `-` adjust source size, the
-left/right arrow keys move the light, `F12` captures a screenshot, and `Escape` exits.
+left/right arrow keys move the light, `Q` cycles rendering quality for both
+worlds, `F12` captures a screenshot, and `Escape` exits.
 
 `--verify` renders controlled masks at DPI scales 1 and 2 and checks that the
 contact transition is at most 3 logical pixels wide, the distant transition is

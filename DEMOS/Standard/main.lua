@@ -28,6 +28,8 @@ local verifyStain = false
 local verifyLines = false
 ---@type boolean
 local verifyWallLines = false
+---@type string[]
+local qualityPresets = { "high", "medium", "low" }
 
 for _, argument in ipairs(arg or {}) do
 	if argument == "--verify" then verifySnapshot = true end
@@ -64,6 +66,21 @@ L = Light:new(LWorld, 500)
 L:SetColor(1, 1, 1, 1)
 L:SetPosition(400, 400, 20)
 
+--- @description Cycles the shared world rendering quality through its presets.
+--- @return nil
+local function cycleQuality()
+	local current = LWorld.Settings:GetQuality()
+	local index = 1
+	for i, preset in ipairs(qualityPresets) do
+		if current == preset then
+			index = i
+			break
+		end
+	end
+	local nextPreset = qualityPresets[index % #qualityPresets + 1]
+	LWorld.Settings:SetQuality(nextPreset)
+end
+
 --local S = Star:new(LWorld, 50000)
 --S:SetColor(1, 1, 1, 1)
 --S:SetPosition(-5000, -5000, 400)
@@ -82,12 +99,14 @@ local function saveSceneSnapshot()
 	local width, height = love.graphics.getDimensions()
 	local pixelWidth, pixelHeight = love.graphics.getPixelDimensions()
 	local major, minor, revision = love.getVersion()
+	local quality = LWorld.Settings:GetQuality()
 	local lines = {
 		"Standard demo scene snapshot",
 		string.format("LÖVE version: %d.%d.%d", major, minor, revision),
 		string.format("Window logical size: %d x %d", width, height),
 		string.format("Window pixel size: %d x %d", pixelWidth, pixelHeight),
 		string.format("World canvas DPI scale: %.17g", LWorld.Canvas:getDPIScale()),
+		string.format("Rendering quality: %s", quality),
 		string.format("Camera x y zoom: %.17g %.17g %.17g", cameraX, cameraY, zoom),
 		string.format("Mouse x y: %.17g %.17g", mouseX, mouseY),
 		string.format("Circle sample removed: %s", tostring(testBody.World == nil)),
@@ -120,6 +139,7 @@ local function saveSceneSnapshot()
 			assert(image:getWidth() == pixelWidth and image:getHeight() == pixelHeight,
 				"Scene screenshot dimensions must match the captured window")
 			assert(text:find("Camera x y zoom: 180 210 1", 1, true), "Camera state must be recorded")
+			assert(text:find("Rendering quality: high", 1, true), "Default rendering quality must be recorded")
 			assert(text:find("Circle sample removed: true", 1, true), "Removed sample must be recorded")
 			assert(text:find("Light 1: position=400,400,20 radius=500", 1, true),
 				"Previous light position and radius must be recorded")
@@ -260,6 +280,13 @@ function love.draw()
 		love.graphics.setColor(1, 1, 1, 1)
 		love.graphics.print(snapshotMessage, 6, 4)
 	end
+	if not snapshotRequested then
+		local quality = LWorld.Settings:GetQuality()
+		love.graphics.setColor(0, 0, 0, 0.72)
+		love.graphics.rectangle("fill", 0, 0, 220, 24)
+		love.graphics.setColor(1, 1, 1, 1)
+		love.graphics.print("Quality: " .. quality .. " | Q: change", 6, 4)
+	end
 	capture.draw()
 end
 
@@ -269,6 +296,8 @@ end
 function love.keypressed(key)
 	if key == "f9" then
 		if not snapshotRequested then snapshotRequested = true end
+	elseif key == "q" then
+		cycleQuality()
 	else
 		capture.keypressed(key)
 	end

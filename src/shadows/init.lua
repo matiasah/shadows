@@ -26,6 +26,7 @@ local Shadows                                         = {}
 
 package.loaded["shadows"]                             = Shadows
 package.preload["shadows.DPI"]                        = assert(love.filesystem.load(Path .. "/DPI.lua"))
+package.preload["shadows.Settings"]                   = assert(love.filesystem.load(Path .. "/Settings.lua"))
 package.preload["shadows.Penumbra"]                   = assert(love.filesystem.load(Path .. "/Penumbra.lua"))
 package.preload["shadows.Object"]                     = assert(love.filesystem.load(Path .. "/Object.lua"))
 package.preload["shadows.Transform"]                  = assert(love.filesystem.load(Path .. "/Transform.lua"))

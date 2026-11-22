@@ -33,7 +33,7 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 
 | API | Description |
 |---|---|
-| [LightWorld](LightWorld.md) | Scene lifecycle, camera, ambient color, and extension callbacks. |
+| [LightWorld](LightWorld.md) | Scene lifecycle, shared rendering settings, camera, ambient color, and extension callbacks. |
 | [Light](Light.md) | Local lights and full-scene stars. |
 | [ParticleLight](ParticleLight.md) | Animated particle-system illumination with emitter-centered shadows. |
 | [Penumbras](Penumbras.md) | Contact-hardening shadow filtering, source size, and rendering limits. |

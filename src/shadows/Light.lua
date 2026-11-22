@@ -8,6 +8,7 @@ Transform                          = require("shadows.Transform")
 
 --- @class Light: Object
 --- @field World LightWorld? World that owns this light.
+--- @field Settings Settings? Shared settings object from the owning world.
 --- @field ID integer? Index in the world's light table.
 --- @field Transform Transform Light position and rotation.
 --- @field Radius number Light radius in world units.
@@ -74,20 +75,36 @@ function Light:new(World, Radius)
 	end
 end
 
+--- @description Allocates a canvas using this light world's rendering quality.
+--- @param Width number Canvas width in logical pixels.
+--- @param Height number Canvas height in logical pixels.
+--- @param Options table? Additional LÖVE canvas settings.
+--- @return love.Canvas canvas New canvas.
+function Light:NewCanvas(Width, Height, Options)
+	local canvasOptions = { dpiscale = self.Settings.ShadowScale }
+	if Options then
+		for name, value in pairs(Options) do
+			canvasOptions[name] = value
+		end
+	end
+	return love.graphics.newCanvas(Width, Height, canvasOptions)
+end
+
 --- @description Creates shadow and illumination canvases when they do not exist.
 --- @return nil
 function Light:InitCanvas()
 	if not self.Canvas then
-		self.Canvas = love.graphics.newCanvas(self.Radius * 2, self.Radius * 2)
+		self.Canvas = self:NewCanvas(self.Radius * 2, self.Radius * 2)
 	end
 
 	if not self.ShadowCanvas then
-		self.ShadowCanvas = love.graphics.newCanvas(self.Radius * 2, self.Radius * 2, { mipmaps = "manual" })
+		self.ShadowCanvas = self:NewCanvas(self.Radius * 2, self.Radius * 2, { mipmaps = "manual" })
 		self.ShadowCanvas:setMipmapFilter("linear")
 	end
 
 	if not self.ShadowRenderCanvas then
-		self.ShadowRenderCanvas = love.graphics.newCanvas(self.Radius * 2, self.Radius * 2, { msaa = 4 })
+		self.ShadowRenderCanvas = self:NewCanvas(self.Radius * 2, self.Radius * 2,
+			{ msaa = self.Settings.ShadowMSAA })
 	end
 
 	if not self.Shapes then
@@ -425,7 +442,8 @@ end
 function Light:GeneratePenumbra(Rebuild)
 	if self.Blur and self.SizeRadius > 0 then
 		if not self.Penumbra then
-			self.Penumbra = require("shadows.Penumbra"):new(self.ShadowCanvas)
+			self.Penumbra = require("shadows.Penumbra"):new(
+				self.ShadowCanvas, self.Settings.PenumbraScale, self.Settings.ShadowMSAA)
 			Rebuild = true
 		end
 		if Rebuild ~= false then
@@ -443,6 +461,7 @@ end
 --- @return nil
 function Light:SetWorld(World)
 	self.World = World
+	self.Settings = World.Settings
 end
 
 --- @description Returns the owning light world.
