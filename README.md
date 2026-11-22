@@ -80,6 +80,11 @@ Existing `world:SetPosition`, `world:Resize`, `world:Draw`, and `world.Canvas`
 continue to use the default camera. Resize additional views independently when
 your screen layout changes. Camera positions are not automatically snapped:
 use the same effective translation and zoom as your scene renderer.
+Each camera exposes `camera.Transform` and `camera:GetTransform()` for
+hierarchical positioning and following a body or other transform. Camera
+`SetPosition` uses world coordinates, even when parented. Parent motion is
+synchronized before light culling and star rendering. Zoom remains separate
+from transform height, and viewports stay axis-aligned.
 
 ## Color API migration
 
@@ -166,6 +171,7 @@ and gravity-driven arcs; verification also measures its rising and falling light
 The `LightCameras` demo displays two independently positioned and zoomed views
 of one animated scene, sharing a local light and a full-scene star. Press `Tab`
 to select a camera, arrows to pan, `+`/`-` to zoom, `Q` to change shared quality,
+`F` to toggle following the animated body with the selected camera's transform,
 or `Space` to pause the body. `--verify` checks matching-view pixel equality,
 shared scene movement, and incremental rendering against full rebuilds.
 

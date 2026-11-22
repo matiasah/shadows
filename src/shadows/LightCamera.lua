@@ -1,6 +1,7 @@
 ---@module Provides independent lighting viewports into a shared LightWorld.
 local Object = require("shadows.Object")
 local Shadows = require("shadows")
+local Transform = require("shadows.Transform")
 
 ---@class LightCamera:Object
 ---@field World LightWorld Owning scene; simulation and rendering settings are shared.
@@ -9,9 +10,10 @@ local Shadows = require("shadows")
 ---@field Width number Viewport width in logical pixels.
 ---@field Height number Viewport height in logical pixels.
 ---@field BorderRadius number Half-diagonal of the viewport in logical pixels.
----@field x number World-space left edge; defaults to 0.
----@field y number World-space top edge; defaults to 0.
----@field z number Positive world-to-viewport scale; defaults to 1.
+---@field Transform Transform Hierarchical camera position; height and rotation do not alter the viewport.
+---@field x number Last synchronized world-space left edge; defaults to 0.
+---@field y number Last synchronized world-space top edge; defaults to 0.
+---@field z number Positive world-to-viewport scale, independent of transform height; defaults to 1.
 ---@field private UpdateCanvas boolean? Whether composition needs refreshing.
 ---@field private UpdateStars boolean? Whether view-dependent star shadows need refreshing.
 ---@field private Removed boolean? Whether this camera is detached.
@@ -29,6 +31,16 @@ local function validateDimension(value)
         "LightCamera dimensions must be finite positive integers")
 end
 
+---@description Validates finite world-space camera coordinates.
+---@param x number World x-coordinate.
+---@param y number World y-coordinate.
+---@return nil
+local function validatePosition(x, y)
+    assert(type(x) == "number" and x > -math.huge and x < math.huge
+        and type(y) == "number" and y > -math.huge and y < math.huge,
+        "LightCamera position must be finite")
+end
+
 ---@description Creates and registers a viewport; the world's first camera becomes its default.
 ---@param World LightWorld Scene to view.
 ---@param Width number? Logical width; defaults to the world's width or display width.
@@ -44,12 +56,27 @@ function LightCamera:new(World, Width, Height)
     local camera = setmetatable({
         World = World,
         Settings = World.Settings,
+        Transform = Transform:new(),
         x = 0, y = 0, z = 1,
     }, LightCamera)
+    camera.Transform.Object = camera
     if not World.DefaultCamera then World.DefaultCamera = camera end
     World.Cameras[#World.Cameras + 1] = camera
     camera:Resize(Width, Height)
     return camera
+end
+
+---@description Synchronizes inherited translation and invalidates view-dependent rendering when it changes.
+---@return nil
+function LightCamera:UpdateTransform()
+    local x, y = self.Transform:GetPosition()
+    validatePosition(x, y)
+    if self.x ~= x or self.y ~= y then
+        self.x, self.y = x, y
+        self.UpdateCanvas, self.UpdateStars = true, true
+        self:SyncWorld()
+    end
+    self.Transform.HasChanged = false
 end
 
 ---@description Keeps legacy world viewport fields aligned with the default camera.
@@ -88,14 +115,15 @@ end
 ---@return nil
 function LightCamera:SetPosition(x, y, z)
     assert(not self.Removed, "Cannot move a removed LightCamera")
-    assert(type(x) == "number" and x > -math.huge and x < math.huge
-        and type(y) == "number" and y > -math.huge and y < math.huge,
-        "LightCamera position must be finite")
+    validatePosition(x, y)
     if z == nil then z = self.z end
     assert(type(z) == "number" and z > 0 and z < math.huge,
         "LightCamera scale must be finite and positive")
-    if self.x ~= x or self.y ~= y or self.z ~= z then
-        self.x, self.y, self.z = x, y, z
+    local _, _, height = self.Transform:GetPosition()
+    self.Transform:SetPosition(x, y, height)
+    self:UpdateTransform()
+    if self.z ~= z then
+        self.z = z
         self.UpdateCanvas, self.UpdateStars = true, true
         self:SyncWorld()
     end
@@ -106,7 +134,14 @@ end
 ---@return number y World y-coordinate.
 ---@return number z World-to-viewport scale.
 function LightCamera:GetPosition()
+    self:UpdateTransform()
     return self.x, self.y, self.z
+end
+
+---@description Returns the camera transform for parent-relative positioning and following scene objects.
+---@return Transform transform Hierarchical position transform; zoom remains separate.
+function LightCamera:GetTransform()
+    return self.Transform
 end
 
 ---@description Returns the viewport's logical width.
@@ -133,14 +168,16 @@ end
 ---@param radius number Light radius in world units.
 ---@return boolean visible Whether the circle intersects the viewport.
 function LightCamera:IsVisible(x, y, radius)
-    local dx = math.max(self.x - x, 0, x - self.x - self.Width / self.z)
-    local dy = math.max(self.y - y, 0, y - self.y - self.Height / self.z)
+    local cx, cy, zoom = self:GetPosition()
+    local dx = math.max(cx - x, 0, x - cx - self.Width / zoom)
+    local dy = math.max(cy - y, 0, y - cy - self.Height / zoom)
     return dx * dx + dy * dy <= radius * radius
 end
 
 ---@description Composes cached illumination and rooms; called by the world's update, never advances simulation.
 ---@return nil
 function LightCamera:Compose()
+    self:UpdateTransform()
     if not self.UpdateCanvas and not self.World.UpdateCanvas then return end
     local world = self.World
     love.graphics.push("all")
@@ -201,6 +238,7 @@ function LightCamera:Remove()
         end
     end
     for _, star in pairs(self.World.Stars) do star.Views[self] = nil end
+    self.Transform:SetParent(nil)
     self.Removed = true
     self.World.UpdateCanvas = true
 end

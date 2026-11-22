@@ -86,6 +86,12 @@ invalidating stationary shadow geometry.
 | `world:GetWidth()` / `world:GetHeight()` | Return the default camera's canvas dimensions. |
 | `world:GetBorderRadius()` | Returns half the canvas diagonal. |
 
+The default camera's [`Transform`](Transform.md) is available through
+`world:GetCamera():GetTransform()`. Cameras can follow parent transforms;
+world updates synchronize their world-space positions before culling and star
+rendering. Camera zoom is independent of transform height, and viewports remain
+axis-aligned. See [LightCamera](LightCamera.md) for parenting examples.
+
 ## Extension callbacks
 
 Override these methods on a world instance to draw custom content per light or star:

@@ -310,7 +310,7 @@ end
 --- @return number y Camera y-coordinate.
 --- @return number z Camera scale.
 function LightWorld:GetPosition()
-	return self.x, self.y, self.z
+	return self.DefaultCamera:GetPosition()
 end
 
 --- @description Advances the shared scene once and refreshes every registered camera.
@@ -327,6 +327,10 @@ function LightWorld:Update(dt)
 
 	Shadows.insertionSort(self.Bodies:GetArray())
 	self:UpdateShapeBounds()
+
+	for _, Camera in ipairs(self.Cameras) do
+		Camera:UpdateTransform()
+	end
 
 	for Index, Light in pairs(self.Lights) do
 		Light:Update(dt)

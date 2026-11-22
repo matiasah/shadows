@@ -37,7 +37,21 @@ local function resizeViews(width, height)
     for _, camera in ipairs(cameras) do camera:Resize(viewportWidth, viewportHeight) end
 end
 
----@description Verifies independent views, shared lighting, and incremental rendering against full rebuilds.
+---@description Toggles parent following while preserving the selected camera's current world position and zoom.
+---@param camera LightCamera Camera whose follow mode changes.
+---@return nil
+local function toggleFollow(camera)
+    local x, y, zoom = camera:GetPosition()
+    local transform = camera:GetTransform()
+    if transform:GetParent() then
+        transform:SetParent(nil)
+    else
+        transform:SetParent(movingBody:GetTransform())
+    end
+    camera:SetPosition(x, y, zoom)
+end
+
+---@description Verifies independent views, shared rendering, and camera transform following.
 ---@return nil
 local function verifyViews()
     world:Update(0)
@@ -63,6 +77,20 @@ local function verifyViews()
             "Camera " .. i .. " incremental lighting must match a full rebuild")
     end
     movingBody:SetPosition(360, 240, 2)
+    world:Update(0)
+    toggleFollow(right)
+    assert(select(3, right:GetPosition()) == rz, "Following must preserve camera zoom")
+    movingBody:SetPosition(380, 270, 2)
+    world:Update(0)
+    local x, y, zoom = right:GetPosition()
+    assert(math.abs(x - rx - 20) < 0.000001 and math.abs(y - ry - 30) < 0.000001 and zoom == rz,
+        "A parented camera must follow body movement without changing zoom")
+    toggleFollow(right)
+    movingBody:SetPosition(360, 240, 2)
+    world:Update(0)
+    local detachedX, detachedY = right:GetPosition()
+    assert(detachedX == x and detachedY == y, "Detaching must keep the current world position")
+    right:SetPosition(rx, ry, rz)
     world:Update(0)
     print("LightCamera split-screen verification passed")
 end
@@ -148,11 +176,12 @@ function love.draw()
         drawView(camera, screenX)
         local x, y, zoom = camera:GetPosition()
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.print(string.format("%s Camera %d | position %.0f, %.0f | zoom %.2f",
-            selected == i and ">" or " ", i, x, y, zoom), screenX, 28)
+        love.graphics.print(string.format("%s Camera %d | %.0f, %.0f | zoom %.2f%s",
+            selected == i and ">" or " ", i, x, y, zoom,
+            camera:GetTransform():GetParent() and " | following" or ""), screenX, 28)
     end
     love.graphics.print("One world, two LightCameras | quality " .. world.Settings:GetQuality(), 12, 8)
-    love.graphics.print("Tab: select view | arrows: pan | +/-: zoom | Q: quality | Space: pause | F12: capture",
+    love.graphics.print("Tab: select | arrows: pan | +/-: zoom | F: follow | Q: quality | Space: pause | F12: capture",
         12, love.graphics.getHeight() - 36)
     capture.draw()
 end
@@ -165,7 +194,7 @@ function love.resize(width, height)
     if world then resizeViews(width, height) end
 end
 
----@description Selects a camera, changes its zoom, or adjusts shared rendering quality.
+---@description Selects a camera, toggles following, changes zoom, or adjusts shared rendering quality.
 ---@param key string Pressed key.
 ---@return nil
 function love.keypressed(key)
@@ -173,6 +202,8 @@ function love.keypressed(key)
         selected = 3 - selected
     elseif key == "space" then
         paused = not paused
+    elseif key == "f" then
+        toggleFollow(cameras[selected])
     elseif key == "=" or key == "+" or key == "-" then
         local camera = cameras[selected]
         local x, y, zoom = camera:GetPosition()
