@@ -198,12 +198,11 @@ function Star:Update()
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		love.graphics.setShader()
 
-		-- Tell the world it needs to update it's canvas
+		self.Camera.UpdateCanvas = true
 		self.Changed = nil
 		self.ShadowChanged = nil
 		self.AppearanceChanged = nil
 		self.PenumbraChanged = nil
-		self.World.UpdateCanvas = true
 	end
 end
 

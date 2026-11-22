@@ -311,15 +311,20 @@ describe("LOVE lighting",
                 body:SetPosition(1112, 96, 1)
                 world:Update(0)
                 assert.equals(0, world.Canvas:newImageData():getPixel(80, 96))
+                assert.equals(0, world:GetCamera().FrameMetrics.LightsComposited)
+                assert.equals(1, camera.FrameMetrics.LightsComposited)
                 assert.is_true(camera.Canvas:newImageData():getPixel(80, 152) > 0.1)
                 local cache = light.Canvas
                 camera:SetPosition(1010, 0, 1.5)
                 world:Update(0)
                 assert.equals(cache, light.Canvas)
                 assert.equals(1, shadowRenders)
+                assert.equals(0, world:GetCamera().FrameMetrics.CompositionMs)
                 camera:Remove()
                 world:Update(0)
                 assert.is_true(light:GetCanvasDestroyed())
+                assert.equals(0, world:GetCamera().FrameMetrics.CompositionMs,
+                    "Removing another view must not recompose an unchanged camera")
                 world:SetPosition(0, 0, 0.1)
                 world:Update(0)
                 assert.is_false(light:GetCanvasDestroyed(),
@@ -327,6 +332,128 @@ describe("LOVE lighting",
                 world:SetPosition(0, 0, 10)
                 world:Update(0)
                 assert.is_true(light:GetCanvasDestroyed())
+            end)
+
+        it("recomposes only cameras affected by local-light appearance, movement, and removal",
+            ---@description Checks old/new visibility invalidation and pixel equality with unculled composition.
+            ---@return nil
+            function()
+                world:Resize(128, 128)
+                local primary = world:GetCamera()
+                local camera = LightCamera:new(world, 192, 192)
+                camera:SetPosition(1000, 0, 1.25)
+                light:SetPosition(1080, 96, 2)
+                body:SetPosition(1112, 96, 1)
+                local nearby = Light:new(world, 48)
+                nearby.Blur = false
+                nearby:SetPosition(64, 64, 2)
+                world:Update(0)
+                assert.equals(1, primary.FrameMetrics.LightsComposited)
+                assert.equals(1, camera.FrameMetrics.LightsComposited)
+
+                ---@description Compares every pixel against submitting all retained light canvases.
+                ---@param view LightCamera Camera whose optimized composition is checked.
+                ---@return nil
+                local function assertMatchesUnculled(view)
+                    local before = view.Canvas:newImageData():getString()
+                    local visible, previous = view.IsLightVisible, view.CompositedLights
+                    ---@description Disables submission culling to reproduce the previous composition behavior.
+                    ---@param candidate Light Local light; unused.
+                    ---@return boolean visible Always true.
+                    function view:IsLightVisible(candidate) return true end
+                    view.UpdateCanvas = true
+                    view:Compose()
+                    view.IsLightVisible, view.CompositedLights = visible, previous
+                    assert.equals(before, view.Canvas:newImageData():getString())
+                end
+                assertMatchesUnculled(primary)
+                assertMatchesUnculled(camera)
+
+                local unchanged = primary.Canvas:newImageData():getString()
+                local beforeTint = camera.Canvas:newImageData():getString()
+                light:SetColor(0.25, 0.5, 1, 1)
+                world:Update(0)
+                assert.equals(0, primary.FrameMetrics.CompositionMs)
+                assert.equals(0, primary.FrameMetrics.LightsComposited)
+                assert.equals(unchanged, primary.Canvas:newImageData():getString())
+                assert.equals(1, camera.FrameMetrics.LightsComposited)
+                assert.is_true(beforeTint ~= camera.Canvas:newImageData():getString())
+
+                light:SetPosition(80, 96, 2)
+                world:Update(0)
+                assert.equals(2, primary.FrameMetrics.LightsComposited)
+                assert.equals(0, camera.FrameMetrics.LightsComposited)
+                assert.equals(0, camera.Canvas:newImageData():getPixel(80, 96),
+                    "The previous camera must clear a light that moved away")
+                assertMatchesUnculled(primary)
+                assertMatchesUnculled(camera)
+
+                light:SetRadius(64)
+                world:Update(0)
+                assert.equals(2, primary.FrameMetrics.LightsComposited)
+                assert.equals(0, camera.FrameMetrics.CompositionMs)
+                light:SetPosition(2000, 2000, 2)
+                world:Update(0)
+                assert.is_true(light:GetCanvasDestroyed())
+                assert.equals(1, primary.FrameMetrics.LightsComposited)
+                assert.equals(0, camera.FrameMetrics.CompositionMs)
+                light:Remove()
+                world:Update(0)
+                assert.equals(0, primary.FrameMetrics.CompositionMs)
+                nearby:Remove()
+                world:Update(0)
+                assert.equals(0, primary.Canvas:newImageData():getPixel(64, 64))
+                assert.equals(0, camera.FrameMetrics.CompositionMs)
+
+                local replacement = Light:new(world, 48)
+                replacement.Blur = false
+                replacement:SetPosition(64, 64, 2)
+                world:Update(0)
+                assert.equals(1, primary.FrameMetrics.LightsComposited)
+                assert.equals(0, camera.FrameMetrics.CompositionMs)
+                assert.is_true(primary.Canvas:newImageData():getPixel(64, 64) > 0.5)
+                world:SetColor(0.2, 0.3, 0.4, 1)
+                world:Update(0)
+                assert.near(0.2, primary.Canvas:newImageData():getPixel(0, 0), 0.01)
+                assert.near(0.2, camera.Canvas:newImageData():getPixel(64, 64), 0.01)
+            end)
+
+        it("preserves textured illumination outside circular light bounds",
+            ---@description Measures square texture corners with fractional camera translation, zoom, and reduced canvas resolution.
+            ---@return nil
+            function()
+                local data = love.image.newImageData(128, 128)
+                data:mapPixel(
+                    ---@description Supplies an opaque texture covering the light canvas's positive corner.
+                    ---@param x number Pixel x-coordinate.
+                    ---@param y number Pixel y-coordinate.
+                    ---@return number r Red channel.
+                    ---@return number g Green channel.
+                    ---@return number b Blue channel.
+                    ---@return number a Alpha channel.
+                    function(x, y) return 1, 1, 1, 1 end)
+                light:SetImage(love.graphics.newImage(data))
+                local primary = world:GetCamera()
+                primary:Resize(32, 32)
+                local camera = LightCamera:new(world, 32, 32)
+                camera:SetPosition(1000, 1000)
+                for _, scale in ipairs({ 0.5, 1 }) do
+                    world:SetQuality("high", { ShadowScale = scale })
+                    for _, zoom in ipairs({ 0.5, 2 }) do
+                        primary:SetPosition(160.25, 176.25, zoom)
+                        assert.is_false(primary:IsVisible(80, 96, light.Radius))
+                        world:Update(0)
+                        assert.is_false(light:GetCanvasDestroyed())
+                        assert.equals(1, primary.FrameMetrics.LightsComposited)
+                        assert.equals(0, camera.FrameMetrics.LightsComposited)
+                        assert.is_true(primary.Canvas:newImageData():getPixel(2, 2) > 0.9)
+                        local before = primary.Canvas:newImageData():getString()
+                        world:ForceUpdate()
+                        world:Update(0)
+                        assert.equals(before, primary.Canvas:newImageData():getString())
+                        assert.equals(0, camera.FrameMetrics.CompositionMs)
+                    end
+                end
             end)
 
         it("resizes only the requested view and propagates quality and star appearance to all cameras",
@@ -668,6 +795,8 @@ describe("LOVE lighting",
                 world:Update(0)
                 local primary, secondary = debug:GetFrameStats(), debug:GetFrameStats(camera)
                 assert.equals(0, primary.Camera.ShadowRedraws)
+                assert.equals(0, primary.Camera.CompositionMs)
+                assert.equals(0, primary.Camera.LightsComposited)
                 assert.equals(0, primary.Shared.ShadowRedraws)
                 assert.equals(1, secondary.Camera.ShadowRedraws)
                 assert.equals(2, secondary.Camera.LightsComposited)
@@ -723,6 +852,7 @@ describe("LOVE lighting",
                 world:Update(0)
                 assert.equals(8, debug:GetFrameStats(camera).Camera.CanvasAllocations)
                 assert.equals(0, debug:GetFrameStats().Camera.CanvasAllocations)
+                assert.equals(0, debug:GetFrameStats().Camera.CompositionMs)
                 assert.equals(0, debug:GetFrameStats().Shared.CanvasAllocations)
                 world:SetQuality("low")
                 world:Update(0)

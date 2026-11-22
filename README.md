@@ -63,6 +63,11 @@ resizing for multiple views of one world. Local lights share their cached
 canvases; stars have separate shadow and penumbra buffers per camera.
 Star textures follow the light's world position and each camera's zoom.
 `world:Update(dt)` advances simulation once and refreshes every registered view.
+Each camera submits only local-light canvases intersecting its viewport, using
+conservative square bounds to preserve texture and particle illumination.
+Local-light changes refresh cameras containing the previous or current light;
+moving or resizing a camera refreshes only that view and its star buffers.
+Ambient color, room changes, and shared quality settings still refresh all views.
 
 ```lua
 local LightCamera = require("shadows.LightCamera")

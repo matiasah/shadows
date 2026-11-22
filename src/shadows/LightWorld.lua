@@ -43,7 +43,7 @@ LightCamera                                            = require("shadows.LightC
 --- @field private ShapeBounds table<Shadow, ShadowBounds> Last updated shape bounds, including removed shapes until the next update.
 --- @field Settings Settings Shared rendering settings for this world's lights and stars.
 --- @field FrameMetrics WorldFrameMetrics Shared local-light work for the most recent world update; read-only.
---- @field UpdateCanvas boolean? Whether the composed canvas needs redrawing.
+--- @field UpdateCanvas boolean? Whether all camera compositions need redrawing for a shared scene change.
 --- @field UpdateStars boolean? Whether stars need updating.
 --- @field x number Camera x-coordinate.
 --- @field y number Camera y-coordinate.
@@ -228,6 +228,22 @@ function LightWorld:UpdateShapeBounds()
 	self.ShapeBounds = current
 end
 
+---@description Invalidates only cameras containing a light's previous composition or current canvas bounds.
+---@param Light Light|Star Changed, removed, or cache-releasing renderer.
+---@return nil
+function LightWorld:InvalidateLight(Light)
+	if Light.Star then
+		Light.Camera.UpdateCanvas = true
+		return
+	end
+	for _, Camera in ipairs(self.Cameras) do
+		if Camera.CompositedLights[Light]
+			or (Light.Canvas and Camera:IsLightVisible(Light)) then
+			Camera.UpdateCanvas = true
+		end
+	end
+end
+
 --- @description Registers a local light with this world.
 --- @param Light Light Light to register.
 --- @return Light light Registered light.
@@ -236,7 +252,6 @@ function LightWorld:AddLight(Light)
 	Light:SetWorld(self)
 	Light.ID = ID
 
-	self.UpdateCanvas = true
 	self.Lights[ID] = Light
 
 	return Light

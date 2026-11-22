@@ -28,6 +28,8 @@ end
 | `camera:Resize(width, height)` | Recreates only this camera's composition and star buffers. Dimensions must be finite positive integers. |
 | `camera:GetWidth()` / `camera:GetHeight()` | Return logical viewport dimensions. |
 | `camera:GetBorderRadius()` | Returns half the logical viewport diagonal. |
+| `camera:IsVisible(x, y, radius)` | Tests a world-space circle against the viewport, accounting for zoom. |
+| `camera:IsLightVisible(light)` | Conservatively tests a local light's existing or prospective square canvas bounds against the viewport, accounting for zoom. |
 | `camera:Draw(screenX?, screenY?)` | Multiplies lighting onto the already-drawn scene at a screen destination; defaults to `(0, 0)`. Preserves graphics state and does not advance simulation. |
 | `camera:Remove()` | Detaches an additional camera and drops its star-cache references. The default camera cannot be removed. |
 
@@ -87,7 +89,15 @@ snaps its translation (as the Standard demo's tile renderer does), use the same
 effective translation for its lighting camera.
 
 Local lights stay cached while visible to **any** registered camera, with
-culling accounting for zoom. Stars render once per view using separate shadow
+culling accounting for zoom and the full square canvas, including texture and
+particle corners. Each composition submits only intersecting local-light
+canvases. Light appearance, movement, cache release, and removal refresh cameras
+containing the light's previous composition or current bounds, so moving a light
+away also clears its old contribution. Camera movement or resizing refreshes
+only that camera's composition and star buffers. Ambient/room changes and shared
+quality settings still invalidate all views. Offscreen casters are not discarded
+merely because they lie outside a camera; their projected shadows may remain visible.
+Stars render once per view using separate shadow
 and penumbra buffers; additional views therefore cost composition and star
 rendering memory. Draw-only world callbacks may run for each star view. The
 callback's star argument exposes `Camera` for view-specific rendering.

@@ -74,8 +74,9 @@ local function verifyOverlay()
     world:Update(0)
     local mainFrame, overviewFrame = overlay:GetFrameStats(), overlay:GetFrameStats(overview)
     assert(mainFrame.Camera.ShadowRedraws == 0 and overviewFrame.Camera.ShadowRedraws > 0
-        and mainFrame.Shared.ShadowRedraws == 0,
-        "Moving the overview must charge its star work only to that camera")
+        and mainFrame.Shared.ShadowRedraws == 0 and mainFrame.Camera.CompositionMs == 0
+        and mainFrame.Camera.LightsComposited == 0 and overviewFrame.Camera.LightsComposited > 0,
+        "Moving the overview must refresh only its own star buffers and composition")
     assert(mainBefore.Camera.ShadowRedraws > 0,
         "Previously completed frame snapshots must remain stable")
     overview:SetPosition(100, 80, 0.55)

@@ -136,7 +136,7 @@ end
 --- @description Releases references to the cached light and shadow canvases.
 --- @return nil
 function Light:DestroyCanvas()
-	if self.Canvas and self.World then self.World.UpdateCanvas = true end
+	if self.Canvas and self.World then self.World:InvalidateLight(self) end
 	self.Canvas = nil
 	self.ShadowCanvas = nil
 	self.ShadowRenderCanvas = nil
@@ -289,12 +289,11 @@ function Light:GenerateDarkness(x, y, z)
 	self.Shapes = newShapes
 end
 
---- @description Retains a shared light cache while its influence intersects any registered camera.
+--- @description Retains a shared light cache while its canvas bounds intersect any registered camera.
 --- @return boolean visible Whether the light should be rendered.
 function Light:GetUpdateVisibility()
-	local x, y = self:GetPosition()
 	for _, Camera in ipairs(self.World.Cameras) do
-		if Camera:IsVisible(x, y, self.Radius) then
+		if Camera:IsLightVisible(self) then
 			if self:GetCanvasDestroyed() then self:InitCanvas() end
 			return true
 		end
@@ -390,12 +389,11 @@ function Light:Update()
 		love.graphics.setBlendMode("alpha", "alphamultiply")
 		love.graphics.setShader()
 
-		-- Tell the world it needs to update it's canvas
+		self.World:InvalidateLight(self)
 		self.Changed = nil
 		self.ShadowChanged = nil
 		self.AppearanceChanged = nil
 		self.PenumbraChanged = nil
-		self.World.UpdateCanvas = true
 	end
 end
 
@@ -611,8 +609,8 @@ end
 --- @return nil
 function Light:Remove()
 	if self.World then
+		self.World:InvalidateLight(self)
 		self.World.Lights[self.ID] = nil
-		self.World.UpdateCanvas = true
 		self.World = nil
 		self.ID = nil
 

@@ -24,6 +24,7 @@ local Transform = require("shadows.Transform")
 ---@field private PendingFrameMetrics CameraFrameMetrics? In-progress metrics, published only after the world update completes.
 ---@field private CanvasAllocationCount integer Successful composition-canvas allocations; defaults to 0.
 ---@field private SampledCanvasAllocationCount integer Allocations sampled by the previous world update; defaults to 0.
+---@field private CompositedLights table<Light, boolean> Local lights included in this camera's last composition.
 ---@field private UpdateCanvas boolean? Whether composition needs refreshing.
 ---@field private UpdateStars boolean? Whether view-dependent star shadows need refreshing.
 ---@field private Removed boolean? Whether this camera is detached.
@@ -80,6 +81,7 @@ function LightCamera:new(World, Width, Height)
         Transform = Transform:new(),
         FrameMetrics = newFrameMetrics(0),
         CanvasAllocationCount = 0, SampledCanvasAllocationCount = 0,
+        CompositedLights = {},
         x = 0, y = 0, z = 1,
     }, LightCamera)
     camera.Transform.Object = camera
@@ -217,6 +219,19 @@ function LightCamera:IsVisible(x, y, radius)
     return dx * dx + dy * dy <= radius * radius
 end
 
+---@description Conservatively tests a local light's square canvas against this viewport, including texture and particle corners.
+---@param Light Light Local light whose existing or prospective canvas is tested.
+---@return boolean visible Whether the canvas bounds intersect the viewport.
+function LightCamera:IsLightVisible(Light)
+    local cx, cy, zoom = self:GetPosition()
+    local x, y = Light:GetPosition()
+    local width, height = Light.Radius * 2, Light.Radius * 2
+    if Light.Canvas then width, height = Light.Canvas:getDimensions() end
+    x, y = x - Light.Radius, y - Light.Radius
+    return x + width >= cx and y + height >= cy
+        and x <= cx + self.Width / zoom and y <= cy + self.Height / zoom
+end
+
 ---@description Composes cached illumination and rooms; called by the world's update, never advances simulation.
 ---@return nil
 function LightCamera:Compose()
@@ -249,14 +264,17 @@ function LightCamera:Compose()
     love.graphics.setShader()
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.setBlendMode("add", "alphamultiply")
+    local compositedLights = {}
     for _, light in pairs(world.Lights) do
-        if not light:GetCanvasDestroyed() then
+        if not light:GetCanvasDestroyed() and self:IsLightVisible(light) then
             local x, y = light:GetPosition()
             love.graphics.draw(light.Canvas, x - light.Radius, y - light.Radius)
+            compositedLights[light] = true
             if metrics then metrics.LightsComposited = metrics.LightsComposited + 1 end
         end
     end
     love.graphics.pop()
+    self.CompositedLights = compositedLights
     if metrics then metrics.CompositionMs = metrics.CompositionMs + (love.timer.getTime() - start) * 1000 end
     self.UpdateCanvas, self.UpdateStars = nil, nil
 end
@@ -288,9 +306,9 @@ function LightCamera:Remove()
         end
     end
     for _, star in pairs(self.World.Stars) do star.Views[self] = nil end
+    self.CompositedLights = {}
     self.Transform:SetParent(nil)
     self.Removed = true
-    self.World.UpdateCanvas = true
 end
 
 return LightCamera

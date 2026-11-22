@@ -152,4 +152,32 @@ describe("Particle lights",
                 world:Update(0.2)
                 assert.equals(0, particles:getCount())
             end)
+
+        it("retains illumination at square canvas corners outside the emitter's radius",
+            ---@description Checks conservative cache and submission culling with translated, zoomed corner-only views.
+            ---@return nil
+            function()
+                particles:reset()
+                particles:setSpeed(0)
+                particles:setEmissionArea("uniform", 0, 0)
+                particles:setPosition(90, 90)
+                particles:emit(1)
+                local primary = world:GetCamera()
+                primary:Resize(32, 32)
+                primary:SetPosition(180, 196, 2)
+                local camera = LightCamera:new(world, 32, 32)
+                camera:SetPosition(1000, 1000)
+                assert.is_false(primary:IsVisible(80, 96, light.Radius),
+                    "This viewport must intersect only the square canvas corner, not the influence circle")
+                world:Update(0)
+                assert.is_false(light:GetCanvasDestroyed())
+                assert.equals(1, primary.FrameMetrics.LightsComposited)
+                assert.equals(0, camera.FrameMetrics.LightsComposited)
+                assert.is_true(primary.Canvas:newImageData():getPixel(4, 4) > 0.4)
+                local before = primary.Canvas:newImageData():getString()
+                world:ForceUpdate()
+                world:Update(0)
+                assert.equals(before, primary.Canvas:newImageData():getString())
+                assert.equals(0, camera.FrameMetrics.CompositionMs)
+            end)
     end)

@@ -69,8 +69,10 @@ Both records expose:
 `LightsComposited`. Star timing includes that view's cache checks, allocation,
 shadow/penumbra rendering, and illumination updates. Composition timing covers
 combining star/local-light canvases and rooms into the view's lighting canvas.
-`LightsComposited` counts actual light-canvas draw submissions, including
-offscreen caches retained for another camera; it is not a visible-light count.
+`LightsComposited` counts actual light-canvas draw submissions. Local-light
+canvases wholly outside the selected viewport are skipped even when retained
+for another camera. Culling uses conservative square canvas bounds, not lit-pixel
+coverage, so this is not an exact visible-light count.
 
 `Shared.SharedUpdateMs` measures local-light updates, including particle
 simulation when `dt` is provided. It excludes body/physics synchronization,
@@ -95,9 +97,10 @@ They are also available as `camera.FrameMetrics` and `world.FrameMetrics`.
 Stationary frames show zero redraws, geometry/draw work, allocations, and
 composition submissions when the cached view is reused. Star CPU time can
 remain nonzero for cache checks. Tint-only updates can recompose illumination
-without rebuilding shadows. A change in another view may also trigger
-composition of this view under the world's existing shared dirty flag; metrics
-report the actual work performed rather than hiding it.
+without rebuilding shadows. Moving or resizing another camera does not trigger
+this view's composition. Local-light changes refresh only cameras containing
+their previous or current contribution; ambient/room changes and shared quality
+changes still refresh all views. Metrics report the actual work performed.
 
 ## Lifetime counters and cache sizes
 
