@@ -1,4 +1,4 @@
----@module Owns lights, stars, shadow bodies, rooms, and the composed scene canvas.
+---@module Owns a shared lighting scene and updates its independent LightCamera viewports.
 module("shadows.LightWorld", package.seeall)
 
 Object                                                 = require("shadows.Object")
@@ -8,6 +8,7 @@ Body                                                   = require("shadows.Body")
 BodyTransform                                          = require("shadows.BodyTransform")
 PriorityQueue                                          = require("shadows.PriorityQueue")
 Settings                                               = require("shadows.Settings")
+LightCamera                                            = require("shadows.LightCamera")
 
 ---@class ShadowBounds
 ---@field x number World-space centroid x-coordinate.
@@ -21,6 +22,8 @@ Settings                                               = require("shadows.Settin
 --- @field Width number Canvas width.
 --- @field Height number Canvas height.
 --- @field BorderRadius number Half-diagonal of the world canvas.
+--- @field DefaultCamera LightCamera Default viewport backing the legacy world rendering API.
+--- @field private Cameras LightCamera[] Registered viewports sharing this scene.
 --- @field Bodies PriorityQueue Bodies ordered by height.
 --- @field BodyTracks table Physics-body-following transforms.
 --- @field Rooms Room[] Registered dark rooms.
@@ -47,26 +50,11 @@ LightWorld.__type                                      = "LightWorld"
 LightWorld.R, LightWorld.G, LightWorld.B, LightWorld.A = 0, 0, 0, 1
 LightWorld.x, LightWorld.y, LightWorld.z               = 0, 0, 1
 
----@description Allocates a world canvas at the requested shadow resolution.
----@param Width number Canvas width in logical pixels.
----@param Height number Canvas height in logical pixels.
----@param ShadowScale number Resolution scale from 0 to 1.
----@return love.Canvas canvas New world canvas.
-local function newWorldCanvas(Width, Height, ShadowScale)
-	return love.graphics.newCanvas(Width, Height, { dpiscale = ShadowScale })
-end
-
---- @description Creates a world and allocates its canvas at the current display size.
+--- @description Creates a scene with a default camera at the current display size.
 --- @return LightWorld world New light world.
 function LightWorld:new()
 	local self = setmetatable({}, LightWorld)
-	local Width, Height = love.graphics.getDimensions()
-
 	self.Settings = Settings:new(self)
-	self.Canvas = newWorldCanvas(Width, Height, self.Settings.ShadowScale)
-	self.Width = Width
-	self.Height = Height
-	self.BorderRadius = math.sqrt(Width * Width + Height * Height) * 0.5
 
 	self.Bodies = PriorityQueue:new() -- Bodies sorted by height
 
@@ -76,25 +64,24 @@ function LightWorld:new()
 	self.Stars = {}
 	self.ShapeBounds = {}
 	self.Changed = true
+	self.Cameras = {}
+	LightCamera:new(self)
 
 	return self
 end
 
---- @description Resizes the world canvas and all registered star canvases.
+--- @description Resizes the default camera and its star buffers; additional cameras are unchanged.
 --- @param Width number New canvas width.
 --- @param Height number New canvas height.
 --- @return nil
 function LightWorld:Resize(Width, Height)
-	self.Canvas = newWorldCanvas(Width, Height, self.Settings.ShadowScale)
-	self.Width = Width
-	self.Height = Height
-	self.BorderRadius = math.sqrt(Width * Width + Height * Height) * 0.5
+	self.DefaultCamera:Resize(Width, Height)
+end
 
-	self.UpdateCanvas = true
-
-	for Index, Light in pairs(self.Stars) do
-		Light:Resize(Width, Height)
-	end
+---@description Returns the default lighting camera used by the legacy world viewport methods.
+---@return LightCamera camera Default viewport.
+function LightWorld:GetCamera()
+	return self.DefaultCamera
 end
 
 --- @description Applies a quality preset and optional per-world setting overrides.
@@ -108,14 +95,12 @@ end
 ---@description Rebuilds world-owned canvases after shared rendering quality changes.
 ---@return nil
 function LightWorld:OnQualityChanged()
-	self.Canvas = newWorldCanvas(self.Width, self.Height, self.Settings.ShadowScale)
 	self.UpdateCanvas = true
-	self.UpdateStars = true
 	for _, Light in pairs(self.Lights) do
 		Light:DestroyCanvas()
 	end
-	for _, Star in pairs(self.Stars) do
-		Star:Resize(self.Width, self.Height)
+	for _, Camera in ipairs(self.Cameras) do
+		Camera:Resize(Camera.Width, Camera.Height)
 	end
 end
 
@@ -269,9 +254,8 @@ end
 --- @return nil
 function LightWorld:Draw()
 	love.graphics.origin()
-	love.graphics.setBlendMode("multiply", "premultiplied")
+	self.DefaultCamera:Draw()
 	love.graphics.setColor(1, 1, 1, 1)
-	love.graphics.draw(self.Canvas, 0, 0)
 	love.graphics.setBlendMode("alpha", "alphamultiply")
 end
 
@@ -318,25 +302,7 @@ end
 --- @param z number? Camera scale; current scale is retained when omitted.
 --- @return nil
 function LightWorld:SetPosition(x, y, z)
-	if x ~= self.x then
-		self.x = x
-		self.UpdateCanvas = true
-		self.UpdateStars = true
-	end
-
-	if y ~= self.y then
-		self.y = y
-		self.UpdateCanvas = true
-		self.UpdateStars = true
-	end
-
-	if z then
-		if z ~= self.z then
-			self.z = z
-			self.UpdateCanvas = true
-			self.UpdateStars = true
-		end
-	end
+	self.DefaultCamera:SetPosition(x, y, z)
 end
 
 --- @description Returns camera position and scale.
@@ -347,7 +313,7 @@ function LightWorld:GetPosition()
 	return self.x, self.y, self.z
 end
 
---- @description Updates scene objects, lights, stars, rooms, and the world canvas.
+--- @description Advances the shared scene once and refreshes every registered camera.
 --- @param dt number? Elapsed time in seconds; omitted dt skips particle simulation.
 --- @return nil
 function LightWorld:Update(dt)
@@ -367,63 +333,18 @@ function LightWorld:Update(dt)
 	end; love.graphics.setCanvas()
 
 	for Index, Star in pairs(self.Stars) do
-		Star:Update()
+		Star:UpdateViews()
 	end; love.graphics.setCanvas()
 
 	for Index, Room in pairs(self.Rooms) do
 		Room:Update()
 	end; love.graphics.setCanvas()
 
-	self.Changed = false
-
-	if self.UpdateCanvas then
-		self.UpdateCanvas = nil
-		self.UpdateStars = nil
-
-		love.graphics.setCanvas(self.Canvas)
-		love.graphics.setShader()
-		love.graphics.setBlendMode("alpha", "alphamultiply")
-		love.graphics.clear(self.R, self.G, self.B, self.A)
-
-		love.graphics.setColor(1, 1, 1, 1)
-		love.graphics.setBlendMode("add", "alphamultiply")
-		love.graphics.origin()
-		love.graphics.scale(1, 1)
-
-		for _, Light in pairs(self.Stars) do
-			if not Light:GetCanvasDestroyed() then
-				love.graphics.draw(Light.Canvas, 0, 0)
-			end
-		end
-
-		love.graphics.translate(-self.x * self.z, -self.y * self.z)
-		love.graphics.scale(self.z, self.z)
-		love.graphics.setShader(Shadows.DarkenShader)
-		love.graphics.setBlendMode("alpha", "alphamultiply")
-
-		for _, Room in pairs(self.Rooms) do
-			Room:Draw()
-		end
-
-		love.graphics.setShader()
-		love.graphics.setColor(1, 1, 1, 1)
-		love.graphics.setBlendMode("add", "alphamultiply")
-
-		love.graphics.origin()
-		love.graphics.translate(-self.x * self.z, -self.y * self.z)
-		love.graphics.scale(self.z, self.z)
-
-		for _, Light in pairs(self.Lights) do
-			if not Light:GetCanvasDestroyed() then
-				local x, y = Light:GetPosition()
-
-				love.graphics.draw(Light.Canvas, x - Light.Radius, y - Light.Radius)
-			end
-		end
-
-		love.graphics.setBlendMode("alpha", "alphamultiply")
-		love.graphics.origin()
+	for _, Camera in ipairs(self.Cameras) do
+		Camera:Compose()
 	end
+	self.Changed = false
+	self.UpdateCanvas, self.UpdateStars = nil, nil
 
 	for i = 1, self.Bodies:GetLength() do
 		local Body = self.Bodies:Get(i)
@@ -437,6 +358,8 @@ function LightWorld:Update(dt)
 
 	love.graphics.setCanvas()
 	love.graphics.setShader()
+	love.graphics.setBlendMode("alpha", "alphamultiply")
+	love.graphics.origin()
 end
 
 --- @description Callback for custom shadow geometry drawn by each light or star.

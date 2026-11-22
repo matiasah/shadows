@@ -10,6 +10,7 @@ local demos = {
     ImageShadow = "DEMOS/ImageShadow/main.lua",
     CastImage = "DEMOS/CastImage/main.lua",
     ParticleLights = "DEMOS/ParticleLights/main.lua",
+    LightCameras = "DEMOS/LightCameras/main.lua",
 }
 
 local demoName = "HighDPI"
@@ -33,6 +34,7 @@ local windowSizes = {
     ImageShadow = { 900, 640 },
     CastImage = { 1060, 660 },
     ParticleLights = { 960, 560 },
+    LightCameras = { 960, 560 },
 }
 
 local requirePath = love.filesystem.getRequirePath()

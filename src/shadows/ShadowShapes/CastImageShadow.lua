@@ -156,7 +156,7 @@ function CastImageShadow:GenerateShadows(shapes, body, deltaX, deltaY, layer, li
     local x, y, z = light:GetPosition()
     local originX, originY, scale = x - light.Radius, y - light.Radius, 1
     if light.Star then
-        originX, originY, scale = light.World:GetPosition()
+        originX, originY, scale = light.Camera:GetPosition()
     end
     local output = OutputShadow:new("rectangle", "fill",
         x - light.Radius, y - light.Radius, light.Radius * 2, light.Radius * 2)

@@ -1,4 +1,4 @@
----@module Implements a full-scene light whose canvas covers the entire world view.
+---@module Implements a shared full-scene light with independent rendering buffers per LightCamera.
 module("shadows.Star", package.seeall)
 
 Shadows      = require("shadows")
@@ -16,7 +16,9 @@ Transform    = require("shadows.Transform")
 --- @field Shapes table Cached projected shadow draw calls.
 --- @field World LightWorld Owning world.
 --- @field Settings Settings Shared settings object from the owning world.
---- @field ID integer Index in the world's star collection.
+--- @field ID integer? Index in the world's star collection; absent on private render views.
+--- @field Camera LightCamera Viewport rendered by this star or its private render view.
+--- @field private Views table<LightCamera, Star> Additional-camera rendering caches.
 --- @field private Penumbra Penumbra? Cached occluder-distance filtering buffers.
 --- @field Changed boolean? Whether shadow geometry and all rendering stages need regeneration.
 --- @field Width number Star canvas width.
@@ -47,6 +49,8 @@ function Star:new(World, Radius)
 
 		self.World = World
 		self.Settings = World.Settings
+		self.Camera = World:GetCamera()
+		self.Views = {}
 		self.Transform = Transform:new()
 		self.Transform:SetLocalPosition(0, 0, 1)
 		self.Transform.Object = self
@@ -76,21 +80,62 @@ end
 --- @return number z Scaled height.
 function Star:GetCanvasCenter()
 	local x, y, z = self.Transform:GetPosition()
-	local wx, wy, wz = self.World:GetPosition()
+	local wx, wy, wz = self.Camera:GetPosition()
 
 	return (x - wx) * wz, (y - wy) * wz, z * wz
+end
+
+---@description Returns this star's default render cache or allocates an additional camera's private cache.
+---@param Camera LightCamera Viewport whose star buffers are requested.
+---@return Star view Per-camera renderer sharing the source transform and settings.
+function Star:GetView(Camera)
+	if Camera == self.Camera then return self end
+	local view = self.Views[Camera]
+	if not view then
+		view = setmetatable({
+			World = self.World, Settings = self.Settings, Transform = self.Transform,
+			Camera = Camera, Shapes = {}, Views = {},
+			Radius = self.Radius,
+		}, Star)
+		view:Resize(Camera.Width, Camera.Height)
+		self.Views[Camera] = view
+	end
+	return view
+end
+
+---@description Refreshes all view caches before consuming source dirty flags; never advances simulation.
+---@return nil
+function Star:UpdateViews()
+	for _, camera in ipairs(self.World.Cameras) do
+		if camera ~= self.Camera then
+			local view = self:GetView(camera)
+			view.Radius, view.Arc = self.Radius, self.Arc
+			view.Blur, view.SizeRadius = self.Blur, self.SizeRadius
+			view:SetColor(self.R, self.G, self.B, self.A)
+			if view.Image ~= self.Image then
+				view.Image = self.Image
+				view.AppearanceChanged = true
+			end
+			view.ShadowChanged = view.ShadowChanged or self.ShadowChanged
+			view.AppearanceChanged = view.AppearanceChanged or self.AppearanceChanged
+			view:Update()
+		end
+	end
+	self:Update()
 end
 
 --- @description Regenerates the star's shadow and illumination canvases when dirty.
 --- @return nil
 function Star:Update()
 	self:UpdateRenderSettings()
-	if self.World.UpdateStars then self.Changed = true end
+	if self.Camera.UpdateStars or (self.Camera == self.World.DefaultCamera and self.World.UpdateStars) then
+		self.Changed = true
+	end
 
-	local shadowChanged = self.Changed or self.ShadowChanged or self.World.UpdateStars
+	local shadowChanged = self.Changed or self.ShadowChanged
 	if shadowChanged or self.AppearanceChanged or self.PenumbraChanged then
 		local x, y, z = self.Transform:GetPosition()
-		local wx, wy, wz = self.World:GetPosition()
+		local wx, wy, wz = self.Camera:GetPosition()
 
 		if shadowChanged or self.PenumbraChanged then
 			love.graphics.origin()
@@ -111,7 +156,7 @@ function Star:Update()
 			-- If there's a image to be used as light texture, use it
 			love.graphics.setBlendMode("lighten", "premultiplied")
 			love.graphics.setColor(self.R, self.G, self.B, self.A)
-			love.graphics.draw(self.Image, self.Radius * wz, self.Radius * wz)
+			love.graphics.draw(self.Image, (x - wx) * wz, (y - wy) * wz, 0, wz, wz)
 		else
 			-- Use a shader to generate the light
 			Shadows.LightShader:send("DpiScale", require("shadows.DPI").getCanvasScale(self.Canvas))
@@ -161,7 +206,8 @@ end
 --- @param Height number New canvas height.
 --- @return nil
 function Star:Resize(Width, Height)
-	local w, h = self.Canvas:getDimensions()
+	local w, h
+	if self.Canvas then w, h = self.Canvas:getDimensions() end
 
 	if Width ~= w or Height ~= h or self.RenderScale ~= self.Settings.ShadowScale
 		or self.RenderMSAA ~= self.Settings.ShadowMSAA
@@ -185,6 +231,7 @@ end
 function Star:Remove()
 	self.World.Stars[self.ID] = nil
 	self.World.UpdateCanvas = true
+	self.Views = {}
 
 	self.Transform:SetParent(nil)
 end

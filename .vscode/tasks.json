@@ -15,7 +15,8 @@
                 "RotatingObjects",
                 "ImageShadow",
                 "CastImage",
-                "ParticleLights"
+                "ParticleLights",
+                "LightCameras"
             ],
             "default": "HighDPI"
         }

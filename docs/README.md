@@ -34,6 +34,7 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 | API | Description |
 |---|---|
 | [LightWorld](LightWorld.md) | Scene lifecycle, shared rendering settings, camera, ambient color, and extension callbacks. |
+| [LightCamera](LightCamera.md) | Independent position, zoom, and resizable viewports into a shared scene. |
 | [Light](Light.md) | Local lights and full-scene stars. |
 | [ParticleLight](ParticleLight.md) | Animated particle-system illumination with emitter-centered shadows. |
 | [Penumbras](Penumbras.md) | Contact-hardening shadow filtering, source size, and rendering limits. |
@@ -56,10 +57,11 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 - [Rotating polygons and shape-local rotation](../DEMOS/RotatingObjects/main.lua)
 - [Upright trees casting and receiving shadows](../DEMOS/CastImage/main.lua)
 - [Particle-system fire, water spray, and sparks](../DEMOS/ParticleLights/main.lua)
+- [Two lighting cameras sharing one animated world](../DEMOS/LightCameras/main.lua)
 
 ## Notes
 
-- `LightWorld` allocates its main canvas using the current graphics dimensions. Call `Resize(width, height)` after a window-size change.
+- `LightWorld` creates a default `LightCamera` using the current graphics dimensions. `world:Resize(width, height)` resizes that view; resize additional cameras separately. Call `world:Update(dt)` once per frame for all cameras.
 - A `Light` allocates per-light canvases based on its radius. `Star` uses full-scene canvases instead and cannot illuminate rooms.
 - Physics fixture import supports circle and polygon fixtures. For ongoing physics synchronization, use `Body:TrackPhysics` or `LightWorld:TrackBody`.
 - The package uses LÖVE graphics canvases and shaders and must be created after the graphics context is available.

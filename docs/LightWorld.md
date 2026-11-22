@@ -9,15 +9,17 @@ local LightWorld = require("shadows.LightWorld")
 local world = LightWorld:new()
 ```
 
-The initial canvas matches `love.graphics.getDimensions()`.
+The default [`LightCamera`](LightCamera.md) and its initial canvas match
+`love.graphics.getDimensions()`. `world:GetCamera()` returns this viewport.
+Register additional cameras to display different locations of the same scene.
 
 ## Scene lifecycle
 
 | Method | Description and return values |
 |---|---|
-| `world:Update(dt?)` | Updates bodies, tracked physics transforms, lights, stars, rooms, and the composed canvas. Call from `love.update`. When supplied, `dt` advances particle-light emitters in seconds; omit it for external particle simulation. |
+| `world:Update(dt?)` | Updates shared scene objects once and refreshes all registered cameras. Call once per frame from `love.update`, not once per camera. When supplied, `dt` advances particle-light emitters in seconds; omit it for external particle simulation. |
 | `world:Draw()` | Draws the composed canvas at the origin. Call from `love.draw`. |
-| `world:Resize(width, height)` | Recreates the world canvas and resizes registered stars. Call after resizing the LÖVE window. |
+| `world:Resize(width, height)` | Resizes the default camera and its star buffers. Additional cameras are unchanged; resize them explicitly for your layout. |
 | `world:ForceUpdate()` | Forces every light and star to rebuild shadow geometry and rendering on its next visible update. |
 | `world:InitFromPhysics(physicsWorld)` | Imports supported bodies and fixtures from a LÖVE physics world once. |
 
@@ -76,11 +78,12 @@ invalidating stationary shadow geometry.
 
 | Method | Description and return values |
 |---|---|
-| `world:SetPosition(x, y, scale?)` | Sets the camera position and scale. The scale defaults to its current value. |
+| `world:GetCamera()` | Returns the default `LightCamera` backing the world viewport API. |
+| `world:SetPosition(x, y, scale?)` | Sets the default camera position and positive scale. The scale defaults to its current value. |
 | `world:GetPosition()` | Returns camera `x`, `y`, and scale. |
 | `world:SetColor(r, g, b, a)` | Sets ambient RGBA channels in the 0–1 range; defaults to opaque black (`0, 0, 0, 1`). |
 | `world:GetColor()` | Returns the channels in the current implementation's order: `r, g, a, b`. |
-| `world:GetWidth()` / `world:GetHeight()` | Return the world canvas dimensions. |
+| `world:GetWidth()` / `world:GetHeight()` | Return the default camera's canvas dimensions. |
 | `world:GetBorderRadius()` | Returns half the canvas diagonal. |
 
 ## Extension callbacks

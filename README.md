@@ -56,6 +56,31 @@ resolution together. `world:SetQuality(...)` remains a shorthand. The default
 `high` preset preserves full-resolution, 4x MSAA rendering. See the
 [LightWorld API](docs/LightWorld.md) for preset values and usage.
 
+## Multiple lighting views
+
+[`LightCamera`](docs/LightCamera.md) provides independent position, zoom, and
+resizing for multiple views of one world. Local lights share their cached
+canvases; stars have separate shadow and penumbra buffers per camera.
+Star textures follow the light's world position and each camera's zoom.
+`world:Update(dt)` advances simulation once and refreshes every registered view.
+
+```lua
+local LightCamera = require("shadows.LightCamera")
+local left = world:GetCamera()
+left:Resize(400, 300)
+local right = LightCamera:new(world, 400, 300)
+right:SetPosition(600, 200, 0.5)
+
+-- After drawing the scene with each camera's matching transform:
+left:Draw(0, 0)
+right:Draw(400, 0)
+```
+
+Existing `world:SetPosition`, `world:Resize`, `world:Draw`, and `world.Canvas`
+continue to use the default camera. Resize additional views independently when
+your screen layout changes. Camera positions are not automatically snapped:
+use the same effective translation and zoom as your scene renderer.
+
 ## Color API migration
 
 All light, star, ambient, and room color channels now use LÖVE's **0-1 range**.
@@ -123,6 +148,8 @@ love . CastImage
 love . CastImage --capture --verify
 love . ParticleLights
 love . ParticleLights --capture --verify
+love . LightCameras
+love . LightCameras --capture --verify
 ```
 
 Capture mode renders the scene to offscreen canvases at DPI scale 2, saves a screenshot using `love.graphics.captureScreenshot`, and exits. Press `F12` to capture an image interactively; press `Escape` to close the demo.
@@ -135,6 +162,12 @@ emitter, not at every particle. Particle randomness remains native to LÖVE;
 capture mode uses a fixed simulation warm-up duration.
 The blue water spray uses tapered droplet textures, velocity-aligned rotation,
 and gravity-driven arcs; verification also measures its rising and falling light.
+
+The `LightCameras` demo displays two independently positioned and zoomed views
+of one animated scene, sharing a local light and a full-scene star. Press `Tab`
+to select a camera, arrows to pan, `+`/`-` to zoom, `Q` to change shared quality,
+or `Space` to pause the body. `--verify` checks matching-view pixel equality,
+shared scene movement, and incremental rendering against full rebuilds.
 
 The `Penumbra` demo compares hard and soft polygon/circle shadows side by side;
 press `Q` to change the shared quality preset in both scenes, use `+` and `-`

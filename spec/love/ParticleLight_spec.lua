@@ -1,6 +1,7 @@
 ---@module Tests particle illumination, simulation ownership, and cached emitter shadows inside LOVE.
 ---@diagnostic disable: undefined-global
 local LightWorld = require("shadows.LightWorld")
+local LightCamera = require("shadows.LightCamera")
 local ParticleLight = require("shadows.ParticleLight")
 local Body = require("shadows.Body")
 local CircleShadow = require("shadows.ShadowShapes.CircleShadow")
@@ -129,5 +130,26 @@ describe("Particle lights",
                 light:Remove()
                 world:Update(0)
                 assert.equals(0, world.Canvas:newImageData():getPixel(80, 140))
+            end)
+
+        it("advances simulation only once when multiple cameras render the same world",
+            ---@description Ensures view updates and repeated draws do not multiply particle aging.
+            ---@return nil
+            function()
+                local first = LightCamera:new(world, 192, 192)
+                local second = LightCamera:new(world, 192, 192)
+                second:SetPosition(32, 32, 2)
+                particles:reset()
+                particles:setParticleLifetime(0.3)
+                particles:emit(1)
+                world:Update(0.2)
+                assert.equals(1, particles:getCount())
+                assert.equals(1, shadowRenders)
+                first:Draw()
+                second:Draw()
+                first:Draw()
+                assert.equals(1, particles:getCount(), "Drawing cannot advance particles")
+                world:Update(0.2)
+                assert.equals(0, particles:getCount())
             end)
     end)

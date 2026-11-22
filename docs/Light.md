@@ -1,6 +1,9 @@
 # Light and Star
 
-`Light` renders a localized light with radius-sized canvases. `Star` is a full-scene light whose canvases match the world view. Both types cast shadows from registered bodies and support custom shadow/sprite callbacks through [`LightWorld`](LightWorld.md).
+`Light` renders a localized light with radius-sized canvases shared by all
+registered cameras. `Star` is a full-scene light with separate buffers for each
+[`LightCamera`](LightCamera.md). Both types cast shadows from registered bodies
+and support custom shadow/sprite callbacks through [`LightWorld`](LightWorld.md).
 
 For dynamic illumination drawn by a native LÖVE particle system, use
 [`ParticleLight`](ParticleLight.md), a local-light subclass that inherits
@@ -54,14 +57,20 @@ See [Penumbras](Penumbras.md) for examples and approximation limits.
 
 | Method | Description |
 |---|---|
-| `star:Resize(width, height)` | Recreates the full-scene canvases when the requested dimensions differ. `LightWorld:Resize` calls this for registered stars. |
+| `star:Resize(width, height)` | Recreates the default view's full-scene buffers when dimensions differ. Prefer `camera:Resize` to keep the viewport and its star buffers aligned. |
 
-Stars have public `Width` and `Height` fields. Their position, radius, color, texture, and blur settings follow the `Light` API.
+Stars' public `Canvas`, `Width`, and `Height` fields describe their default
+camera buffers. Their position, radius, color, texture, and blur settings follow
+the `Light` API and are shared across views. During a world rendering callback,
+the star argument's `Camera` identifies the view being rendered.
+Textured stars draw their image at the star's world position, translated and
+scaled by each camera, rather than at a fixed viewport offset.
 
 ## Rendering notes
 
 - Local-light canvas dimensions are twice the radius. Soft shadows additionally use an occluder mask, two floating-point distance-field buffers, a floating-point radius buffer, and shadow-mask mipmaps.
-- Star canvas dimensions follow the world canvas and are independent of radius.
+- Star canvas dimensions follow their camera and are independent of radius. Camera movement and resizing do not rebuild other views' shadow caches.
+- Local lights retain their shared canvases while their influence intersects any registered camera; zoomed viewports are culled in world coordinates.
 - Rendering resolution, shadow-edge MSAA, and penumbra-buffer resolution are controlled per world with `LightWorld:SetQuality`; changing settings reallocates the relevant caches.
 - Projected shadow geometry is cached per shape and height layer, including empty shadow lists. Editing a shape preserves unchanged siblings' geometry; moving its body invalidates all its shapes.
 - Local shadow canvases rebuild only for shapes intersecting the light's range at their previous or current bounds. Movement, radius changes, removal, and texture replacement are tracked on the next world update. Stars conservatively redraw for any scene geometry change.

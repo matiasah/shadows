@@ -110,7 +110,7 @@ function Penumbra:UpdateRadius(Light, Scale)
     love.graphics.origin()
     love.graphics.setBlendMode("replace", "premultiplied")
     love.graphics.setColor(1, 1, 1, 1)
-    local scale = Scale or (Light.Star and select(3, Light.World:GetPosition())) or 1
+    local scale = Scale or (Light.Star and select(3, Light.Camera:GetPosition())) or 1
     self.Scale = scale
     local x, y = Light:GetCanvasCenter()
     Shadows.PenumbraRadiusShader:send("DpiScale", DPI.getCanvasScale(Light.ShadowCanvas))

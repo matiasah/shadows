@@ -267,36 +267,18 @@ function Light:GenerateDarkness(x, y, z)
 	self.Shapes = newShapes
 end
 
---- @description Initializes or releases canvases according to world visibility.
+--- @description Retains a shared light cache while its influence intersects any registered camera.
 --- @return boolean visible Whether the light should be rendered.
 function Light:GetUpdateVisibility()
-	-- World's position
-	local wx, wy, wz = self.World:GetPosition()
-
-	-- Light's position
-	local x, y, z = self:GetPosition()
-
-	-- Delta
-	local dx = (wx + self.World:GetWidth() * 0.5) - x
-	local dy = (wy + self.World:GetHeight() * 0.5) - y
-	local Distance = math.sqrt(dx * dx + dy * dy)
-
-	if self:GetCanvasDestroyed() then
-		-- If the distance is lower than the light's radius + world's border radius
-		if Distance <= (self.World:GetBorderRadius() + self.Radius) * wz then
-			-- Must be initialized
-			self:InitCanvas()
+	local x, y = self:GetPosition()
+	for _, Camera in ipairs(self.World.Cameras) do
+		if Camera:IsVisible(x, y, self.Radius) then
+			if self:GetCanvasDestroyed() then self:InitCanvas() end
 			return true
 		end
-	else
-		-- If the distance is higher than the light's radius + world's border radius
-		if Distance > (self.World:GetBorderRadius() + self.Radius) * wz then
-			self:DestroyCanvas()
-			return false
-		end
 	end
-
-	return not self:GetCanvasDestroyed()
+	self:DestroyCanvas()
+	return false
 end
 
 ---@description Rebuilds shadow pixels with the caller's world-to-canvas transform.
