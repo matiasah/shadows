@@ -9,6 +9,9 @@ local DebugOverlay = require("shadows.DebugOverlay")
 local Body = require("shadows.Body")
 local CircleShadow = require("shadows.ShadowShapes.CircleShadow")
 local PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
+local OutputShadow = require("shadows.OutputShadow")
+---@type fun(self: OutputShadow, Canvas: love.Canvas): boolean
+local defaultOutputVisibility = OutputShadow.IsVisible
 
 ---@description Builds a small nearest-filtered cookie from deterministic pixels.
 ---@param pixels fun(x: number, y: number): number, number, number, number Cookie RGBA generator.
@@ -60,6 +63,7 @@ describe("LOVE lighting",
             ---@description Restores caller graphics state even when a test fails.
             ---@return nil
             function()
+                OutputShadow.IsVisible = defaultOutputVisibility
                 love.graphics.setCanvas()
                 love.graphics.pop()
                 world, light, body = nil, nil, nil
@@ -767,6 +771,133 @@ describe("LOVE lighting",
                 assert.equals(geometry, light.Shapes)
                 assert.same(stats, debug:GetStats())
                 assert.equals(lighting, world.Canvas:newImageData():getString())
+            end)
+
+        it("culls projected outputs while preserving offscreen casters and hard/soft lighting pixels",
+            ---@description Compares shared and per-camera draws with an unculled baseline, including an offscreen caster casting into view.
+            ---@return nil
+            function()
+                world:Resize(128, 128)
+                world:SetPosition(64, 32)
+                local camera = LightCamera:new(world, 96, 96)
+                camera:SetPosition(400, 300, 0.75)
+                light:SetPosition(20, 96, 2)
+                body:SetPosition(52, 96, 1)
+                body:GetShapes():Get(1):SetRadius(8)
+                local near = Body:new(world)
+                near:SetPosition(122, 130, 1)
+                CircleShadow:new(near, 0, 0, 12)
+                local far = Body:new(world)
+                far:SetPosition(20, 350, 1)
+                CircleShadow:new(far, 0, 0, 12)
+                local star = Star:new(world, 500)
+                star:SetPosition(20, 96, 2)
+                for _, blur in ipairs({ false, true }) do
+                    light.Blur, star.Blur = blur, blur
+                    world:ForceUpdate()
+                    world:Update(0)
+                    local primary = world:GetCamera()
+                    local mainPixels = primary.Canvas:newImageData():getString()
+                    local otherPixels = camera.Canvas:newImageData():getString()
+                    local sharedPixels = light.Canvas:newImageData():getString()
+                    local mainDraws = primary.FrameMetrics.ShadowDrawCalls
+                    local otherDraws = camera.FrameMetrics.ShadowDrawCalls
+                    local sharedDraws = world.FrameMetrics.ShadowDrawCalls
+                    local visibility = star.ShadowRenderCanvas:newImageData()
+                    assert.is_true(visibility:getPixel(4, 64) < 0.1,
+                        "A caster wholly left of the viewport must still shadow visible pixels")
+                    assert.is_true(visibility:getPixel(4, 110) > 0.8)
+                    ---@description Submits every cached output to reproduce the pre-culling renderer.
+                    ---@param Canvas love.Canvas Render target; unused.
+                    ---@return boolean visible Always true.
+                    function OutputShadow:IsVisible(Canvas) return true end
+                    world:ForceUpdate()
+                    world:Update(0)
+                    OutputShadow.IsVisible = defaultOutputVisibility
+                    assert.is_true(primary.FrameMetrics.ShadowDrawCalls > mainDraws)
+                    assert.is_true(camera.FrameMetrics.ShadowDrawCalls > otherDraws)
+                    assert.is_true(world.FrameMetrics.ShadowDrawCalls > sharedDraws)
+                    assert.equals(mainPixels, primary.Canvas:newImageData():getString())
+                    assert.equals(otherPixels, camera.Canvas:newImageData():getString())
+                    assert.equals(sharedPixels, light.Canvas:newImageData():getString())
+                end
+            end)
+
+        it("culls transformed texture and shader draws conservatively at different DPI scales",
+            ---@description Verifies native draw equality for transformed textures, shader bounds, unsupported overloads, strokes, and raster padding.
+            ---@return nil
+            function()
+                local data = love.image.newImageData(32, 8)
+                data:mapPixel(
+                    ---@description Supplies a red texture that makes an incorrectly culled visible draw detectable.
+                    ---@param x number Pixel x-coordinate.
+                    ---@param y number Pixel y-coordinate.
+                    ---@return number r Red channel.
+                    ---@return number g Green channel.
+                    ---@return number b Blue channel.
+                    ---@return number a Alpha channel.
+                    function(x, y) return 1, 0, 0, 1 end)
+                local texture = love.graphics.newImage(data)
+                local fragment = love.graphics.newShader [[
+                    vec4 effect(vec4 color, Image texture, vec2 uv, vec2 pixel) { return color; }
+                ]]
+                local displaced = love.graphics.newShader [[
+                    vec4 position(mat4 transform_projection, vec4 vertex_position) {
+                        vertex_position.xy -= vec2(200.0);
+                        return transform_projection * vertex_position;
+                    }
+                ]]
+                local shaderRect = OutputShadow:new("rectangle", "fill", 300, 300, 10, 10)
+                shaderRect:SetShader(fragment, true)
+                local movedRect = OutputShadow:new("rectangle", "fill", 305, 255, 6, 6)
+                movedRect:SetShader(displaced)
+                local filtered = OutputShadow:new("rectangle", "fill", 104, 54, 8, 8)
+                filtered:SetLayer(99)
+                local outputs = {
+                    OutputShadow:new("polygon", "fill", { 102, 52, 108, 52, 108, 58, 102, 58 }),
+                    OutputShadow:new("circle", "fill", 300, 300, 10),
+                    shaderRect,
+                    OutputShadow:new(nil, nil, texture, 140, 60, 0.3, -2, 1.5, 4, 2, 0.2, -0.1),
+                    OutputShadow:new(nil, nil, texture, 300, 300),
+                    OutputShadow:new("circle", "line", 300, 300, 10),
+                    OutputShadow:new(nil, nil, texture, love.graphics.newQuad(0, 0, 4, 4, 32, 8), 104, 75),
+                    movedRect,
+                    OutputShadow:new("rectangle", "fill", 132.25, 55, 1, 1),
+                    filtered,
+                }
+                for _, scale in ipairs({ 0.5, 1, 2 }) do
+                    local target = love.graphics.newCanvas(64, 64, { dpiscale = scale })
+                    love.graphics.setCanvas(target)
+                    love.graphics.origin()
+                    love.graphics.translate(-200, -100)
+                    love.graphics.scale(2)
+                    love.graphics.setColor(1, 1, 1, 1)
+                    love.graphics.setBlendMode("replace", "premultiplied")
+                    love.graphics.clear()
+                    local calls = 0
+                    for _, output in ipairs(outputs) do
+                        if (not output.Layer or output.Layer == 1) and output:IsVisible(target) then
+                            output:Draw(1)
+                            calls = calls + 1
+                        end
+                    end
+                    assert.equals(6, calls)
+                    love.graphics.setCanvas()
+                    local culled = target:newImageData():getString()
+                    love.graphics.setCanvas(target)
+                    love.graphics.clear()
+                    for _, output in ipairs(outputs) do output:Draw(1) end
+                    love.graphics.setCanvas()
+                    assert.equals(culled, target:newImageData():getString())
+                    assert.is_true(outputs[9]:IsVisible(target),
+                        "A primitive just outside the viewport must retain a physical-pixel antialiasing margin")
+                    assert.is_true(movedRect:IsVisible(target),
+                        "Unknown vertex shaders may move offscreen geometry into the target")
+                    local mutable = outputs[2]
+                    mutable.Input[1], mutable.Input[2] = 110, 70
+                    assert.is_true(mutable:IsVisible(target), "Direct argument edits must not reuse stale bounds")
+                    mutable:Pack(300, 300, 10)
+                end
             end)
 
         it("reports completed per-camera frame work separately from shared local-light work",

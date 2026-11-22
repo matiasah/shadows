@@ -8,6 +8,7 @@ local Star = require("shadows.Star")
 local Body = require("shadows.Body")
 local PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
 local CircleShadow = require("shadows.ShadowShapes.CircleShadow")
+local OutputShadow = require("shadows.OutputShadow")
 
 ---@type LightWorld
 local world
@@ -106,6 +107,25 @@ local function verifyOverlay()
     assert(overlay.CumulativeTotals, "T must enable secondary lifetime totals")
     love.keypressed("t")
     assert(not overlay.CumulativeTotals, "T must return to frame metrics only")
+    local camera = world:GetCamera()
+    local x, y, zoom = camera:GetPosition()
+    camera:SetPosition(1000, 1000, zoom)
+    world:Update(0)
+    assert(camera.FrameMetrics.ShadowDrawCalls == 0 and overlay:GetStats().CachedDrawCalls > 0,
+        "A distant viewport must retain cached geometry without submitting offscreen shadow draws")
+    local culled = camera.Canvas:newImageData():getString()
+    local isVisible = OutputShadow.IsVisible
+    ---@description Submits every cached draw to compare projected culling against the previous renderer.
+    ---@param Canvas love.Canvas Render target; unused.
+    ---@return boolean visible Always true.
+    function OutputShadow:IsVisible(Canvas) return true end
+    world:ForceUpdate()
+    world:Update(0)
+    OutputShadow.IsVisible = isVisible
+    assert(camera.FrameMetrics.ShadowDrawCalls > 0 and culled == camera.Canvas:newImageData():getString(),
+        "Offscreen draw rejection must reduce submissions without changing rendered pixels")
+    camera:SetPosition(x, y, zoom)
+    world:Update(0)
     print("DebugOverlay per-frame ownership, rendering, toggle, and cache-counter verification passed")
 end
 

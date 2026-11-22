@@ -36,6 +36,11 @@ rebuilds its shapes. Local lights redraw shadows only when their influence
 intersects a changed shape's previous or current bounds. Full-scene stars
 redraw on scene changes. Affected canvases are still redrawn completely to
 preserve overlapping shadows and height ordering.
+Cached filled primitives and ordinary texture draws wholly outside their shadow
+render target are not submitted. Bounds account for projection, camera zoom,
+texture transforms, and a two-physical-pixel raster margin. Geometry stays cached;
+offscreen casters whose shadows reach the target are retained. Unsupported draw
+overloads and untrusted custom vertex shaders are conservatively submitted.
 
 Color, angular coverage, and light rotation changes reuse shadow pixels.
 Changing `SizeRadius` reuses the occluder-distance field and updates only filter

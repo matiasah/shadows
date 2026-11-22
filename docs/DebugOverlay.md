@@ -62,7 +62,7 @@ Both records expose:
 | `Frame` | Completed `world:Update` sequence number; initially `0` before the first update. |
 | `ShadowRedraws` | Shadow canvases redrawn during this update. |
 | `GeometryRebuilds` | Shape/layer geometry generations during this update, including empty results. |
-| `ShadowDrawCalls` | Cached deferred shadow draws executed during this update, respecting their layer filters. |
+| `ShadowDrawCalls` | Cached deferred shadow draws executed during this update, respecting layer filters and projected-target culling. |
 | `CanvasAllocations` | Successful lighting-canvas allocations since the previous completed update. |
 
 `Camera` additionally exposes `StarUpdateMs`, `CompositionMs`, and
@@ -73,6 +73,10 @@ combining star/local-light canvases and rooms into the view's lighting canvas.
 canvases wholly outside the selected viewport are skipped even when retained
 for another camera. Culling uses conservative square canvas bounds, not lit-pixel
 coverage, so this is not an exact visible-light count.
+Projected shadow draws wholly outside their shadow target are also skipped.
+Cached geometry and red wireframes remain intact, so `CachedDrawCalls` can
+exceed the outputs actually submitted in a rebuilt frame. Offscreen caster
+positions alone are not grounds for culling their projected shadows.
 
 `Shared.SharedUpdateMs` measures local-light updates, including particle
 simulation when `dt` is provided. It excludes body/physics synchronization,

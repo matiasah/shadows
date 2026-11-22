@@ -160,7 +160,7 @@ function CastImageShadow:GenerateShadows(shapes, body, deltaX, deltaY, layer, li
     end
     local output = OutputShadow:new("rectangle", "fill",
         x - light.Radius, y - light.Radius, light.Radius * 2, light.Radius * 2)
-    output:SetShader(groundShader)
+    output:SetShader(groundShader, true)
     output:SendShader("Blocker", self.Texture)
     output:SendShader("BlockerAnchor", { self.Transform:GetPosition() })
     output:SendShader("BlockerSize", { self:GetWidth(), self:GetHeight() })

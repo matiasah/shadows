@@ -266,8 +266,9 @@ function Light:GenerateDarkness(x, y, z)
 		for Body, BodyShapes in pairs(Shapes) do
 			for Shape, ShadowList in pairs(BodyShapes) do
 				for _, Shadow in pairs(ShadowList) do
-					Shadow:Draw(MinAltitude)
-					if not Shadow.Layer or Shadow.Layer == MinAltitude then
+					if (not Shadow.Layer or Shadow.Layer == MinAltitude)
+						and Shadow:IsVisible(self.ShadowRenderCanvas) then
+						Shadow:Draw(MinAltitude)
 						self.ShadowDrawCount = self.ShadowDrawCount + 1
 					end
 				end

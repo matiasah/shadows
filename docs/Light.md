@@ -124,6 +124,37 @@ scaled by each camera, rather than at a fixed viewport offset.
 - `LightWorld:DrawShadows(lightOrStar)` and `LightWorld:DrawSprites(lightOrStar)` run during shadow-buffer rebuilds, not appearance-only recomposition. Call `world:ForceUpdate()` if their output depends on changed light appearance or external state, or if texture pixels are edited in place.
 - When penumbras are enabled, `DrawSprites` is also invoked for the occluder mask. Keep this callback limited to drawing; do not update simulation state inside it.
 
+### Projected shadow culling
+
+Before submitting each cached `OutputShadow`, the renderer tests its projected
+draw bounds against the actual shadow target. This applies to shared local-light
+canvases and each camera's separate star buffers. Filled polygons (flat or nested
+coordinate arrays), circles, rectangles, and ordinary 2D texture draws are
+supported, including texture rotation, negative/nonuniform scale, origin, and shear.
+The active world-to-canvas transform and a two-physical-pixel raster margin
+account for camera position, zoom, DPI, and antialiasing.
+
+This skips only draw submissions; geometry generation, cache contents, height
+layer selection, caster restoration, custom world callbacks, and penumbra masks
+are unchanged. A caster outside the viewport can still project a visible shadow.
+Off-target draws that were already clipped by the GPU cannot contribute to the
+shadow pixels or subsequent filtering.
+
+Unknown operations, stroke modes, Quad/Transform draw overloads, and custom
+shaders with untrusted vertex bounds are retained rather than guessed.
+Built-in height/normal-map shaders and upright-image ground projections are
+eligible for culling. Custom fragment-only shaders can opt in with
+`output:SetShader(shader, true)`; do not opt in if vertices can move outside
+the ordinary draw bounds. The existing one-argument setter remains conservative
+for custom shaders.
+
+`output:GetBounds()` returns world-space `minX, minY, maxX, maxY`, or nil when
+safe bounds are unavailable. `output:IsVisible(canvas)` tests those bounds under
+the current graphics transform. Bounds are read from the current packed arguments
+so direct argument edits cannot leave stale cached bounds.
+Per-frame `ShadowDrawCalls` counts only submitted, layer-matching outputs;
+debug wireframes and `CachedDrawCalls` still represent every cached output.
+
 See the [standard demonstration](Standard-Demonstration.md) for a complete interactive scene.
 
 Use [DebugOverlay](DebugOverlay.md) to inspect light bounds, existing shadow
