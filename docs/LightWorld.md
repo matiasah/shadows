@@ -23,6 +23,20 @@ Register additional cameras to display different locations of the same scene.
 | `world:ForceUpdate()` | Forces every light and star to rebuild shadow geometry and rendering on its next visible update. |
 | `world:InitFromPhysics(physicsWorld)` | Imports supported bodies and fixtures from a LÖVE physics world once. |
 
+## Frame metrics
+
+`world.FrameMetrics` is the read-only shared local-light metric snapshot from
+the last completed `world:Update`. It contains `Frame`, `SharedUpdateMs`,
+`ShadowRedraws`, `GeometryRebuilds`, `ShadowDrawCalls`, and `CanvasAllocations`.
+Particle simulation belongs to this shared CPU bucket, not to every camera.
+Body/physics and room work are outside this bucket.
+
+Each camera exposes separate `camera.FrameMetrics` for its star work and
+lighting composition. Values reset per completed update and retained snapshots
+remain stable; resize/quality allocations between updates appear in the next
+completed snapshot. See [DebugOverlay](DebugOverlay.md) for metric definitions
+and CPU-versus-GPU timing limits.
+
 ## Rendering quality
 
 Each world owns one `Settings` object, shared by its lights and stars. Access it

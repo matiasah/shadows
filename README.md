@@ -86,6 +86,27 @@ hierarchical positioning and following a body or other transform. Camera
 synchronized before light culling and star rendering. Zoom remains separate
 from transform height, and viewports stay axis-aligned.
 
+## Debug overlays
+
+[`DebugOverlay`](docs/DebugOverlay.md) draws light influence bounds and cone
+directions, green occluder outlines, cached shadow-geometry wireframes, camera
+viewports, and actual cache-work counters over an already-lit scene.
+Create it with `DebugOverlay:new(world)` and call
+`debug:Draw(camera?, screenX?, screenY?)` after applying lighting. Toggle its
+`LightBounds`, `ShadowGeometry`, `CameraViewports`, and `CacheCounters` fields
+independently. Drawing preserves graphics state and does not rebuild caches.
+Textured/shader-based shadows show draw bounds rather than per-pixel contours.
+The panel shows **per-frame, per-camera** star/composition CPU milliseconds,
+shadow redraws, geometry/draw work, light composition submissions, and canvas
+allocations. Shared local-light work has its own world-level section and is not
+charged to every camera. `debug:GetFrameStats(camera?)` returns stable snapshots
+from the last completed world update; `camera.FrameMetrics` and
+`world.FrameMetrics` expose the same read-only records. Resize/quality
+allocations between updates appear in the next frame. Timings are CPU values,
+not GPU timings. Cumulative totals are secondary:
+`debug.CumulativeTotals = true` appends them, and `debug:GetStats(camera?)`
+retains its existing lifetime-counter and cache-size API.
+
 ## Color API migration
 
 All light, star, ambient, and room color channels now use LÖVE's **0-1 range**.
@@ -155,6 +176,8 @@ love . ParticleLights
 love . ParticleLights --capture --verify
 love . LightCameras
 love . LightCameras --capture --verify
+love . DebugOverlay
+love . DebugOverlay --capture --verify
 ```
 
 Capture mode renders the scene to offscreen canvases at DPI scale 2, saves a screenshot using `love.graphics.captureScreenshot`, and exits. Press `F12` to capture an image interactively; press `Escape` to close the demo.
@@ -174,6 +197,12 @@ to select a camera, arrows to pan, `+`/`-` to zoom, `Q` to change shared quality
 `F` to toggle following the animated body with the selected camera's transform,
 or `Space` to pause the body. `--verify` checks matching-view pixel equality,
 shared scene movement, and incremental rendering against full rebuilds.
+
+The `DebugOverlay` demo displays all four diagnostic categories in a main view
+and overview. Press `1`-`4` to toggle categories, `D` to hide them all, `T` to
+append/hide cumulative totals, `Space`
+to pause caster motion, `C` for tint-only changes, `B` for hard/soft shadows,
+or `R` to force a rebuild. Use arrows to pan the main camera.
 
 The `Penumbra` demo compares hard and soft polygon/circle shadows side by side;
 press `Q` to change the shared quality preset in both scenes, use `+` and `-`

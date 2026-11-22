@@ -5,6 +5,7 @@ local LightCamera = require("shadows.LightCamera")
 local Light = require("shadows.Light")
 local Star = require("shadows.Star")
 local Transform = require("shadows.Transform")
+local DebugOverlay = require("shadows.DebugOverlay")
 local Body = require("shadows.Body")
 local CircleShadow = require("shadows.ShadowShapes.CircleShadow")
 local PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
@@ -491,5 +492,258 @@ describe("LOVE lighting",
                 camera:Remove()
                 assert.is_nil(other.Children[id])
                 assert.is_nil(camera:GetTransform():GetParent())
+            end)
+
+        it("reports actual cache work without allocating star views or counting reuse as rebuilding",
+            ---@description Checks completed redraw/geometry counts and their independent camera ownership.
+            ---@return nil
+            function()
+                local debug = DebugOverlay:new(world)
+                local camera = LightCamera:new(world, 192, 192)
+                local star = Star:new(world, 112)
+                star.Blur = false
+                star:SetPosition(80, 96, 2)
+                assert.equals(0, debug:GetStats(camera).ShadowRedraws)
+                assert.is_nil(star.Views[camera], "Inspecting statistics cannot allocate a view")
+                world:Update(0)
+                local initial = debug:GetStats()
+                assert.equals(2, initial.ShadowRedraws)
+                assert.equals(2, initial.GeometryRebuilds)
+                assert.is_true(initial.CachedDrawCalls > 0)
+                world:Update(0)
+                light:SetColor(0.5, 0.75, 1, 1)
+                star:SetColor(0.75, 0.5, 1, 1)
+                world:Update(0)
+                assert.same(initial, debug:GetStats(), "Stationary and tint-only updates must not count as rebuilds")
+                body:SetPosition(112, 120, 1)
+                world:Update(0)
+                assert.same({ 2, 2 }, { light:GetDebugCounts() })
+                assert.equals(4, debug:GetStats().ShadowRedraws)
+                assert.equals(4, debug:GetStats().GeometryRebuilds)
+                local primary = debug:GetStats()
+                local secondary = debug:GetStats(camera)
+                camera:SetPosition(32, 32, 2)
+                world:Update(0)
+                assert.same(primary, debug:GetStats(), "Moving another view must not rebuild this view's shadows")
+                assert.equals(secondary.ShadowRedraws + 1, debug:GetStats(camera).ShadowRedraws)
+            end)
+
+        it("draws each diagnostic category in the requested viewport while preserving state and lighting caches",
+            ---@description Measures light, occluder, camera, and counter pixels independently at translated and zoomed coordinates.
+            ---@return nil
+            function()
+                world:Resize(192, 192)
+                world:SetPosition(32, 32, 1.5)
+                world:Update(0)
+                local debug = DebugOverlay:new(world)
+                local fields = { "LightBounds", "ShadowGeometry", "CameraViewports", "CacheCounters" }
+                local original = world.Canvas:newImageData():getString()
+                local lightPixels = light.Canvas:newImageData():getString()
+                local shapes = light.Shapes
+                local stats = debug:GetStats()
+                for _, field in ipairs(fields) do debug[field] = false end
+                for _, scale in ipairs({ 1, 2 }) do
+                    local target = love.graphics.newCanvas(384, 320, { dpiscale = scale })
+                    for _, field in ipairs(fields) do
+                        debug[field] = true
+                        love.graphics.setCanvas(target)
+                        love.graphics.setScissor()
+                        love.graphics.clear()
+                        love.graphics.origin()
+                        love.graphics.translate(9, 7)
+                        love.graphics.setShader(require("shadows").DarkenShader)
+                        love.graphics.setColor(0.25, 0.5, 0.75, 1)
+                        local color = { love.graphics.getColor() }
+                        love.graphics.setBlendMode("add", "alphamultiply")
+                        love.graphics.setLineWidth(7)
+                        love.graphics.setLineStyle("rough")
+                        love.graphics.setScissor(8, 8, 320, 300)
+                        debug:Draw(world:GetCamera(), 16, 12)
+                        assert.equals(target, love.graphics.getCanvas())
+                        assert.equals(require("shadows").DarkenShader, love.graphics.getShader())
+                        assert.same(color, { love.graphics.getColor() })
+                        assert.same({ 9, 7 }, { love.graphics.transformPoint(0, 0) })
+                        assert.same({ 8, 8, 320, 300 }, { love.graphics.getScissor() })
+                        assert.same({ "add", "alphamultiply" }, { love.graphics.getBlendMode() })
+                        assert.equals(7, love.graphics.getLineWidth())
+                        assert.equals("rough", love.graphics.getLineStyle())
+                        love.graphics.setCanvas()
+                        local pixels = target:newImageData()
+                        assert.equals(0, select(4, pixels:getPixel(12 * scale, 100 * scale)),
+                            "Overlays must be viewport-clipped")
+                        assert.equals(0, select(4, pixels:getPixel(208 * scale, 100 * scale)),
+                            "Overlays must not bleed past the viewport")
+                        local colored = 0
+                        for py = 12, 203 do
+                            for px = 16, 207 do
+                                local r, g, b = pixels:getPixel(px * scale, py * scale)
+                                if (field == "LightBounds" and r > 0.4 and g > 0.25 and b < 0.3)
+                                    or (field == "ShadowGeometry" and g > 0.5 and g > r)
+                                    or (field == "CameraViewports" and b > 0.5 and b > r)
+                                    or (field == "CacheCounters" and r > 0.6 and g > 0.6 and b > 0.6) then
+                                    colored = colored + 1
+                                end
+                            end
+                        end
+                        assert.is_true(colored > 20, field .. " must draw visible diagnostics at DPI " .. scale)
+                        if field == "ShadowGeometry" then
+                            local _, green = pixels:getPixel(136 * scale, 93 * scale)
+                            assert.is_true(green > 0.5, "Occluder outlines must use the camera transform")
+                        end
+                        debug[field] = false
+                    end
+                end
+                love.graphics.setScissor()
+                love.graphics.setShader()
+                assert.equals(original, world.Canvas:newImageData():getString())
+                assert.equals(lightPixels, light.Canvas:newImageData():getString())
+                assert.equals(shapes, light.Shapes)
+                assert.same(stats, debug:GetStats())
+            end)
+
+        it("outlines cached textured and shader-based shapes without applying their shaders",
+            ---@description Covers texture draw bounds, packed polygon arguments, upright shader rectangles, and geometry cache immutability.
+            ---@return nil
+            function()
+                local texture = love.graphics.newCanvas(8, 8, { dpiscale = 1 })
+                love.graphics.setCanvas(texture)
+                love.graphics.clear(0.5, 0.5, 1, 1)
+                love.graphics.setCanvas()
+                require("shadows.ShadowShapes.ImageShadow"):new(body, texture)
+                require("shadows.ShadowShapes.HeightShadow"):new(body, texture):SetPosition(0, 16)
+                require("shadows.ShadowShapes.CastImageShadow"):new(body, texture)
+                world:Update(0)
+                local debug = DebugOverlay:new(world)
+                debug.LightBounds, debug.CameraViewports, debug.CacheCounters = false, false, false
+                local geometry = light.Shapes
+                local stats = debug:GetStats()
+                local lighting = world.Canvas:newImageData():getString()
+                local output = love.graphics.newCanvas(world.Width, world.Height, { dpiscale = 1 })
+                love.graphics.setCanvas(output)
+                love.graphics.clear()
+                debug:Draw()
+                love.graphics.setCanvas()
+                local _, green = output:newImageData():getPixel(112, 112)
+                assert.is_true(green > 0.5, "Texture bounds must be outlined at their world coordinates")
+                assert.equals(geometry, light.Shapes)
+                assert.same(stats, debug:GetStats())
+                assert.equals(lighting, world.Canvas:newImageData():getString())
+            end)
+
+        it("reports completed per-camera frame work separately from shared local-light work",
+            ---@description Checks cold work, stationary zeros, camera isolation, composition counts, and stable completed snapshots.
+            ---@return nil
+            function()
+                local debug = DebugOverlay:new(world)
+                local camera = LightCamera:new(world, 192, 192)
+                local star = Star:new(world, 112)
+                star.Blur = false
+                star:SetPosition(80, 96, 2)
+                world:Update(0)
+                local cold = debug:GetFrameStats()
+                assert.equals(1, cold.Camera.Frame)
+                assert.equals(1, cold.Shared.Frame)
+                assert.equals(1, cold.Shared.ShadowRedraws)
+                assert.equals(1, cold.Camera.ShadowRedraws)
+                assert.equals(3, cold.Shared.ShadowDrawCalls)
+                assert.equals(3, cold.Camera.ShadowDrawCalls)
+                assert.equals(3, cold.Shared.CanvasAllocations)
+                assert.equals(4, cold.Camera.CanvasAllocations)
+                assert.equals(4, debug:GetFrameStats(camera).Camera.CanvasAllocations)
+                assert.equals(2, cold.Camera.LightsComposited)
+                assert.equals(cold.Shared, debug:GetFrameStats(camera).Shared,
+                    "Shared work must be one world bucket, not copied into each camera")
+                assert.is_true(cold.Camera.StarUpdateMs >= 0 and cold.Camera.CompositionMs >= 0
+                    and cold.Shared.SharedUpdateMs >= 0)
+                world:Update(0)
+                local idle = debug:GetFrameStats()
+                for _, field in ipairs({ "ShadowRedraws", "GeometryRebuilds", "ShadowDrawCalls", "CanvasAllocations" }) do
+                    assert.equals(0, idle.Camera[field], field .. " must reset for an idle camera")
+                    assert.equals(0, idle.Shared[field], field .. " must reset for idle shared lights")
+                end
+                assert.equals(0, idle.Camera.CompositionMs)
+                assert.equals(0, idle.Camera.LightsComposited)
+                assert.equals(1, cold.Camera.ShadowRedraws, "Older frame snapshots must not be cleared in place")
+                camera:SetPosition(32, 32, 2)
+                world:Update(0)
+                local primary, secondary = debug:GetFrameStats(), debug:GetFrameStats(camera)
+                assert.equals(0, primary.Camera.ShadowRedraws)
+                assert.equals(0, primary.Shared.ShadowRedraws)
+                assert.equals(1, secondary.Camera.ShadowRedraws)
+                assert.equals(2, secondary.Camera.LightsComposited)
+                light:SetColor(0.5, 0.75, 1, 1)
+                world:Update(0)
+                assert.equals(0, debug:GetFrameStats().Shared.ShadowRedraws)
+                assert.equals(0, debug:GetFrameStats().Camera.GeometryRebuilds)
+                assert.equals(2, debug:GetFrameStats().Camera.LightsComposited)
+
+                local completed = debug:GetFrameStats()
+                local render = light.RenderShadowCanvas
+                local observedFrame
+                ---@description Observes diagnostics during rendering to ensure only completed snapshots are public.
+                ---@param self Light Renderer being observed.
+                ---@param x number World x-coordinate.
+                ---@param y number World y-coordinate.
+                ---@param z number Light height.
+                ---@return nil
+                function light:RenderShadowCanvas(x, y, z)
+                    observedFrame = debug:GetFrameStats()
+                    render(self, x, y, z)
+                end
+                world:ForceUpdate()
+                world:Update(0)
+                assert.equals(completed.Shared, observedFrame.Shared)
+                assert.equals(completed.Camera, observedFrame.Camera)
+                assert.equals(completed.Camera.Frame + 1, debug:GetFrameStats().Camera.Frame)
+                local before = {}
+                for field, value in pairs(debug:GetFrameStats().Camera) do before[field] = value end
+                debug:Draw()
+                debug:Draw()
+                assert.same(before, debug:GetFrameStats().Camera,
+                    "Drawing diagnostics must not reset, time, or modify the sampled frame")
+            end)
+
+        it("counts camera and penumbra allocations in the next completed update without charging other views",
+            ---@description Measures full buffer allocations for resize/quality churn and checks zero/nonnegative work after removal.
+            ---@return nil
+            function()
+                light.Blur = true
+                local debug = DebugOverlay:new(world)
+                local camera = LightCamera:new(world, 192, 192)
+                local star = Star:new(world, 112)
+                star:SetPosition(80, 96, 2)
+                world:Update(0)
+                assert.equals(7, debug:GetFrameStats().Shared.CanvasAllocations)
+                assert.equals(8, debug:GetFrameStats().Camera.CanvasAllocations)
+                assert.equals(8, debug:GetFrameStats(camera).Camera.CanvasAllocations)
+                local previous = debug:GetFrameStats(camera).Camera
+                camera:Resize(160, 128)
+                assert.equals(previous, debug:GetFrameStats(camera).Camera,
+                    "Between-update allocations must not modify the completed snapshot")
+                world:Update(0)
+                assert.equals(8, debug:GetFrameStats(camera).Camera.CanvasAllocations)
+                assert.equals(0, debug:GetFrameStats().Camera.CanvasAllocations)
+                assert.equals(0, debug:GetFrameStats().Shared.CanvasAllocations)
+                world:SetQuality("low")
+                world:Update(0)
+                assert.equals(7, debug:GetFrameStats().Shared.CanvasAllocations)
+                assert.equals(8, debug:GetFrameStats().Camera.CanvasAllocations)
+                assert.equals(8, debug:GetFrameStats(camera).Camera.CanvasAllocations)
+                world:Update(0)
+                assert.equals(0, debug:GetFrameStats().Shared.CanvasAllocations)
+                assert.equals(0, debug:GetFrameStats(camera).Camera.CanvasAllocations)
+                star:Remove()
+                light:Remove()
+                world:Update(0)
+                assert.equals(0, debug:GetFrameStats().Shared.ShadowRedraws)
+                assert.equals(0, debug:GetFrameStats().Camera.ShadowRedraws)
+                assert.equals(0, debug:GetFrameStats().Camera.LightsComposited)
+                local replacement = Light:new(world, 112)
+                replacement:SetPosition(80, 96, 2)
+                world:Update(0)
+                assert.equals(1, debug:GetFrameStats().Shared.ShadowRedraws)
+                assert.equals(7, debug:GetFrameStats().Shared.CanvasAllocations)
+                assert.equals(0, debug:GetFrameStats().Camera.ShadowRedraws)
+                assert.equals(1, debug:GetFrameStats().Camera.LightsComposited)
             end)
     end)

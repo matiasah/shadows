@@ -36,6 +36,7 @@ Constructors register their result with the world and return `nil` if required a
 | `light:SetImage(texture)` / `light:GetImage()` | Sets or returns a custom light texture. Setting one derives the radius from its dimensions. |
 | `light:GetWorld()` / `light:SetWorld(world)` | Gets or sets the owning world. `SetWorld` is used by world registration. |
 | `light:GetTransform()` | Returns the light's [`Transform`](Transform.md). |
+| `light:GetDebugCounts()` | Returns cumulative completed shadow redraws and shape/layer geometry rebuilds for this renderer. |
 | `light:Remove()` | Removes the light from its world and detaches its transform. |
 
 `Blur`, `SizeRadius`, and `Arc` are public fields rather than methods.
@@ -81,3 +82,8 @@ scaled by each camera, rather than at a fixed viewport offset.
 - When penumbras are enabled, `DrawSprites` is also invoked for the occluder mask. Keep this callback limited to drawing; do not update simulation state inside it.
 
 See the [standard demonstration](Standard-Demonstration.md) for a complete interactive scene.
+
+Use [DebugOverlay](DebugOverlay.md) to inspect light bounds, existing shadow
+geometry, viewports, and cache work without changing lighting caches. Source
+star counters describe the default view; overlay statistics select the
+requested camera's existing star renderers.

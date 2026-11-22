@@ -32,6 +32,7 @@ package.preload["shadows.Object"]                     = assert(love.filesystem.l
 package.preload["shadows.Transform"]                  = assert(love.filesystem.load(Path .. "/Transform.lua"))
 package.preload["shadows.LightWorld"]                 = assert(love.filesystem.load(Path .. "/LightWorld.lua"))
 package.preload["shadows.LightCamera"]                = assert(love.filesystem.load(Path .. "/LightCamera.lua"))
+package.preload["shadows.DebugOverlay"]               = assert(love.filesystem.load(Path .. "/DebugOverlay.lua"))
 package.preload["shadows.Light"]                      = assert(love.filesystem.load(Path .. "/Light.lua"))
 package.preload["shadows.ParticleLight"]              = assert(love.filesystem.load(Path .. "/ParticleLight.lua"))
 package.preload["shadows.Star"]                       = assert(love.filesystem.load(Path .. "/Star.lua"))

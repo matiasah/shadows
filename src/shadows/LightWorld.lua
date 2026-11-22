@@ -17,6 +17,16 @@ LightCamera                                            = require("shadows.LightC
 ---@field radius number Shape bounding radius.
 ---@field angle number World-space rotation in degrees.
 
+---@class RenderWorkMetrics
+---@field ShadowRedraws integer Completed shadow redraws in this update.
+---@field GeometryRebuilds integer Completed shape/layer geometry generations in this update.
+---@field ShadowDrawCalls integer Cached shadow draw calls executed in this update.
+---@field CanvasAllocations integer Successful canvas allocations since the previous update.
+
+---@class WorldFrameMetrics:RenderWorkMetrics
+---@field Frame integer Completed world-update sequence number; initially 0.
+---@field SharedUpdateMs number CPU milliseconds spent updating shared local lights, including particle simulation.
+
 --- @class LightWorld: Object
 --- @field Canvas love.Canvas Composited world canvas.
 --- @field Width number Canvas width.
@@ -32,6 +42,7 @@ LightCamera                                            = require("shadows.LightC
 --- @field Changed boolean Whether all shadow caches need rebuilding.
 --- @field private ShapeBounds table<Shadow, ShadowBounds> Last updated shape bounds, including removed shapes until the next update.
 --- @field Settings Settings Shared rendering settings for this world's lights and stars.
+--- @field FrameMetrics WorldFrameMetrics Shared local-light work for the most recent world update; read-only.
 --- @field UpdateCanvas boolean? Whether the composed canvas needs redrawing.
 --- @field UpdateStars boolean? Whether stars need updating.
 --- @field x number Camera x-coordinate.
@@ -50,11 +61,34 @@ LightWorld.__type                                      = "LightWorld"
 LightWorld.R, LightWorld.G, LightWorld.B, LightWorld.A = 0, 0, 0, 1
 LightWorld.x, LightWorld.y, LightWorld.z               = 0, 0, 1
 
+---@description Creates zeroed shared metrics for a world-update sequence number.
+---@param Frame integer Update sequence number.
+---@return WorldFrameMetrics metrics Empty shared local-light metrics.
+local function newFrameMetrics(Frame)
+	return {
+		Frame = Frame, SharedUpdateMs = 0,
+		ShadowRedraws = 0, GeometryRebuilds = 0, ShadowDrawCalls = 0, CanvasAllocations = 0,
+	}
+end
+
+---@description Accumulates renderer work into its shared-world or camera-specific bucket.
+---@param Metrics RenderWorkMetrics Destination work metrics.
+---@param Light Light|Star Renderer being sampled once per world update.
+---@return nil
+local function sampleFrameWork(Metrics, Light)
+	local redraws, rebuilds, draws, allocations = Light:SampleFrameWork()
+	Metrics.ShadowRedraws = Metrics.ShadowRedraws + redraws
+	Metrics.GeometryRebuilds = Metrics.GeometryRebuilds + rebuilds
+	Metrics.ShadowDrawCalls = Metrics.ShadowDrawCalls + draws
+	Metrics.CanvasAllocations = Metrics.CanvasAllocations + allocations
+end
+
 --- @description Creates a scene with a default camera at the current display size.
 --- @return LightWorld world New light world.
 function LightWorld:new()
 	local self = setmetatable({}, LightWorld)
 	self.Settings = Settings:new(self)
+	self.FrameMetrics = newFrameMetrics(0)
 
 	self.Bodies = PriorityQueue:new() -- Bodies sorted by height
 
@@ -317,6 +351,7 @@ end
 --- @param dt number? Elapsed time in seconds; omitted dt skips particle simulation.
 --- @return nil
 function LightWorld:Update(dt)
+	local frameMetrics = newFrameMetrics(self.FrameMetrics.Frame + 1)
 	for Index, Transform in pairs(self.BodyTracks) do
 		Transform:Update()
 	end
@@ -329,12 +364,15 @@ function LightWorld:Update(dt)
 	self:UpdateShapeBounds()
 
 	for _, Camera in ipairs(self.Cameras) do
+		Camera:BeginFrame(frameMetrics.Frame)
 		Camera:UpdateTransform()
 	end
 
+	local sharedStart = love.timer.getTime()
 	for Index, Light in pairs(self.Lights) do
 		Light:Update(dt)
 	end; love.graphics.setCanvas()
+	frameMetrics.SharedUpdateMs = (love.timer.getTime() - sharedStart) * 1000
 
 	for Index, Star in pairs(self.Stars) do
 		Star:UpdateViews()
@@ -364,6 +402,15 @@ function LightWorld:Update(dt)
 	love.graphics.setShader()
 	love.graphics.setBlendMode("alpha", "alphamultiply")
 	love.graphics.origin()
+	for _, Light in pairs(self.Lights) do sampleFrameWork(frameMetrics, Light) end
+	for _, Camera in ipairs(self.Cameras) do
+		local metrics = assert(Camera.PendingFrameMetrics, "Camera metrics must be started before sampling")
+		for _, Star in pairs(self.Stars) do
+			sampleFrameWork(metrics, Star:GetView(Camera))
+		end
+		Camera:EndFrame()
+	end
+	self.FrameMetrics = frameMetrics
 end
 
 --- @description Callback for custom shadow geometry drawn by each light or star.

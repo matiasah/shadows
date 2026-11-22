@@ -108,6 +108,7 @@ end
 function Star:UpdateViews()
 	for _, camera in ipairs(self.World.Cameras) do
 		if camera ~= self.Camera then
+			local start = love.timer.getTime()
 			local view = self:GetView(camera)
 			view.Radius, view.Arc = self.Radius, self.Arc
 			view.Blur, view.SizeRadius = self.Blur, self.SizeRadius
@@ -119,9 +120,14 @@ function Star:UpdateViews()
 			view.ShadowChanged = view.ShadowChanged or self.ShadowChanged
 			view.AppearanceChanged = view.AppearanceChanged or self.AppearanceChanged
 			view:Update()
+			local metrics = camera.PendingFrameMetrics
+			if metrics then metrics.StarUpdateMs = metrics.StarUpdateMs + (love.timer.getTime() - start) * 1000 end
 		end
 	end
+	local start = love.timer.getTime()
 	self:Update()
+	local metrics = self.Camera.PendingFrameMetrics
+	if metrics then metrics.StarUpdateMs = metrics.StarUpdateMs + (love.timer.getTime() - start) * 1000 end
 end
 
 --- @description Regenerates the star's shadow and illumination canvases when dirty.

@@ -16,21 +16,33 @@ local FILTER_RADIUS_SCALE = 0.9
 local Penumbra = {}
 Penumbra.__index = Penumbra
 
+---@description Allocates a filtering canvas through its renderer when allocation accounting is available.
+---@param Owner Light|Star? Renderer receiving allocation counts; defaults to direct allocation.
+---@param width number Logical canvas width.
+---@param height number Logical canvas height.
+---@param options table Canvas settings, including explicit penumbra DPI.
+---@return love.Canvas canvas New filtering canvas.
+local function newCanvas(Owner, width, height, options)
+    if Owner then return Owner:NewCanvas(width, height, options) end
+    return love.graphics.newCanvas(width, height, options)
+end
+
 ---@description Allocates filtering buffers at the requested fraction of shadow resolution.
 ---@param Canvas love.Canvas Shadow canvas whose dimensions and DPI are matched.
 ---@param QualityScale number? Penumbra buffer resolution factor; defaults to 1.
 ---@param MSAA integer? Silhouette antialiasing sample count; defaults to 4.
+---@param Owner Light|Star? Renderer receiving allocation counts; defaults to direct allocation.
 ---@return Penumbra penumbra New filtering buffers.
-function Penumbra:new(Canvas, QualityScale, MSAA)
+function Penumbra:new(Canvas, QualityScale, MSAA, Owner)
     local width, height = Canvas:getDimensions()
     local scale = DPI.getCanvasScale(Canvas)
     QualityScale = QualityScale or 1
     MSAA = MSAA == nil and 4 or MSAA
     local self = setmetatable({}, Penumbra)
-    self.Mask = love.graphics.newCanvas(width, height, { dpiscale = scale * QualityScale, msaa = MSAA })
-    self.Field = love.graphics.newCanvas(width, height, { dpiscale = scale * QualityScale, format = "rgba16f" })
-    self.Scratch = love.graphics.newCanvas(width, height, { dpiscale = scale * QualityScale, format = "rgba16f" })
-    self.Radius = love.graphics.newCanvas(width, height, { dpiscale = scale * QualityScale, format = "rgba16f" })
+    self.Mask = newCanvas(Owner, width, height, { dpiscale = scale * QualityScale, msaa = MSAA })
+    self.Field = newCanvas(Owner, width, height, { dpiscale = scale * QualityScale, format = "rgba16f" })
+    self.Scratch = newCanvas(Owner, width, height, { dpiscale = scale * QualityScale, format = "rgba16f" })
+    self.Radius = newCanvas(Owner, width, height, { dpiscale = scale * QualityScale, format = "rgba16f" })
     self.Scale = 1
     self.QualityScale = QualityScale
     self.Field:setFilter("nearest", "nearest")

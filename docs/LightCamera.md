@@ -36,6 +36,13 @@ Position and zoom must be finite; zoom must be greater than zero.
 references the world's shared settings object. Quality changes affect all
 registered views. Resize views explicitly after changing your window layout.
 
+`camera.FrameMetrics` exposes the last completed world update's camera-specific
+star/composition CPU milliseconds, shadow redraws, geometry/draw work,
+light composition submissions, and canvas allocations. Metrics are read-only
+and initially zero; queries and drawing do not reset them. Shared local-light
+work is separate in `world.FrameMetrics`. See [DebugOverlay](DebugOverlay.md)
+for field definitions and allocation/timing scope.
+
 ## Transform and parenting
 
 `camera.Transform` (also available through `GetTransform()`) controls position.

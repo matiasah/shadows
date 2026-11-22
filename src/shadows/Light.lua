@@ -39,6 +39,14 @@ Transform                          = require("shadows.Transform")
 --- @field private PreviousX number? Last updated world x-coordinate.
 --- @field private PreviousY number? Last updated world y-coordinate.
 --- @field private PreviousZ number? Last updated world height.
+--- @field private ShadowRenderCount integer Completed shadow-canvas redraws over this renderer's lifetime; defaults to 0.
+--- @field private GeometryRebuildCount integer Completed shape/layer geometry generations over this renderer's lifetime; defaults to 0.
+--- @field private ShadowDrawCount integer Executed cached shadow draw calls over this renderer's lifetime; defaults to 0.
+--- @field private CanvasAllocationCount integer Successful canvas allocations, including penumbra buffers; defaults to 0.
+--- @field private SampledShadowRenderCount integer Redraw total sampled by the previous world update; defaults to 0.
+--- @field private SampledGeometryRebuildCount integer Geometry total sampled by the previous world update; defaults to 0.
+--- @field private SampledShadowDrawCount integer Draw total sampled by the previous world update; defaults to 0.
+--- @field private SampledCanvasAllocationCount integer Allocation total sampled by the previous world update; defaults to 0.
 --- @field private __index Light Instance method lookup.
 --- @field private __type string Runtime type name.
 Light                              = setmetatable({}, Object)
@@ -49,6 +57,14 @@ Light.Arc                          = 360
 Light.Radius                       = 0
 Light.SizeRadius                   = 10
 Light.Blur                         = true
+Light.ShadowRenderCount             = 0
+Light.GeometryRebuildCount          = 0
+Light.ShadowDrawCount               = 0
+Light.CanvasAllocationCount         = 0
+Light.SampledShadowRenderCount      = 0
+Light.SampledGeometryRebuildCount   = 0
+Light.SampledShadowDrawCount        = 0
+Light.SampledCanvasAllocationCount = 0
 
 Light.R, Light.G, Light.B, Light.A = 1, 1, 1, 1
 
@@ -87,7 +103,9 @@ function Light:NewCanvas(Width, Height, Options)
 			canvasOptions[name] = value
 		end
 	end
-	return love.graphics.newCanvas(Width, Height, canvasOptions)
+	local canvas = love.graphics.newCanvas(Width, Height, canvasOptions)
+	self.CanvasAllocationCount = self.CanvasAllocationCount + 1
+	return canvas
 end
 
 --- @description Creates shadow and illumination canvases when they do not exist.
@@ -173,6 +191,7 @@ function Light:GenerateShadows(x, y, z, Layer)
 					local ShadowList = {}
 
 					Shape:GenerateShadows(ShadowList, Body, 0, 0, dz, self)
+					self.GeometryRebuildCount = self.GeometryRebuildCount + 1
 
 					newBodyShapes[Shape] = ShadowList
 				else
@@ -240,6 +259,9 @@ function Light:GenerateDarkness(x, y, z)
 			for Shape, ShadowList in pairs(BodyShapes) do
 				for _, Shadow in pairs(ShadowList) do
 					Shadow:Draw(MinAltitude)
+					if not Shadow.Layer or Shadow.Layer == MinAltitude then
+						self.ShadowDrawCount = self.ShadowDrawCount + 1
+					end
 				end
 			end
 		end
@@ -299,6 +321,31 @@ function Light:RenderShadowCanvas(x, y, z)
 	love.graphics.setColor(1, 1, 1, 1)
 	self.World:DrawSprites(self)
 	self:ResolveShadowCanvas()
+	self.ShadowRenderCount = self.ShadowRenderCount + 1
+end
+
+---@description Returns completed shadow redraws and shape/layer geometry rebuilds for this renderer.
+---@return integer shadowRedraws Lifetime shadow-canvas redraw count.
+---@return integer geometryRebuilds Lifetime geometry generation count, including empty results.
+function Light:GetDebugCounts()
+	return self.ShadowRenderCount, self.GeometryRebuildCount
+end
+
+---@description Samples work completed since this renderer's previous world update, including pending allocations.
+---@return integer shadowRedraws Shadow redraws since the previous sample.
+---@return integer geometryRebuilds Geometry generations since the previous sample.
+---@return integer shadowDrawCalls Cached draw executions since the previous sample.
+---@return integer canvasAllocations Successful allocations since the previous sample.
+function Light:SampleFrameWork()
+	local redraws = self.ShadowRenderCount - self.SampledShadowRenderCount
+	local rebuilds = self.GeometryRebuildCount - self.SampledGeometryRebuildCount
+	local draws = self.ShadowDrawCount - self.SampledShadowDrawCount
+	local allocations = self.CanvasAllocationCount - self.SampledCanvasAllocationCount
+	self.SampledShadowRenderCount = self.ShadowRenderCount
+	self.SampledGeometryRebuildCount = self.GeometryRebuildCount
+	self.SampledShadowDrawCount = self.ShadowDrawCount
+	self.SampledCanvasAllocationCount = self.CanvasAllocationCount
+	return redraws, rebuilds, draws, allocations
 end
 
 --- @description Updates cached canvases when the light or its world has changed.
@@ -425,7 +472,7 @@ function Light:GeneratePenumbra(Rebuild)
 	if self.Blur and self.SizeRadius > 0 then
 		if not self.Penumbra then
 			self.Penumbra = require("shadows.Penumbra"):new(
-				self.ShadowCanvas, self.Settings.PenumbraScale, self.Settings.ShadowMSAA)
+				self.ShadowCanvas, self.Settings.PenumbraScale, self.Settings.ShadowMSAA, self)
 			Rebuild = true
 		end
 		if Rebuild ~= false then

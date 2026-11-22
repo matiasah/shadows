@@ -35,6 +35,7 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 |---|---|
 | [LightWorld](LightWorld.md) | Scene lifecycle, shared rendering settings, camera, ambient color, and extension callbacks. |
 | [LightCamera](LightCamera.md) | Independent position, zoom, and resizable viewports into a shared scene. |
+| [DebugOverlay](DebugOverlay.md) | Light bounds, cached shadow wireframes, camera viewports, and actual cache-work counters. |
 | [Light](Light.md) | Local lights and full-scene stars. |
 | [ParticleLight](ParticleLight.md) | Animated particle-system illumination with emitter-centered shadows. |
 | [Penumbras](Penumbras.md) | Contact-hardening shadow filtering, source size, and rendering limits. |
@@ -58,6 +59,7 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 - [Upright trees casting and receiving shadows](../DEMOS/CastImage/main.lua)
 - [Particle-system fire, water spray, and sparks](../DEMOS/ParticleLights/main.lua)
 - [Two lighting cameras sharing one animated world](../DEMOS/LightCameras/main.lua)
+- [Lighting debug overlays and cache-work counters](../DEMOS/DebugOverlay/main.lua)
 
 ## Notes
 

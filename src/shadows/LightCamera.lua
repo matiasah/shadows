@@ -3,6 +3,12 @@ local Object = require("shadows.Object")
 local Shadows = require("shadows")
 local Transform = require("shadows.Transform")
 
+---@class CameraFrameMetrics:RenderWorkMetrics
+---@field Frame integer World-update sequence number; initially 0.
+---@field StarUpdateMs number CPU milliseconds spent updating this camera's star renderers.
+---@field CompositionMs number CPU milliseconds spent composing lighting; 0 when the cached composition is reused.
+---@field LightsComposited integer Local/star canvas draw submissions during composition; 0 when reused.
+
 ---@class LightCamera:Object
 ---@field World LightWorld Owning scene; simulation and rendering settings are shared.
 ---@field Settings Settings Shared world rendering settings.
@@ -14,6 +20,10 @@ local Transform = require("shadows.Transform")
 ---@field x number Last synchronized world-space left edge; defaults to 0.
 ---@field y number Last synchronized world-space top edge; defaults to 0.
 ---@field z number Positive world-to-viewport scale, independent of transform height; defaults to 1.
+---@field FrameMetrics CameraFrameMetrics Work for this camera in the most recent world update; read-only.
+---@field private PendingFrameMetrics CameraFrameMetrics? In-progress metrics, published only after the world update completes.
+---@field private CanvasAllocationCount integer Successful composition-canvas allocations; defaults to 0.
+---@field private SampledCanvasAllocationCount integer Allocations sampled by the previous world update; defaults to 0.
 ---@field private UpdateCanvas boolean? Whether composition needs refreshing.
 ---@field private UpdateStars boolean? Whether view-dependent star shadows need refreshing.
 ---@field private Removed boolean? Whether this camera is detached.
@@ -22,6 +32,17 @@ local Transform = require("shadows.Transform")
 local LightCamera = setmetatable({}, Object)
 LightCamera.__index = LightCamera
 LightCamera.__type = "LightCamera"
+
+---@description Creates an empty per-camera metric bucket for an update sequence number.
+---@param Frame integer Update sequence number.
+---@return CameraFrameMetrics metrics Empty per-camera work metrics.
+local function newFrameMetrics(Frame)
+    return {
+        Frame = Frame, StarUpdateMs = 0, CompositionMs = 0, LightsComposited = 0,
+        ShadowRedraws = 0, GeometryRebuilds = 0, ShadowDrawCalls = 0,
+        CanvasAllocations = 0,
+    }
+end
 
 ---@description Validates a positive integer viewport dimension before allocating graphics resources.
 ---@param value number Requested logical dimension.
@@ -57,6 +78,8 @@ function LightCamera:new(World, Width, Height)
         World = World,
         Settings = World.Settings,
         Transform = Transform:new(),
+        FrameMetrics = newFrameMetrics(0),
+        CanvasAllocationCount = 0, SampledCanvasAllocationCount = 0,
         x = 0, y = 0, z = 1,
     }, LightCamera)
     camera.Transform.Object = camera
@@ -64,6 +87,25 @@ function LightCamera:new(World, Width, Height)
     World.Cameras[#World.Cameras + 1] = camera
     camera:Resize(Width, Height)
     return camera
+end
+
+---@description Starts an in-progress world-update metric bucket without changing the previous completed snapshot.
+---@param Frame integer Current world-update sequence number.
+---@return nil
+function LightCamera:BeginFrame(Frame)
+    self.PendingFrameMetrics = newFrameMetrics(Frame)
+end
+
+---@description Publishes completed camera metrics, including composition allocations made since the previous update.
+---@return nil
+function LightCamera:EndFrame()
+    local metrics = self.PendingFrameMetrics
+    assert(metrics, "LightCamera frame metrics must be started before publishing")
+    metrics.CanvasAllocations = metrics.CanvasAllocations
+        + self.CanvasAllocationCount - self.SampledCanvasAllocationCount
+    self.SampledCanvasAllocationCount = self.CanvasAllocationCount
+    self.FrameMetrics = metrics
+    self.PendingFrameMetrics = nil
 end
 
 ---@description Synchronizes inherited translation and invalidates view-dependent rendering when it changes.
@@ -99,6 +141,7 @@ function LightCamera:Resize(Width, Height)
     validateDimension(Width)
     validateDimension(Height)
     self.Canvas = love.graphics.newCanvas(Width, Height, { dpiscale = self.Settings.ShadowScale })
+    self.CanvasAllocationCount = self.CanvasAllocationCount + 1
     self.Width, self.Height = Width, Height
     self.BorderRadius = math.sqrt(Width * Width + Height * Height) * 0.5
     self.UpdateCanvas, self.UpdateStars = true, true
@@ -179,6 +222,8 @@ end
 function LightCamera:Compose()
     self:UpdateTransform()
     if not self.UpdateCanvas and not self.World.UpdateCanvas then return end
+    local start = love.timer.getTime()
+    local metrics = self.PendingFrameMetrics
     local world = self.World
     love.graphics.push("all")
     love.graphics.setCanvas(self.Canvas)
@@ -191,7 +236,10 @@ function LightCamera:Compose()
     love.graphics.setBlendMode("add", "alphamultiply")
     for _, star in pairs(world.Stars) do
         local view = star:GetView(self)
-        if not view:GetCanvasDestroyed() then love.graphics.draw(view.Canvas, 0, 0) end
+        if not view:GetCanvasDestroyed() then
+            love.graphics.draw(view.Canvas, 0, 0)
+            if metrics then metrics.LightsComposited = metrics.LightsComposited + 1 end
+        end
     end
     love.graphics.translate(-self.x * self.z, -self.y * self.z)
     love.graphics.scale(self.z, self.z)
@@ -205,9 +253,11 @@ function LightCamera:Compose()
         if not light:GetCanvasDestroyed() then
             local x, y = light:GetPosition()
             love.graphics.draw(light.Canvas, x - light.Radius, y - light.Radius)
+            if metrics then metrics.LightsComposited = metrics.LightsComposited + 1 end
         end
     end
     love.graphics.pop()
+    if metrics then metrics.CompositionMs = metrics.CompositionMs + (love.timer.getTime() - start) * 1000 end
     self.UpdateCanvas, self.UpdateStars = nil, nil
 end
 

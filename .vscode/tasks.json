@@ -16,7 +16,8 @@
                 "ImageShadow",
                 "CastImage",
                 "ParticleLights",
-                "LightCameras"
+                "LightCameras",
+                "DebugOverlay"
             ],
             "default": "HighDPI"
         }
