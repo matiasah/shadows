@@ -34,7 +34,8 @@ Lights retain a shared shadow canvas and cache projected geometry per shape and
 height layer. Shape edits rebuild only that shape's geometry; moving a body
 rebuilds its shapes. Local lights redraw shadows only when their influence
 intersects a changed shape's previous or current bounds. Full-scene stars
-redraw on scene changes. Affected canvases are still redrawn completely to
+redraw on accepted occluder changes. Mask changes invalidate lights accepting
+the previous or current occluder groups. Affected canvases are still redrawn completely to
 preserve overlapping shadows and height ordering.
 Cached filled primitives and ordinary texture draws wholly outside their shadow
 render target are not submitted. Bounds account for projection, camera zoom,
@@ -106,6 +107,35 @@ hierarchical positioning and following a body or other transform. Camera
 `SetPosition` uses world coordinates, even when parented. Parent motion is
 synchronized before light culling and star rendering. Zoom remains separate
 from transform height, and viewports stay axis-aligned.
+
+## Light layers and occluder masks
+
+Use unsigned 32-bit masks to select lights per camera and blockers per light:
+
+```lua
+local Mask = require("shadows.Mask")
+local walls, objects = Mask.group(0), Mask.group(1)
+light:SetLightMask(walls) -- camera-selectable light membership
+camera:SetLightMask(Mask.combine(walls, objects))
+light:SetShadowMask(walls) -- accepted occluder membership
+body:SetShadowMask(walls) -- inherited by its shapes
+shape:SetShadowMask(objects) -- optional individual override
+shape:SetShadowMask(nil) -- restore body inheritance
+```
+
+Group indices run from `0` to `31`; `Mask.ALL` selects every group and `0`
+selects none. Use `Mask.combine(...)` rather than signed LuaJIT bitwise results.
+Defaults preserve existing scenes: cameras and lights accept all groups,
+lights and bodies belong to group `0`, and shapes inherit their body.
+Selections apply to local lights, stars, particles, and hard/soft shadows.
+Ignored shapes do not restore silhouettes or enter penumbra masks.
+Unselected additional star views are created only when first selected; retained
+views preserve pending changes. Particles still simulate when masked out.
+
+These are lighting-view and **caster** groups, not per-mesh receiver layers,
+height layers, or room masks. Custom drawing callbacks remain application-controlled.
+See [Light and occluder groups](docs/Light.md#light-and-occluder-groups)
+and the `LightLayers` demo.
 
 ## Debug overlays
 
@@ -201,6 +231,8 @@ love . DebugOverlay
 love . DebugOverlay --capture --verify
 love . LightCookies
 love . LightCookies --capture --verify
+love . LightLayers
+love . LightLayers --capture --verify
 ```
 
 Capture mode renders the scene to offscreen canvases at DPI scale 2, saves a screenshot using `love.graphics.captureScreenshot`, and exits. Press `F12` to capture an image interactively; press `Escape` to close the demo.
@@ -235,6 +267,20 @@ to pause pattern animation. Verification checks actual masking, transforms,
 shadow-cache reuse, and exact pixel equality with full rebuilds.
 The green gobo uses a 512-pixel, supersampled and mipmapped mask with gently
 feathered apertures to avoid blocky projection edges without blurring shadows.
+
+The `LightLayers` demo shows wall lights, object lights, and both plus an
+effects-only star across three matching views. Orange/blue outlines identify
+effective caster groups; the small circle overrides its wall body's group.
+The blue light has a wider footprint so the upper circle's projected shadow
+stays visible in the object-light and combined views rather than fading into
+the edge of its illumination; it intentionally casts no wall-light shadow.
+Press `Tab` to select a view, `1`/`2` for individual light groups, `3` for all,
+or `0` for ambient only. `S` toggles selective/all casters, `O` toggles shape
+inheritance, `G` changes the wall body's group, `L` changes the warm light's
+membership, `B` toggles blur, `Q` changes quality, and `Space` pauses motion.
+Verification measures camera selection, upper-circle shadow contrast outside
+its silhouette for hard and soft shadows, override inheritance, cache reuse,
+and equality with forced rebuilds.
 
 The `Penumbra` demo compares hard and soft polygon/circle shadows side by side;
 press `Q` to change the shared quality preset in both scenes, use `+` and `-`

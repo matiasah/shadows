@@ -37,6 +37,9 @@ Constructors register their result with the world and return `nil` if required a
 | `light:SetCookie(texture?)` / `light:GetCookie()` | Sets, clears, or returns a 2D illumination mask without changing radius; setter returns the light. |
 | `light:SetCookieTransform(x?, y?, angle?, scaleX?, scaleY?)` | Sets light-local offsets, relative rotation, and positive scale multipliers; returns the light. Defaults: `0, 0, 0, 1, scaleX`. |
 | `light:GetCookieTransform()` | Returns `x, y, angle, scaleX, scaleY`. |
+| `light:SetLightMask(mask)` / `light:GetLightMask()` | Sets or returns camera-selectable light membership (default `1`); setter returns the light. |
+| `light:SetShadowMask(mask)` / `light:GetShadowMask()` | Sets or returns accepted occluder groups (default `Mask.ALL`); setter returns the light. |
+| `light:CanCastShadow(shape)` | Tests overlap with the shape's effective occluder groups; returns a boolean. Does not test height, distance, or projection visibility. |
 | `light:GetWorld()` / `light:SetWorld(world)` | Gets or sets the owning world. `SetWorld` is used by world registration. |
 | `light:GetTransform()` | Returns the light's [`Transform`](Transform.md). |
 | `light:GetDebugCounts()` | Returns cumulative completed shadow redraws and shape/layer geometry rebuilds for this renderer. |
@@ -54,6 +57,71 @@ with opaque white (`1, 1, 1, 1`) as the default. Divide legacy 0–255 inputs by
 255 before calling `SetColor`; the library no longer converts them.
 Radial lights apply the RGB tint and alpha with distance falloff using premultiplied output.
 See [Penumbras](Penumbras.md) for examples and approximation limits.
+
+## Light and occluder groups
+
+Light membership and occluder membership are independent unsigned 32-bit
+masks, not the renderer's height layers:
+
+```lua
+local Mask = require("shadows.Mask")
+local walls, objects = Mask.group(0), Mask.group(1)
+light:SetLightMask(Mask.combine(walls, objects))
+world:GetCamera():SetLightMask(walls)
+light:SetShadowMask(walls)
+body:SetShadowMask(walls)
+shape:SetShadowMask(objects)
+shape:SetShadowMask(nil) -- inherit body membership again
+```
+
+A camera displays a light when its selection overlaps `light:GetLightMask()`.
+A shape blocks a light when its effective mask overlaps `light:GetShadowMask()`.
+The two masks need not use the same groups. Multiple bits give membership in
+multiple groups. Defaults preserve previous rendering:
+
+| Setting | Default |
+|---|---|
+| Camera light selection | `Mask.ALL` |
+| Light membership | `1` (group index `0`) |
+| Light occluder selection | `Mask.ALL` |
+| Body occluder membership | `1` |
+| Shape occluder membership | Inherits body |
+
+`require("shadows.Mask")` exposes:
+
+| Utility | Meaning |
+|---|---|
+| `Mask.ALL` | Unsigned all-groups value `4294967295`. |
+| `Mask.group(index)` | One group bit for an integer index `0`–`31`; group `31` is `2147483648`. |
+| `Mask.combine(...)` | Unsigned union of valid masks; no arguments returns `0`. |
+| `Mask.matches(first, second)` | Whether two valid masks overlap. |
+| `Mask.validate(mask)` | Returns a valid unsigned mask or raises an assertion error. |
+
+Masks must be integers from `0` through `4294967295`. Negative/signed bitwise
+results, fractional numbers, and nonfinite values are rejected rather than
+truncated. Use `Mask.combine` to safely combine high bits under LuaJIT.
+Zero camera/light membership hides illumination; zero occluder selection or
+shape membership disables registered casting, without hiding the scene object.
+Ambient color and rooms are not camera-masked.
+
+Use setters and call `world:Update(dt)` to apply changes. Mask changes clear
+previous contributions, update newly selected cameras, and redraw shadows for
+affected old/new occluder groups. Unchanged overridden shapes are not dirtied
+by changing their body's mask. Masked-out shapes are excluded from projection
+height iteration, silhouette restoration, and penumbra distance fields.
+Camera selection reuses retained local/shared and star shadows; caches that
+were released or never created are rendered when selected again.
+Unselected additional star views are not allocated just for metrics or resizing;
+existing views keep pending changes without redrawing shadows while excluded.
+The source star retains its constructor-created default buffers.
+Masked particle lights still advance their simulation once per world update.
+
+These are **camera light selections and caster masks**, not arbitrary receiver
+mesh layers. `DrawShadows`/`DrawSprites` callbacks remain application-controlled;
+filter custom shapes with `light:CanCastShadow(shape)` if appropriate.
+The built-in upright-sprite renderer uses the default camera's light selection
+and each light's caster mask for sprite-to-sprite occlusion.
+See the [LightLayers demo](../DEMOS/LightLayers/main.lua).
 
 ## Light cookies
 
@@ -114,10 +182,10 @@ scaled by each camera, rather than at a fixed viewport offset.
 
 - Local-light canvas dimensions are twice the radius. Soft shadows additionally use an occluder mask, two floating-point distance-field buffers, a floating-point radius buffer, and shadow-mask mipmaps.
 - Star canvas dimensions follow their camera and are independent of radius. Camera movement and resizing do not rebuild other views' shadow caches.
-- Local lights retain their shared canvases while their influence intersects any registered camera; zoomed viewports are culled in world coordinates.
+- Local lights retain their shared canvases while their influence intersects any registered camera selecting their groups; zoomed viewports are culled in world coordinates.
 - Rendering resolution, shadow-edge MSAA, and penumbra-buffer resolution are controlled per world with `LightWorld:SetQuality`; changing settings reallocates the relevant caches.
 - Projected shadow geometry is cached per shape and height layer, including empty shadow lists. Editing a shape preserves unchanged siblings' geometry; moving its body invalidates all its shapes.
-- Local shadow canvases rebuild only for shapes intersecting the light's range at their previous or current bounds. Movement, radius changes, removal, and texture replacement are tracked on the next world update. Stars conservatively redraw for any scene geometry change.
+- Local shadow canvases rebuild only for accepted shapes intersecting the light's range at their previous or current bounds. Movement, radius changes, removal, and texture replacement are tracked on the next world update. Selected stars conservatively redraw for accepted scene geometry changes.
 - Affected shadow canvases are cleared and fully redrawn, rather than painting only changed shapes, so overlaps and height layers remain correct.
 - Color, direct `Arc` changes, and light rotation only recompose illumination. Source-size changes update the penumbra radius field without rebuilding shadow pixels or occluder-distance fields. Disabling filtering releases its buffers; enabling it rebuilds them.
 - Light position and radius changes rebuild shadow geometry. Radius changes also recreate local-light canvases at the new size. Star camera changes rebuild view-dependent geometry and rendering.

@@ -62,7 +62,7 @@ function Penumbra:DrawOccluders(Light)
             local shape = shapes:Get(j)
             local sx, sy, sz = shape:GetCentroid()
             local radius = Light:GetRadius() + shape:GetRadius()
-            if sz > 0 and (sx - x)^2 + (sy - y)^2 < radius^2 then
+            if sz > 0 and (sx - x)^2 + (sy - y)^2 < radius^2 and Light:CanCastShadow(shape) then
                 love.graphics.setShader(Shadows.ShapeShader)
                 if shape.Texture then
                     love.graphics.draw(shape.Texture, sx, sy, shape:GetTransform():GetRadians(),

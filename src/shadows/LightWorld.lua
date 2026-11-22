@@ -9,6 +9,7 @@ BodyTransform                                          = require("shadows.BodyTr
 PriorityQueue                                          = require("shadows.PriorityQueue")
 Settings                                               = require("shadows.Settings")
 LightCamera                                            = require("shadows.LightCamera")
+local Mask = require("shadows.Mask")
 
 ---@class ShadowBounds
 ---@field x number World-space centroid x-coordinate.
@@ -16,6 +17,7 @@ LightCamera                                            = require("shadows.LightC
 ---@field z number World-space centroid height.
 ---@field radius number Shape bounding radius.
 ---@field angle number World-space rotation in degrees.
+---@field shadowMask integer? Effective occluder membership; manually supplied bounds default to all groups.
 
 ---@class RenderWorkMetrics
 ---@field ShadowRedraws integer Completed shadow redraws in this update.
@@ -185,15 +187,17 @@ end
 ---@param Bounds ShadowBounds Previous or current shape bounds.
 ---@return nil
 function LightWorld:InvalidateBounds(Bounds)
+	local shadowMask = Bounds.shadowMask or Mask.ALL
 	for _, Light in pairs(self.Lights) do
 		local x, y = Light:GetPosition()
 		local radius = Light.Radius + Bounds.radius
-		if (Bounds.x - x)^2 + (Bounds.y - y)^2 <= radius^2 then
+		if (Bounds.x - x)^2 + (Bounds.y - y)^2 <= radius^2
+			and Mask.matches(Light.ShadowMask, shadowMask) then
 			Light.ShadowChanged = true
 		end
 	end
 	for _, Star in pairs(self.Stars) do
-		Star.ShadowChanged = true
+		if Mask.matches(Star.ShadowMask, shadowMask) then Star.ShadowChanged = true end
 	end
 end
 
@@ -209,13 +213,14 @@ function LightWorld:UpdateShapeBounds()
 			local x, y, z = shape:GetCentroid()
 			local radius = shape:GetRadius()
 			local angle = shape:GetTransform():GetRotation()
+			local shadowMask = shape:GetShadowMask()
 			local previous = self.ShapeBounds[shape]
 			if body:GetChanged() or shape:GetChanged() or not previous
 				or previous.x ~= x or previous.y ~= y or previous.z ~= z
-				or previous.radius ~= radius or previous.angle ~= angle then
+				or previous.radius ~= radius or previous.angle ~= angle or previous.shadowMask ~= shadowMask then
 				shape:SetChanged(true)
 				if previous then self:InvalidateBounds(previous) end
-				current[shape] = { x = x, y = y, z = z, radius = radius, angle = angle }
+				current[shape] = { x = x, y = y, z = z, radius = radius, angle = angle, shadowMask = shadowMask }
 				self:InvalidateBounds(current[shape])
 			else
 				current[shape] = previous
@@ -421,7 +426,8 @@ function LightWorld:Update(dt)
 	for _, Camera in ipairs(self.Cameras) do
 		local metrics = assert(Camera.PendingFrameMetrics, "Camera metrics must be started before sampling")
 		for _, Star in pairs(self.Stars) do
-			sampleFrameWork(metrics, Star:GetView(Camera))
+			local view = Star.Camera == Camera and Star or Star.Views[Camera]
+			if view then sampleFrameWork(metrics, view) end
 		end
 		Camera:EndFrame()
 	end

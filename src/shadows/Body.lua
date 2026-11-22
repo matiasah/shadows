@@ -6,6 +6,7 @@ Object        = require("shadows.Object")
 PriorityQueue = require("shadows.PriorityQueue")
 Shadows       = require("shadows")
 Transform     = require("shadows.Transform")
+local Mask = require("shadows.Mask")
 
 CircleShadow  = require("shadows.ShadowShapes.CircleShadow")
 PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
@@ -16,11 +17,13 @@ PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
 --- @field Shapes PriorityQueue Shadow shapes attached to the body.
 --- @field TrackBody love.Body? Optional physics body followed during updates.
 --- @field Changed boolean? Whether this body's geometry needs regeneration.
+--- @field ShadowMask integer Default occluder group membership inherited by shapes; defaults to 1. Use SetShadowMask.
 --- @field private __index Body Instance method lookup.
 --- @field private __type string Runtime type name.
 Body          = setmetatable({}, Object)
 Body.__index  = Body
 Body.__type   = "Body"
+Body.ShadowMask = 1
 
 --- @description Creates a body and registers it with a light world.
 --- @param World LightWorld? Owning world; when omitted, no body is created.
@@ -74,15 +77,16 @@ end
 --- @param y number Center y-coordinate.
 --- @param z number Layer height passed to shapes.
 --- @param DrawRadius number Search radius.
+--- @param Light Light|Star? Optional caster filter; omitted preserves ordinary shape drawing.
 --- @return nil
-function Body:DrawRadius(x, y, z, DrawRadius)
+function Body:DrawRadius(x, y, z, DrawRadius, Light)
 	for i = 1, self.Shapes:GetLength() do
 		local Shape = self.Shapes:Get(i)
 		local Radius = DrawRadius + Shape:GetRadius()
 		local ShapeX, ShapeY = Shape:GetCentroid()
 		local dx, dy = ShapeX - x, ShapeY - y
 
-		if dx * dx + dy * dy < Radius * Radius then
+		if dx * dx + dy * dy < Radius * Radius and (not Light or Light:CanCastShadow(Shape)) then
 			Shape:Draw(z)
 		end
 	end
@@ -230,6 +234,20 @@ end
 --- @return PriorityQueue shapes Attached shapes.
 function Body:GetShapes()
 	return self.Shapes
+end
+
+---@description Sets the body's occluder groups; inherited shape-mask changes are tracked on the next world update.
+---@param mask integer Unsigned 32-bit membership mask; 0 disables casting unless a shape overrides it.
+---@return Body body This body, for chaining.
+function Body:SetShadowMask(mask)
+	self.ShadowMask = Mask.validate(mask)
+	return self
+end
+
+---@description Returns the default occluder groups inherited by this body's shapes.
+---@return integer mask Unsigned membership mask.
+function Body:GetShadowMask()
+	return self.ShadowMask
 end
 
 --- @description Sets the geometry-dirty flag used during shadow regeneration.

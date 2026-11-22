@@ -22,11 +22,12 @@ Width and height default to the texture dimensions. `GetPosition` and
 Shape-local translation and ground-plane rotation are inherited. World camera
 translation/zoom and high-DPI canvases are supported.
 
-`DrawSprite()` shades the image using the world's ambient RGB and all registered
-lights/stars, with radial attenuation, light color/alpha, angular coverage, and
+`DrawSprite()` shades the image using the world's ambient RGB and registered
+lights/stars selected by the default camera, with radial attenuation, light color/alpha, angular coverage, and
 front-facing diffuse illumination. A light behind the sprite produces an
 ambient-only silhouette. Every other `CastImageShadow` in the same world is
-tested for alpha occlusion between each sprite pixel and the light. The sprite
+tested for alpha occlusion between each sprite pixel and the light if its
+effective occluder mask matches that light's shadow selection. The sprite
 does not occlude itself. Call this method once per sprite, back to front.
 
 Ground projection participates in the existing shadow cache and optional
@@ -41,6 +42,9 @@ not volumetric foliage or a 3D renderer.
 `SetTexture`, `GetTexture`, `GetWidth`, `GetHeight`, `SetPosition`,
 `GetTransform`, and `Remove` follow the shared image/shape API.
 Use `world:ForceUpdate()` if texture pixels are edited in place.
+`SetShadowMask`/`GetShadowMask` follow the shared shape inheritance API; they
+filter ground casting and sprite-to-sprite blocking, not whether the sprite
+receives light. See [Light and occluder groups](Light.md#light-and-occluder-groups).
 
 Run `love . CastImage --capture --verify` for the forest demonstration and
 all-tree regression checks at DPI 1 and 2. Each tree is checked for solid and

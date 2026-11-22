@@ -172,6 +172,19 @@
                 "LightCookies"
             ],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: LightLayers",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "LightLayers"
+            ],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

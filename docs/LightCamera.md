@@ -24,12 +24,14 @@ end
 | `LightCamera:new(world, width?, height?)` | Registers a view; omitted dimensions match the world's default viewport. |
 | `camera:SetPosition(x, y, scale?)` | Sets the world-space top-left and positive zoom. Omitted scale is retained. |
 | `camera:GetPosition()` | Returns `x`, `y`, and scale. |
+| `camera:SetLightMask(mask)` / `camera:GetLightMask()` | Sets or returns selected unsigned 32-bit light groups (default `Mask.ALL`); setter returns the camera. Zero selects no lights. |
+| `camera:AcceptsLight(light)` | Returns whether camera selection overlaps the light's membership, independently of bounds. |
 | `camera:GetTransform()` | Returns the hierarchical positioning `Transform` for local coordinates or parenting. |
 | `camera:Resize(width, height)` | Recreates only this camera's composition and star buffers. Dimensions must be finite positive integers. |
 | `camera:GetWidth()` / `camera:GetHeight()` | Return logical viewport dimensions. |
 | `camera:GetBorderRadius()` | Returns half the logical viewport diagonal. |
 | `camera:IsVisible(x, y, radius)` | Tests a world-space circle against the viewport, accounting for zoom. |
-| `camera:IsLightVisible(light)` | Conservatively tests a local light's existing or prospective square canvas bounds against the viewport, accounting for zoom. |
+| `camera:IsLightVisible(light)` | Tests group selection and conservatively tests a local light's existing or prospective square canvas bounds against the viewport, accounting for zoom. |
 | `camera:Draw(screenX?, screenY?)` | Multiplies lighting onto the already-drawn scene at a screen destination; defaults to `(0, 0)`. Preserves graphics state and does not advance simulation. |
 | `camera:Remove()` | Detaches an additional camera and drops its star-cache references. The default camera cannot be removed. |
 
@@ -88,7 +90,7 @@ Camera positions are not automatically pixel-snapped. If your scene renderer
 snaps its translation (as the Standard demo's tile renderer does), use the same
 effective translation for its lighting camera.
 
-Local lights stay cached while visible to **any** registered camera, with
+Local lights stay cached while selected and visible to **any** registered camera, with
 culling accounting for zoom and the full square canvas, including texture and
 particle corners. Each composition submits only intersecting local-light
 canvases. Light appearance, movement, cache release, and removal refresh cameras
@@ -97,10 +99,30 @@ away also clears its old contribution. Camera movement or resizing refreshes
 only that camera's composition and star buffers. Ambient/room changes and shared
 quality settings still invalidate all views. Offscreen casters are not discarded
 merely because they lie outside a camera; their projected shadows may remain visible.
-Stars render once per view using separate shadow
-and penumbra buffers; additional views therefore cost composition and star
+Selected stars render once per view using separate shadow
+and penumbra buffers; additional selected views therefore cost composition and star
 rendering memory. Draw-only world callbacks may run for each star view. The
 callback's star argument exposes `Camera` for view-specific rendering.
+
+## Light selection
+
+```lua
+local Mask = require("shadows.Mask")
+local effects = Mask.group(31)
+light:SetLightMask(effects)
+camera:SetLightMask(effects)
+camera:SetLightMask(0) -- ambient color and rooms only
+camera:SetLightMask(Mask.ALL) -- default: every light group
+```
+
+Changing selection dirties only this camera's composition. Existing shadow
+buffers can be reused; unselected additional star buffers are created lazily
+when first needed. Existing excluded views retain changes for later selection.
+Metrics never allocate missing star views, and excluded views submit no lights
+or shadows. Particles still simulate even when no camera selects them.
+Selections do not filter scene objects or rooms. See
+[Light and occluder groups](Light.md#light-and-occluder-groups) for unsigned
+masks, separate caster selection, inheritance, and defaults.
 
 ## Compatibility
 

@@ -192,7 +192,7 @@ function CastImageShadow:Illuminate(light)
     local world = self.Body.World
     for _, body in ipairs(world.Bodies:GetArray()) do
         for _, shape in ipairs(body:GetShapes():GetArray()) do
-            if shape ~= self and shape.__type == "CastImageShadow" then
+            if shape ~= self and shape.__type == "CastImageShadow" and light:CanCastShadow(shape) then
                 shape:SendPlane(visibilityShader, "Blocker")
                 visibilityShader:send("Blocker", shape.Texture)
                 love.graphics.draw(self.Texture, 0, 0, 0,
@@ -235,8 +235,13 @@ function CastImageShadow:DrawSprite()
     local world = self.Body.World
     love.graphics.setCanvas(self.LightingCanvas)
     love.graphics.clear(world.R, world.G, world.B, 1)
-    for _, light in pairs(world.Lights) do self:Illuminate(light) end
-    for _, light in pairs(world.Stars) do self:Illuminate(light) end
+    local camera = world:GetCamera()
+    for _, light in pairs(world.Lights) do
+        if camera:AcceptsLight(light) then self:Illuminate(light) end
+    end
+    for _, light in pairs(world.Stars) do
+        if camera:AcceptsLight(light) then self:Illuminate(light) end
+    end
     love.graphics.setCanvas(target)
     love.graphics.setShader(spriteShader)
     spriteShader:send("Illumination", self.LightingCanvas)

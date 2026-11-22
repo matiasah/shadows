@@ -22,7 +22,7 @@ body:SetAngle(15)
 |---|---|
 | `Body:AddShape(shape)` | Adds a shadow shape and returns this body. Shape constructors usually register themselves automatically. |
 | `Body:Draw()` | Draws all attached shapes. Used by the renderer. |
-| `Body:DrawRadius(x, y, z, radius)` | Draws shapes whose centroids are within `radius` of the point. Used during light rendering. |
+| `Body:DrawRadius(x, y, z, radius, light?)` | Draws shapes whose centroids are within `radius` of the point. Optional light filters accepted caster groups during silhouette restoration; omitted preserves ordinary drawing. |
 | `Body:Update()` | Synchronizes a tracked physics body and updates attached shapes. Called by the world. |
 | `Body:InitFromPhysics(physicsBody)` | Imports circle and polygon fixtures from a LÖVE physics body, begins tracking it, and returns this body. |
 | `Body:TrackPhysics(physicsBody)` | Makes this body follow a LÖVE physics body during updates; returns this body. |
@@ -34,6 +34,7 @@ body:SetAngle(15)
 | `Body:GetRadianAngle()` | Returns the world rotation in radians. |
 | `Body:GetTransform()` | Returns the body's [`Transform`](Transform.md). |
 | `Body:GetShapes()` | Returns the ordered shape collection. |
+| `Body:SetShadowMask(mask)` / `Body:GetShadowMask()` | Sets or returns unsigned 32-bit default occluder membership (default `1`); setter returns this body. |
 | `Body:SetChanged(changed)` / `Body:GetChanged()` | Sets or returns the geometry-dirty flag used by the renderer. |
 | `Body:Remove()` | Removes the body from its world and detaches its transform. |
 
@@ -48,5 +49,13 @@ local body = Body:new(world):InitFromPhysics(physicsBody)
 Fixtures of other shape types are skipped. To control tracking separately, call `TrackPhysics` or use `LightWorld:TrackBody`.
 
 ## Shadow shapes
+
+Shapes inherit the body's caster mask unless individually overridden.
+`body:SetShadowMask(0)` disables inherited casting, not scene drawing.
+`shape:SetShadowMask(mask)` overrides membership; `shape:SetShadowMask(nil)`
+restores inheritance. Updating a body's mask redraws affected lights on the
+next world update without changing height or geometry; shapes with unchanged
+explicit overrides are unaffected. See
+[Light and occluder groups](Light.md#light-and-occluder-groups).
 
 Add shapes with constructors such as `CircleShadow:new(body, x, y, radius)` and `PolygonShadow:new(body, x1, y1, ...)`. See [Shadow shapes](Shadow.md), [ImageShadow](ImageShadow.md), [NormalShadow](NormalShadow.md), and [HeightShadow](HeightShadow.md).

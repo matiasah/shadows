@@ -34,9 +34,10 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 | API | Description |
 |---|---|
 | [LightWorld](LightWorld.md) | Scene lifecycle, shared rendering settings, camera, ambient color, and extension callbacks. |
-| [LightCamera](LightCamera.md) | Independent position, zoom, and resizable viewports into a shared scene. |
+| [LightCamera](LightCamera.md) | Independent position, zoom, light-group selection, and resizable viewports into a shared scene. |
 | [DebugOverlay](DebugOverlay.md) | Light bounds, cached shadow wireframes, camera viewports, and actual cache-work counters. |
 | [Light](Light.md) | Local lights and full-scene stars. |
+| [Light and occluder groups](Light.md#light-and-occluder-groups) | Unsigned 32-bit mask helpers, camera selection, and inherited/overridden caster membership. |
 | [ParticleLight](ParticleLight.md) | Animated particle-system illumination with emitter-centered shadows. |
 | [Penumbras](Penumbras.md) | Contact-hardening shadow filtering, source size, and rendering limits. |
 | [Body](Body.md) | Height-aware groups of shadow shapes and physics integration. |
@@ -60,6 +61,7 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 - [Particle-system fire, water spray, and sparks](../DEMOS/ParticleLights/main.lua)
 - [Two lighting cameras sharing one animated world](../DEMOS/LightCameras/main.lua)
 - [Lighting debug overlays and cache-work counters](../DEMOS/DebugOverlay/main.lua)
+- [Three camera selections and selective occluder masks](../DEMOS/LightLayers/main.lua)
 
 ## Notes
 

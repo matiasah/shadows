@@ -5,6 +5,7 @@ Object                             = require("shadows.Object")
 
 Shadows                            = require("shadows")
 Transform                          = require("shadows.Transform")
+local Mask = require("shadows.Mask")
 
 --- @class Light: Object
 --- @field World LightWorld? World that owns this light.
@@ -13,6 +14,8 @@ Transform                          = require("shadows.Transform")
 --- @field Transform Transform Light position and rotation.
 --- @field Radius number Light radius in world units.
 --- @field Arc number Angular coverage in degrees.
+--- @field LightMask integer Light-group membership selected by cameras; defaults to 1. Use SetLightMask.
+--- @field ShadowMask integer Occluder groups accepted by this light; defaults to Mask.ALL. Use SetShadowMask.
 --- @field SizeRadius number Effective source radius for penumbras in world units; defaults to 10.
 --- @field Blur boolean Whether to apply contact-hardening penumbras; defaults to true.
 --- @field R number Red color channel in the 0-1 range; defaults to 1.
@@ -60,6 +63,8 @@ Light.__index                      = Light
 Light.__type                       = "Light"
 
 Light.Arc                          = 360
+Light.LightMask                     = 1
+Light.ShadowMask                    = Mask.ALL
 Light.Radius                       = 0
 Light.SizeRadius                   = 10
 Light.Blur                         = true
@@ -194,7 +199,7 @@ function Light:GenerateShadows(x, y, z, Layer)
 			end
 
 			-- Is the light in the draw range?
-			if dx * dx + dy * dy + dz * dz <= SqrRadius then
+			if dx * dx + dy * dy + dz * dz <= SqrRadius and self:CanCastShadow(Shape) then
 				if Shape:GetChanged() or Body:GetChanged() or self.Changed or not preBodyShapes[Shape] then
 					local ShadowList = {}
 
@@ -289,7 +294,7 @@ function Light:GenerateDarkness(x, y, z)
 			end
 
 			-- As long as this body is on top of the layer
-			Body:DrawRadius(x, y, z, self.Radius)
+			Body:DrawRadius(x, y, z, self.Radius, self)
 		end
 
 		newShapes[Layer] = Shapes
@@ -527,6 +532,60 @@ end
 function Light:SetWorld(World)
 	self.World = World
 	self.Settings = World.Settings
+end
+
+---@description Sets camera-selectable light groups and invalidates previous and newly selected compositions.
+---@param mask integer Unsigned 32-bit membership mask; 0 hides the light from all cameras.
+---@return Light light This light, for chaining.
+function Light:SetLightMask(mask)
+	mask = Mask.validate(mask)
+	if self.LightMask ~= mask then
+		local previous = self.LightMask
+		self.LightMask = mask
+		if self.World then
+			if self.Star then
+				for _, camera in ipairs(self.World.Cameras) do
+					if Mask.matches(camera.LightMask, previous) or Mask.matches(camera.LightMask, mask) then
+						camera.UpdateCanvas = true
+					end
+				end
+			else
+				self.World:InvalidateLight(self)
+			end
+		end
+	end
+	return self
+end
+
+---@description Returns this light's camera-selectable group membership.
+---@return integer mask Unsigned membership mask.
+function Light:GetLightMask()
+	return self.LightMask
+end
+
+---@description Selects which occluder groups can cast this light's shadows.
+---@param mask integer Unsigned 32-bit selection mask; 0 disables registered occluders.
+---@return Light light This light, for chaining.
+function Light:SetShadowMask(mask)
+	mask = Mask.validate(mask)
+	if self.ShadowMask ~= mask then
+		self.ShadowMask = mask
+		self.ShadowChanged = true
+	end
+	return self
+end
+
+---@description Returns the occluder groups accepted by this light.
+---@return integer mask Unsigned selection mask.
+function Light:GetShadowMask()
+	return self.ShadowMask
+end
+
+---@description Tests a shape's effective occluder groups without changing its geometry or height.
+---@param Shape Shadow Shape whose body inheritance or override is resolved.
+---@return boolean casts Whether this light accepts the shape as an occluder.
+function Light:CanCastShadow(Shape)
+	return Mask.matches(self.ShadowMask, Shape:GetShadowMask())
 end
 
 --- @description Returns the owning light world.

@@ -18,7 +18,8 @@
                 "ParticleLights",
                 "LightCameras",
                 "DebugOverlay",
-                "LightCookies"
+                "LightCookies",
+                "LightLayers"
             ],
             "default": "HighDPI"
         }

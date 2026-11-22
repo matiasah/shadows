@@ -2,11 +2,13 @@
 module("shadows.ShadowShapes.Shadow", package.seeall)
 
 Object = require("shadows.Object")
+local Mask = require("shadows.Mask")
 
 --- @class Shadow: Object
 --- @field Body Body? Body that owns this shape.
 --- @field Transform Transform? Shape transform relative to its body.
 --- @field Changed boolean? Whether the shape needs shadow regeneration.
+--- @field ShadowMask integer? Occluder membership override; nil inherits the body, or mask 1 when detached. Use SetShadowMask.
 --- @field private __index Shadow Instance method lookup.
 --- @field private __type string Runtime type name.
 Shadow = setmetatable({}, Object)
@@ -80,6 +82,21 @@ end
 --- @return number radius Bounding radius.
 function Shadow:GetRadius()
 	return math.sqrt(self:GetSqrRadius())
+end
+
+---@description Sets occluder membership or restores inheritance from the body.
+---@param mask integer? Unsigned 32-bit membership mask; nil inherits the body's mask, and 0 disables casting.
+---@return Shadow shape This shape, for chaining.
+function Shadow:SetShadowMask(mask)
+	self.ShadowMask = mask ~= nil and Mask.validate(mask) or nil
+	return self
+end
+
+---@description Returns the effective occluder membership, including body inheritance.
+---@return integer mask Unsigned membership mask; detached shapes default to group 0's bit.
+function Shadow:GetShadowMask()
+	if self.ShadowMask ~= nil then return self.ShadowMask end
+	return self.Body and self.Body:GetShadowMask() or 1
 end
 
 --- @description Returns the squared bounding radius; subclasses provide the geometry.

@@ -26,6 +26,8 @@ Transform    = require("shadows.Transform")
 --- @field private RenderScale number Resolution scale used by the current canvases.
 --- @field private RenderMSAA integer MSAA sample count used by the current shadow canvas.
 --- @field private RenderPenumbraScale number Resolution scale used by current penumbra buffers.
+--- @field private PendingShadowChanged boolean? Shadow changes retained while this view is excluded by its camera.
+--- @field private PendingAppearanceChanged boolean? Appearance changes retained without repeatedly invalidating other views.
 --- @field private __index Star Instance method lookup.
 --- @field private __type string Runtime type name.
 Star         = setmetatable({}, Light)
@@ -96,6 +98,7 @@ function Star:GetView(Camera)
 			World = self.World, Settings = self.Settings, Transform = self.Transform,
 			Camera = Camera, Shapes = {}, Views = {},
 			Radius = self.Radius,
+			LightMask = self.LightMask, ShadowMask = self.ShadowMask,
 		}, Star)
 		view:Resize(Camera.Width, Camera.Height)
 		self.Views[Camera] = view
@@ -107,11 +110,13 @@ end
 ---@return nil
 function Star:UpdateViews()
 	for _, camera in ipairs(self.World.Cameras) do
-		if camera ~= self.Camera then
+		if camera ~= self.Camera and (camera:AcceptsLight(self) or self.Views[camera]) then
 			local start = love.timer.getTime()
 			local view = self:GetView(camera)
 			view.Radius, view.Arc = self.Radius, self.Arc
 			view.Blur, view.SizeRadius = self.Blur, self.SizeRadius
+			view.LightMask = self.LightMask
+			view:SetShadowMask(self.ShadowMask)
 			view:SetColor(self.R, self.G, self.B, self.A)
 			view:SetCookie(self.Cookie)
 			view:SetCookieTransform(self:GetCookieTransform())
@@ -139,6 +144,15 @@ function Star:Update()
 	if self.Camera.UpdateStars or (self.Camera == self.World.DefaultCamera and self.World.UpdateStars) then
 		self.Changed = true
 	end
+	if not self.Camera:AcceptsLight(self) then
+		self.PendingShadowChanged = self.PendingShadowChanged or self.ShadowChanged
+		self.PendingAppearanceChanged = self.PendingAppearanceChanged or self.AppearanceChanged
+		self.ShadowChanged, self.AppearanceChanged = nil, nil
+		return
+	end
+	self.ShadowChanged = self.ShadowChanged or self.PendingShadowChanged
+	self.AppearanceChanged = self.AppearanceChanged or self.PendingAppearanceChanged
+	self.PendingShadowChanged, self.PendingAppearanceChanged = nil, nil
 
 	local shadowChanged = self.Changed or self.ShadowChanged
 	if shadowChanged or self.AppearanceChanged or self.PenumbraChanged then

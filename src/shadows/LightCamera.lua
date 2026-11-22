@@ -2,6 +2,7 @@
 local Object = require("shadows.Object")
 local Shadows = require("shadows")
 local Transform = require("shadows.Transform")
+local Mask = require("shadows.Mask")
 
 ---@class CameraFrameMetrics:RenderWorkMetrics
 ---@field Frame integer World-update sequence number; initially 0.
@@ -12,6 +13,7 @@ local Transform = require("shadows.Transform")
 ---@class LightCamera:Object
 ---@field World LightWorld Owning scene; simulation and rendering settings are shared.
 ---@field Settings Settings Shared world rendering settings.
+---@field LightMask integer Selected light groups; defaults to Mask.ALL. Use SetLightMask.
 ---@field Canvas love.Canvas Composed lighting for this viewport.
 ---@field Width number Viewport width in logical pixels.
 ---@field Height number Viewport height in logical pixels.
@@ -33,6 +35,7 @@ local Transform = require("shadows.Transform")
 local LightCamera = setmetatable({}, Object)
 LightCamera.__index = LightCamera
 LightCamera.__type = "LightCamera"
+LightCamera.LightMask = Mask.ALL
 
 ---@description Creates an empty per-camera metric bucket for an update sequence number.
 ---@param Frame integer Update sequence number.
@@ -149,7 +152,9 @@ function LightCamera:Resize(Width, Height)
     self.UpdateCanvas, self.UpdateStars = true, true
     self:SyncWorld()
     for _, star in pairs(self.World.Stars) do
-        star:GetView(self):Resize(Width, Height)
+        if self:AcceptsLight(star) or star.Camera == self or star.Views[self] then
+            star:GetView(self):Resize(Width, Height)
+        end
     end
 end
 
@@ -219,10 +224,37 @@ function LightCamera:IsVisible(x, y, radius)
     return dx * dx + dy * dy <= radius * radius
 end
 
----@description Conservatively tests a local light's square canvas against this viewport, including texture and particle corners.
+---@description Selects light groups for this viewport without changing other cameras or shadow geometry.
+---@param mask integer Unsigned 32-bit selection mask; 0 displays only ambient color and rooms.
+---@return LightCamera camera This camera, for chaining.
+function LightCamera:SetLightMask(mask)
+    assert(not self.Removed, "Cannot change a removed LightCamera")
+    mask = Mask.validate(mask)
+    if self.LightMask ~= mask then
+        self.LightMask = mask
+        self.UpdateCanvas = true
+    end
+    return self
+end
+
+---@description Returns the light groups selected by this camera.
+---@return integer mask Unsigned selection mask.
+function LightCamera:GetLightMask()
+    return self.LightMask
+end
+
+---@description Tests group membership independently of local-light bounds or star projection.
+---@param Light Light|Star Light being selected.
+---@return boolean accepted Whether the camera and light share a group.
+function LightCamera:AcceptsLight(Light)
+    return Mask.matches(self.LightMask, Light.LightMask)
+end
+
+---@description Tests camera-selected local-light canvas bounds, including texture and particle corners.
 ---@param Light Light Local light whose existing or prospective canvas is tested.
 ---@return boolean visible Whether the canvas bounds intersect the viewport.
 function LightCamera:IsLightVisible(Light)
+    if not self:AcceptsLight(Light) then return false end
     local cx, cy, zoom = self:GetPosition()
     local x, y = Light:GetPosition()
     local width, height = Light.Radius * 2, Light.Radius * 2
@@ -250,10 +282,12 @@ function LightCamera:Compose()
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.setBlendMode("add", "alphamultiply")
     for _, star in pairs(world.Stars) do
-        local view = star:GetView(self)
-        if not view:GetCanvasDestroyed() then
-            love.graphics.draw(view.Canvas, 0, 0)
-            if metrics then metrics.LightsComposited = metrics.LightsComposited + 1 end
+        if self:AcceptsLight(star) then
+            local view = star:GetView(self)
+            if not view:GetCanvasDestroyed() then
+                love.graphics.draw(view.Canvas, 0, 0)
+                if metrics then metrics.LightsComposited = metrics.LightsComposited + 1 end
+            end
         end
     end
     love.graphics.translate(-self.x * self.z, -self.y * self.z)

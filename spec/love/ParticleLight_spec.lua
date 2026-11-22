@@ -211,4 +211,27 @@ describe("Particle lights",
                 world:Update(0)
                 assert.equals(original, world.Canvas:newImageData():getString())
             end)
+
+        it("advances particles while their group is excluded by every camera",
+            ---@description Checks masked cache lifetime, single simulation ownership, unmasking, and removal of expired light.
+            ---@return nil
+            function()
+                particles:reset()
+                particles:setParticleLifetime(0.3)
+                particles:emit(1)
+                world:GetCamera():SetLightMask(0)
+                world:Update(0.2)
+                assert.equals(1, particles:getCount())
+                assert.is_true(light:GetCanvasDestroyed())
+                assert.equals(0, shadowRenders)
+                world:GetCamera():SetLightMask(1)
+                world:Update(0.05)
+                assert.is_false(light:GetCanvasDestroyed())
+                assert.is_true(world.Canvas:newImageData():getPixel(80, 140) > 0.4)
+                world:GetCamera():SetLightMask(0)
+                world:Update(0.1)
+                assert.equals(0, particles:getCount())
+                assert.is_true(light:GetCanvasDestroyed())
+                assert.equals(0, world.Canvas:newImageData():getPixel(80, 140))
+            end)
     end)

@@ -26,6 +26,7 @@ Coordinates are local to the body. Polygon vertices are passed as alternating `x
 | `shape:GetTransform()` | Returns the shape's [`Transform`](Transform.md). |
 | `shape:GetCentroid()` | Returns the shape's world-space centroid. |
 | `shape:GetRadius()` / `shape:GetSqrRadius()` | Returns its bounding radius or squared radius. |
+| `shape:SetShadowMask(mask?)` / `shape:GetShadowMask()` | Sets an optional unsigned 32-bit caster membership override or returns effective membership. Nil restores body inheritance; setter returns the shape. |
 | `shape:SetChanged(changed)` / `shape:GetChanged()` | Sets or returns the renderer's geometry-dirty flag. |
 | `shape:Remove()` | Removes the shape from its body and detaches its transform. |
 
@@ -35,6 +36,13 @@ lights intersecting its previous or current bounds. Body movement invalidates
 all attached shapes. Removal clears the old shadow on the next world update.
 For custom geometry changes, use `shape:SetChanged(true)`; use
 `world:ForceUpdate()` for custom callbacks or textures whose pixels change in place.
+
+All built-in shapes inherit their body's occluder mask (default `1`).
+An explicit `0` disables casting; nil restores inheritance. Lights select
+these groups with `SetShadowMask`, independently of camera light selection.
+Ignored shapes do not generate projected shadows, restore caster silhouettes,
+or enter penumbra masks. Masks do not hide scene objects or change their height.
+See [Light and occluder groups](Light.md#light-and-occluder-groups).
 
 ## CircleShadow
 

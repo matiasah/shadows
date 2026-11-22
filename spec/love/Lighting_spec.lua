@@ -9,7 +9,9 @@ local DebugOverlay = require("shadows.DebugOverlay")
 local Body = require("shadows.Body")
 local CircleShadow = require("shadows.ShadowShapes.CircleShadow")
 local PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
+local CastImageShadow = require("shadows.ShadowShapes.CastImageShadow")
 local OutputShadow = require("shadows.OutputShadow")
+local Mask = require("shadows.Mask")
 ---@type fun(self: OutputShadow, Canvas: love.Canvas): boolean
 local defaultOutputVisibility = OutputShadow.IsVisible
 
@@ -1175,6 +1177,260 @@ describe("LOVE lighting",
                 world:Update(0)
                 assert.near(baseline, world.Canvas:newImageData():getPixel(64, 64), 0.01)
                 assert.equals(0, camera.FrameMetrics.ShadowRedraws)
+            end)
+
+        it("selects 32-bit light groups independently per camera and preserves shared cache ownership",
+            ---@description Exercises the highest group bit, mixed selections, zero masks, membership changes, and invalid input errors.
+            ---@return nil
+            function()
+                world:Resize(192, 192)
+                local high, blue = Mask.group(31), Mask.group(1)
+                local primary = world:GetCamera():SetLightMask(high)
+                local camera = LightCamera:new(world, 192, 192):SetLightMask(blue)
+                local excluded = LightCamera:new(world, 192, 192):SetLightMask(0)
+                light:SetLightMask(high):SetColor(1, 0, 0)
+                local other = Light:new(world, 112)
+                other.Blur = false
+                other:SetPosition(80, 96, 2):SetLightMask(blue):SetColor(0, 0, 1)
+                world:Update(0)
+                local r, _, b = primary.Canvas:newImageData():getPixel(80, 152)
+                assert.is_true(r > 0.1 and b == 0)
+                r, _, b = camera.Canvas:newImageData():getPixel(80, 152)
+                assert.is_true(r == 0 and b > 0.1)
+                assert.equals(0, excluded.FrameMetrics.LightsComposited)
+                local cache = light.Canvas
+                primary:SetLightMask(Mask.combine(high, blue))
+                world:Update(0)
+                assert.equals(cache, light.Canvas)
+                assert.equals(0, world.FrameMetrics.ShadowRedraws)
+                assert.equals(0, camera.FrameMetrics.CompositionMs)
+                assert.equals(2, primary.FrameMetrics.LightsComposited)
+                primary:SetLightMask(0)
+                world:Update(0)
+                assert.is_true(light:GetCanvasDestroyed())
+                assert.is_false(other:GetCanvasDestroyed())
+                assert.equals(0, primary.Canvas:newImageData():getPixel(80, 152))
+                assert.equals(0, camera.FrameMetrics.CompositionMs)
+                light:SetLightMask(blue)
+                world:Update(0)
+                assert.equals(2, camera.FrameMetrics.LightsComposited)
+                r, _, b = camera.Canvas:newImageData():getPixel(80, 152)
+                assert.is_true(r > 0.1 and b > 0.1)
+                assert.has_error(
+                    ---@description Rejects signed masks rather than truncating them.
+                    ---@return nil
+                    function() primary:SetLightMask(-1) end)
+                assert.has_error(
+                    ---@description Rejects masks exceeding 32 bits.
+                    ---@return nil
+                    function() light:SetShadowMask(4294967296) end)
+                assert.has_error(
+                    ---@description Rejects fractional occluder membership.
+                    ---@return nil
+                    function() body:SetShadowMask(1.5) end)
+                assert.has_error(
+                    ---@description Rejects an out-of-range group index.
+                    ---@return nil
+                    function() Mask.group(32) end)
+            end)
+
+        it("inherits body occluder groups and overrides them per shape for hard and soft shadows",
+            ---@description Compares masked rendering with removing the caster and verifies override-specific invalidation.
+            ---@return nil
+            function()
+                local shape = body:GetShapes():Get(1)
+                for _, blur in ipairs({ false, true }) do
+                    light.Blur = blur
+                    body:SetShadowMask(1)
+                    shape:SetShadowMask(nil)
+                    light:SetShadowMask(1)
+                    world:ForceUpdate()
+                    world:Update(0)
+                    local blocked = world.Canvas:newImageData():getString()
+                    body:SetShadowMask(2)
+                    world:Update(0)
+                    assert.is_true(light.ShadowCanvas:newImageData():getPixel(168, 112) > 0.99)
+                    shape:SetShadowMask(1)
+                    world:Update(0)
+                    assert.equals(blocked, world.Canvas:newImageData():getString())
+                    body:SetShadowMask(4)
+                    world:Update(0)
+                    assert.equals(0, world.FrameMetrics.ShadowRedraws,
+                        "Body group changes must not invalidate a shape with an unchanged explicit override")
+                    shape:SetShadowMask(nil)
+                    world:Update(0)
+                    local ignored = world.Canvas:newImageData():getString()
+                    body:Remove()
+                    world:ForceUpdate()
+                    world:Update(0)
+                    assert.equals(ignored, world.Canvas:newImageData():getString())
+                    world:AddBody(body)
+                    body:SetShadowMask(1)
+                    shape:SetShadowMask(0)
+                    world:Update(0)
+                    assert.is_true(light.ShadowCanvas:newImageData():getPixel(168, 112) > 0.99)
+                end
+            end)
+
+        it("does not restore ignored caster silhouettes or include them in penumbra filtering",
+            ---@description Checks an ignored shape overlapping an accepted shadow against physically removing that shape.
+            ---@return nil
+            function()
+                local accepted = Body:new(world):SetShadowMask(2)
+                accepted:SetPosition(100, 96, 1)
+                CircleShadow:new(accepted, 0, 0, 6)
+                light:SetShadowMask(2)
+                for _, blur in ipairs({ false, true }) do
+                    light.Blur = blur
+                    world:ForceUpdate()
+                    world:Update(0)
+                    assert.is_true(light.ShadowRenderCanvas:newImageData():getPixel(142, 112) < 0.1,
+                        "An ignored caster must not erase another group's shadow under its silhouette")
+                    local masked = world.Canvas:newImageData():getString()
+                    body:SetPosition(116, 96, 1)
+                    world:Update(0)
+                    assert.equals(0, world.FrameMetrics.ShadowRedraws)
+                    assert.equals(masked, world.Canvas:newImageData():getString())
+                    body:Remove()
+                    world:ForceUpdate()
+                    world:Update(0)
+                    assert.equals(masked, world.Canvas:newImageData():getString())
+                    world:AddBody(body)
+                end
+            end)
+
+        it("applies camera selection and caster masks to upright sprite illumination",
+            ---@description Compares masked local/star receiver pixels with an unobstructed scene, including noncasting receivers.
+            ---@return nil
+            function()
+                light:Remove()
+                body:Remove()
+                world:Resize(192, 192)
+                world:SetColor(0.03, 0.03, 0.03, 1)
+                local texture = newCookie(
+                    ---@description Produces an opaque white sprite whose pixels expose lighting directly.
+                    ---@param x number Unused texture x-coordinate.
+                    ---@param y number Unused texture y-coordinate.
+                    ---@return number red White red channel.
+                    ---@return number green White green channel.
+                    ---@return number blue White blue channel.
+                    ---@return number alpha Opaque alpha.
+                    function(x, y) return 1, 1, 1, 1 end)
+                local target = love.graphics.newCanvas(192, 192, { dpiscale = 1 })
+                for _, kind in ipairs({ Light, Star }) do
+                    world:GetCamera():SetLightMask(1)
+                    local source = kind:new(world, 160)
+                    source.Blur = false
+                    source:SetPosition(80, 140, 80):SetShadowMask(1)
+                    local receiverBody = Body:new(world):SetShadowMask(0)
+                    receiverBody:SetPosition(80, 80, 0)
+                    local receiver = CastImageShadow:new(receiverBody, texture, 32, 64)
+                    ---@description Reads actual sprite output rather than internal visibility alone.
+                    ---@return love.ImageData pixels Rendered receiver pixels.
+                    local function spritePixels()
+                        love.graphics.setCanvas(target)
+                        love.graphics.origin()
+                        love.graphics.clear(0, 0, 0, 0)
+                        receiver:DrawSprite()
+                        love.graphics.setCanvas()
+                        return target:newImageData()
+                    end
+                    world:Update(0)
+                    local clear = spritePixels()
+                    assert.is_true(clear:getPixel(80, 48) > 0.3,
+                        "A zero caster mask must not stop an upright sprite from receiving selected light")
+                    local blockerBody = Body:new(world)
+                    blockerBody:SetPosition(80, 100, 0)
+                    local blocker = CastImageShadow:new(blockerBody, texture, 32, 64)
+                    world:Update(0)
+                    assert.is_true(spritePixels():getPixel(80, 48) < 0.04)
+                    source:SetShadowMask(2)
+                    world:Update(0)
+                    assert.equals(clear:getString(), spritePixels():getString())
+                    source:SetShadowMask(1)
+                    blocker:SetShadowMask(0)
+                    world:Update(0)
+                    assert.equals(clear:getString(), spritePixels():getString())
+                    blocker:SetShadowMask(nil)
+                    world:Update(0)
+                    assert.is_true(spritePixels():getPixel(80, 48) < 0.04)
+                    source:SetShadowMask(0)
+                    world:Update(0)
+                    assert.equals(clear:getString(), spritePixels():getString())
+                    world:GetCamera():SetLightMask(0)
+                    world:Update(0)
+                    assert.is_true(math.abs(spritePixels():getPixel(80, 48) - world.R) < 0.01)
+                    world:GetCamera():SetLightMask(1)
+                    source:SetLightMask(2)
+                    world:Update(0)
+                    assert.is_true(spritePixels():getPixel(80, 48) < 0.04)
+                    world:GetCamera():SetLightMask(2)
+                    world:Update(0)
+                    assert.equals(clear:getString(), spritePixels():getString())
+                    source:Remove()
+                    receiverBody:Remove()
+                    blockerBody:Remove()
+                end
+            end)
+
+        it("retains masked star changes without repeatedly redrawing other cameras",
+            ---@description Verifies lazy excluded views, pending geometry/tint, mask changes while hidden, and later pixel equality.
+            ---@return nil
+            function()
+                light:Remove()
+                world:Resize(192, 192)
+                local primary = world:GetCamera():SetLightMask(1)
+                local camera = LightCamera:new(world, 192, 192):SetLightMask(2)
+                local excluded = LightCamera:new(world, 192, 192):SetLightMask(1)
+                local star = Star:new(world, 112)
+                star.Blur = false
+                star:SetPosition(80, 96, 2):SetLightMask(2):SetColor(0, 0, 1)
+                world:Update(0)
+                assert.is_nil(star.Views[excluded])
+                assert.equals(0, primary.FrameMetrics.ShadowRedraws)
+                assert.equals(1, camera.FrameMetrics.ShadowRedraws)
+                local r, g, b = camera.Canvas:newImageData():getPixel(80, 152)
+                assert.is_true(r == 0 and g == 0 and b > 0.1)
+                excluded:Resize(176, 176)
+                excluded:Resize(192, 192)
+                world:Update(0)
+                assert.is_nil(star.Views[excluded], "Resizing an excluded view must not allocate star buffers")
+                assert.equals(0, camera.FrameMetrics.CompositionMs)
+                star:SetColor(0.25, 0.5, 1)
+                world:Update(0)
+                assert.equals(0, camera.FrameMetrics.ShadowRedraws)
+                world:Update(0)
+                assert.equals(0, camera.FrameMetrics.CompositionMs)
+                body:SetPosition(112, 120, 1)
+                world:Update(0)
+                assert.equals(1, camera.FrameMetrics.ShadowRedraws)
+                world:Update(0)
+                assert.equals(0, camera.FrameMetrics.ShadowRedraws)
+                primary:SetLightMask(2)
+                world:Update(0)
+                assert.equals(primary.Canvas:newImageData():getString(), camera.Canvas:newImageData():getString())
+                assert.is_true(star.ShadowCanvas:newImageData():getPixel(124, 129) < 0.1)
+                primary:SetLightMask(0)
+                camera:SetLightMask(0)
+                star:SetColor(1, 0, 0):SetShadowMask(1)
+                body:SetShadowMask(2)
+                world:Update(0)
+                assert.equals(0, primary.FrameMetrics.ShadowRedraws)
+                assert.equals(0, camera.FrameMetrics.ShadowRedraws)
+                primary:SetLightMask(2)
+                world:Update(0)
+                camera:SetLightMask(2)
+                world:Update(0)
+                assert.equals(primary.Canvas:newImageData():getString(), camera.Canvas:newImageData():getString())
+                assert.is_true(star.ShadowCanvas:newImageData():getPixel(124, 129) > 0.99,
+                    "An occluder changing groups while all views are hidden must clear its stale shadow")
+                star:SetLightMask(1)
+                world:Update(0)
+                assert.equals(0, primary.Canvas:newImageData():getPixel(80, 152))
+                assert.equals(0, camera.Canvas:newImageData():getPixel(80, 152))
+                assert.equals(1, excluded.FrameMetrics.LightsComposited)
+                assert.equals(3, excluded.FrameMetrics.CanvasAllocations)
+                assert.is_not_nil(star.Views[excluded])
             end)
 
         it("counts camera and penumbra allocations in the next completed update without charging other views",

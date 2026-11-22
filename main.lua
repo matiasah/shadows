@@ -13,6 +13,7 @@ local demos = {
     LightCameras = "DEMOS/LightCameras/main.lua",
     DebugOverlay = "DEMOS/DebugOverlay/main.lua",
     LightCookies = "DEMOS/LightCookies/main.lua",
+    LightLayers = "DEMOS/LightLayers/main.lua",
 }
 
 local demoName = "HighDPI"
@@ -39,6 +40,7 @@ local windowSizes = {
     LightCameras = { 960, 560 },
     DebugOverlay = { 1100, 680 },
     LightCookies = { 1000, 640 },
+    LightLayers = { 1200, 580 },
 }
 
 local requirePath = love.filesystem.getRequirePath()
