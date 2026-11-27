@@ -1,4 +1,4 @@
----@module Demonstrates camera light groups and inherited/overridden occluder masks in one shared scene.
+---@module Demonstrates camera light groups, receiver layers, and inherited/overridden occluder masks.
 local capture = require("Capture").new("light-layers-capture.png")
 local LightWorld = require("shadows.LightWorld")
 local LightCamera = require("shadows.LightCamera")
@@ -14,6 +14,8 @@ local CircleShadow = require("shadows.ShadowShapes.CircleShadow")
 local world
 ---@type LightCamera[]
 local cameras = {}
+---@type love.Canvas[]
+local receiverLayers = {}
 ---@type Light[]
 local lights = {}
 ---@type Body
@@ -32,10 +34,21 @@ local selected = 1
 local allCasters = false
 ---@type boolean
 local paused = false
+---@type boolean
+local receiverLayerMode = false
 ---@type number
 local elapsed = 0
 ---@type string[]
 local qualities = { "high", "medium", "low" }
+
+---@description Allocates transparent scene targets for the combined view's receiver groups.
+---@return nil
+local function resizeReceiverLayers()
+    local camera = cameras[3]
+    local options = { dpiscale = world.Settings.ShadowScale }
+    receiverLayers[1] = love.graphics.newCanvas(camera.Width, camera.Height, options)
+    receiverLayers[2] = love.graphics.newCanvas(camera.Width, camera.Height, options)
+end
 
 ---@description Fits three matching world-space camera views to the current window.
 ---@param width number Logical window width.
@@ -48,6 +61,7 @@ local function resizeViews(width, height)
         camera:Resize(viewportWidth, viewportHeight)
         camera:SetPosition(0, 0, viewportWidth / 360)
     end
+    resizeReceiverLayers()
 end
 
 ---@description Restores selective casting, body inheritance, and the three camera selections.
@@ -216,21 +230,49 @@ end
 ---@return nil
 local function drawView(camera, screenX)
     local x, y, zoom = camera:GetPosition()
-    love.graphics.push("all")
-    love.graphics.origin()
-    love.graphics.setScissor(screenX, 72, camera.Width, camera.Height)
-    love.graphics.translate(screenX, 72)
-    love.graphics.scale(zoom, zoom)
-    love.graphics.translate(-x, -y)
-    love.graphics.setColor(0.85, 0.85, 0.9, 1)
-    love.graphics.rectangle("fill", x, y, camera.Width / zoom, camera.Height / zoom)
-    love.graphics.setColor(0.65, 0.65, 0.7, 1)
-    for gx = 0, 360, 24 do love.graphics.line(gx, 0, gx, camera.Height / zoom) end
-    for gy = 0, camera.Height / zoom, 24 do love.graphics.line(0, gy, 360, gy) end
-    love.graphics.setColor(0.35, 0.4, 0.45, 1)
-    for _, shape in ipairs(shapes) do shape:Draw(math.huge) end
-    love.graphics.pop()
-    camera:Draw(screenX, 72)
+    if receiverLayerMode and camera == cameras[3] then
+        for layerIndex, canvas in ipairs(receiverLayers) do
+            love.graphics.push("all")
+            love.graphics.setCanvas(canvas)
+            love.graphics.setScissor(0, 0, camera.Width, camera.Height)
+            love.graphics.origin()
+            love.graphics.clear(0, 0, 0, 0)
+            love.graphics.scale(zoom, zoom)
+            love.graphics.translate(-x, -y)
+            if layerIndex == 1 then
+                love.graphics.setColor(0.85, 0.85, 0.9, 1)
+                love.graphics.rectangle("fill", x, y, camera.Width / zoom, camera.Height / zoom)
+                love.graphics.setColor(0.65, 0.65, 0.7, 1)
+                for gx = 0, 360, 24 do love.graphics.line(gx, 0, gx, camera.Height / zoom) end
+                for gy = 0, camera.Height / zoom, 24 do love.graphics.line(0, gy, 360, gy) end
+            end
+            love.graphics.setColor(0.35, 0.4, 0.45, 1)
+            for index, shape in ipairs(shapes) do
+                if (layerIndex == 1 and index == 1) or (layerIndex == 2 and index > 1) then
+                    shape:Draw(math.huge)
+                end
+            end
+            love.graphics.pop()
+        end
+        camera:DrawReceiverLayer(Mask.combine(groups[1], groups[3]), receiverLayers[1], screenX, 72)
+        camera:DrawReceiverLayer(Mask.combine(groups[2], groups[3]), receiverLayers[2], screenX, 72)
+    else
+        love.graphics.push("all")
+        love.graphics.origin()
+        love.graphics.setScissor(screenX, 72, camera.Width, camera.Height)
+        love.graphics.translate(screenX, 72)
+        love.graphics.scale(zoom, zoom)
+        love.graphics.translate(-x, -y)
+        love.graphics.setColor(0.85, 0.85, 0.9, 1)
+        love.graphics.rectangle("fill", x, y, camera.Width / zoom, camera.Height / zoom)
+        love.graphics.setColor(0.65, 0.65, 0.7, 1)
+        for gx = 0, 360, 24 do love.graphics.line(gx, 0, gx, camera.Height / zoom) end
+        for gy = 0, camera.Height / zoom, 24 do love.graphics.line(0, gy, 360, gy) end
+        love.graphics.setColor(0.35, 0.4, 0.45, 1)
+        for _, shape in ipairs(shapes) do shape:Draw(math.huge) end
+        love.graphics.pop()
+        camera:Draw(screenX, 72)
+    end
     love.graphics.push("all")
     love.graphics.setScissor(screenX, 72, camera.Width, camera.Height)
     love.graphics.translate(screenX, 72)
@@ -260,7 +302,9 @@ function love.draw()
     love.graphics.print("LightLayers | one world, three lighting selections | orange: wall casters | blue: object casters", 12, 8)
     love.graphics.print("Small circle: " .. (override.ShadowMask == nil and "inherits wall body" or "explicit object override")
         .. " | casters: " .. (allCasters and "all groups" or "selective")
-        .. " | quality " .. world.Settings:GetQuality() .. (paused and " | paused" or ""), 12, 28)
+        .. " | quality " .. world.Settings:GetQuality()
+        .. (receiverLayerMode and " | receiver layers on view 3" or "")
+        .. (paused and " | paused" or ""), 12, 28)
     for i, camera in ipairs(cameras) do
         local screenX = 12 + (i - 1) * (camera.Width + 12)
         drawView(camera, screenX)
@@ -272,7 +316,7 @@ function love.draw()
             screenX, 78 + camera.Height)
     end
     love.graphics.print(
-        "Tab: view | 1/2/3/0: lights | S: caster selection | O: shape override | G: body group | L: light group | B: blur | Q: quality | Space: pause",
+        "Tab: view | 1/2/3/0: lights | R: receiver layers | S: caster selection | O: shape override | G: body group | L: light group | B: blur | Q: quality | Space: pause",
         12, love.graphics.getHeight() - 26)
     capture.draw()
 end
@@ -311,9 +355,12 @@ function love.keypressed(key)
         for i, quality in ipairs(qualities) do
             if world.Settings:GetQuality() == quality then
                 world.Settings:SetQuality(qualities[i % #qualities + 1])
+                resizeReceiverLayers()
                 break
             end
         end
+    elseif key == "r" then
+        receiverLayerMode = not receiverLayerMode
     end
     capture.keypressed(key)
 end

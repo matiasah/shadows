@@ -33,6 +33,8 @@ end
 | `camera:IsVisible(x, y, radius)` | Tests a world-space circle against the viewport, accounting for zoom. |
 | `camera:IsLightVisible(light)` | Tests group selection and conservatively tests a local light's existing or prospective square canvas bounds against the viewport, accounting for zoom. |
 | `camera:Draw(screenX?, screenY?)` | Multiplies lighting onto the already-drawn scene at a screen destination; defaults to `(0, 0)`. Preserves graphics state and does not advance simulation. |
+| `camera:DrawReceiverLayer(mask, receiverCanvas, screenX?, screenY?)` | Lights an unlit receiver canvas and alpha-composites it onto the current target. Lights must match both the receiver mask and camera selection. |
+| `camera:ReleaseReceiverMask(mask)` | Releases the cached lighting pass for a receiver mask; returns the camera. |
 | `camera:Remove()` | Detaches an additional camera and drops its star-cache references. The default camera cannot be removed. |
 
 Position and zoom must be finite; zoom must be greater than zero.
@@ -42,7 +44,8 @@ registered views. Resize views explicitly after changing your window layout.
 
 `camera.FrameMetrics` exposes the last completed world update's camera-specific
 star/composition CPU milliseconds, shadow redraws, geometry/draw work,
-light composition submissions, and canvas allocations. Metrics are read-only
+light composition submissions, and canvas allocations, including requested
+receiver passes. Metrics are read-only
 and initially zero; queries and drawing do not reset them. Shared local-light
 work is separate in `world.FrameMetrics`. See [DebugOverlay](DebugOverlay.md)
 for field definitions and allocation/timing scope.
@@ -120,9 +123,46 @@ buffers can be reused; unselected additional star buffers are created lazily
 when first needed. Existing excluded views retain changes for later selection.
 Metrics never allocate missing star views, and excluded views submit no lights
 or shadows. Particles still simulate even when no camera selects them.
-Selections do not filter scene objects or rooms. See
+Camera light selection alone does not filter scene objects or rooms; use
+receiver passes for surface-specific lighting. See
 [Light and occluder groups](Light.md#light-and-occluder-groups) for unsigned
 masks, separate caster selection, inheritance, and defaults.
+
+## Receiver layers
+
+`DrawReceiverLayer(mask, receiverCanvas)` composites ambient color, rooms, and only the
+lights whose membership overlaps both `mask` and the camera's `LightMask`.
+This lets an application render separately classified receiver layers while
+leaving scene-object drawing under application control:
+
+```lua
+local Mask = require("shadows.Mask")
+local walls = Mask.group(0)
+local actors = Mask.group(1)
+local wallCanvas = love.graphics.newCanvas(camera:GetWidth(), camera:GetHeight())
+local actorCanvas = love.graphics.newCanvas(camera:GetWidth(), camera:GetHeight())
+
+-- Render each receiver layer separately to a transparent Canvas.
+love.graphics.setCanvas(wallCanvas)
+love.graphics.clear(0, 0, 0, 0)
+drawWalls()
+love.graphics.setCanvas()
+
+love.graphics.setCanvas(actorCanvas)
+love.graphics.clear(0, 0, 0, 0)
+drawActors()
+love.graphics.setCanvas()
+camera:DrawReceiverLayer(walls, wallCanvas)
+camera:DrawReceiverLayer(actors, actorCanvas)
+```
+
+Each receiver layer needs its own transparent canvas matching the camera's
+viewport. `DrawReceiverLayer` preserves the receiver alpha and composites the
+lit layer onto the current target, which must differ from the receiver canvas.
+Ambient color and rooms are included in every pass. The ordinary `camera:Draw`
+and `world:Draw` behavior remains unchanged. Receiver lighting passes are
+cached by mask; call `camera:ReleaseReceiverMask(mask)` when a pass is no
+longer needed.
 
 ## Compatibility
 

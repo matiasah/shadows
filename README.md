@@ -1,6 +1,7 @@
 # Shädows
 
-Shädows is a dynamic lighting and shadow library for LÖVE. It supports height-aware polygon and circle occluders, textured shadows, ambient-darkening rooms, and normal- and height-map effects.
+Shädows is a dynamic lighting and shadow library for LÖVE. It supports height-aware polygon and circle occluders, RGB light transmission for tinted shadows, textured shadows, ambient-darkening rooms, and normal- and height-map effects.
+The built-in chromatic-aberration shader preserves source alpha for transparent images.
 
 [`ParticleLight`](docs/ParticleLight.md) adds dynamic illumination from a native
 LÖVE `ParticleSystem`, including its texture, motion, colors, and alpha. Particles
@@ -37,6 +38,7 @@ intersects a changed shape's previous or current bounds. Full-scene stars
 redraw on accepted occluder changes. Mask changes invalidate lights accepting
 the previous or current occluder groups. Affected canvases are still redrawn completely to
 preserve overlapping shadows and height ordering.
+Local-light and star radii must be finite positive world-unit values.
 Cached filled primitives and ordinary texture draws wholly outside their shadow
 render target are not submitted. Bounds account for projection, camera zoom,
 texture transforms, and a two-physical-pixel raster margin. Geometry stays cached;
@@ -107,6 +109,11 @@ hierarchical positioning and following a body or other transform. Camera
 `SetPosition` uses world coordinates, even when parented. Parent motion is
 synchronized before light culling and star rendering. Zoom remains separate
 from transform height, and viewports stay axis-aligned.
+Transform parenting rejects cycles and invalidates the reparented transform's
+descendants.
+Lights also use world-space `SetPosition` and `SetAngle` values when parented;
+their transforms handle conversion to parent-local coordinates. Omitting the
+height from `Transform:SetPosition` preserves its current world height.
 
 ## Light layers and occluder masks
 
@@ -132,8 +139,12 @@ Ignored shapes do not restore silhouettes or enter penumbra masks.
 Unselected additional star views are created only when first selected; retained
 views preserve pending changes. Particles still simulate when masked out.
 
-These are lighting-view and **caster** groups, not per-mesh receiver layers,
-height layers, or room masks. Custom drawing callbacks remain application-controlled.
+Camera light and occluder masks select lights and casters; they do not assign
+groups to arbitrary scene objects, create height layers, or control room masks.
+For receiver-specific lighting, render receiver groups to separate targets and
+apply `camera:DrawReceiverLayer(mask, receiverCanvas)` to composite each lit
+layer. Ambient color and rooms apply to every pass. Custom drawing callbacks
+remain application-controlled.
 See [Light and occluder groups](docs/Light.md#light-and-occluder-groups)
 and the `LightLayers` demo.
 
@@ -205,6 +216,12 @@ end
 
 The repository launcher and source demos configure the path for you. See the [API guide](docs/README.md) for all supported objects and methods.
 
+World collection getters expose live bodies, lights, stars, rooms, tracked
+transforms, and cameras; use the object constructors and `Remove()` methods
+to manage their lifecycle. Polygon-room `SetVertices` refreshes lighting
+composition automatically. See [LightWorld](docs/LightWorld.md#scene-objects)
+for collection types and iteration details.
+
 ## Demos
 
 In VS Code, choose **Terminal > Run Task > Run LÖVE demo** and select a scene. Demos under `DEMOS/` load the shared library from `src/shadows`; they do not contain copies of the package.
@@ -233,6 +250,8 @@ love . LightCookies
 love . LightCookies --capture --verify
 love . LightLayers
 love . LightLayers --capture --verify
+love . Glass
+love . Glass --capture --verify
 ```
 
 Capture mode renders the scene to offscreen canvases at DPI scale 2, saves a screenshot using `love.graphics.captureScreenshot`, and exits. Press `F12` to capture an image interactively; press `Escape` to close the demo.
@@ -274,10 +293,12 @@ effective caster groups; the small circle overrides its wall body's group.
 The blue light has a wider footprint so the upper circle's projected shadow
 stays visible in the object-light and combined views rather than fading into
 the edge of its illumination; it intentionally casts no wall-light shadow.
-Press `Tab` to select a view, `1`/`2` for individual light groups, `3` for all,
-or `0` for ambient only. `S` toggles selective/all casters, `O` toggles shape
-inheritance, `G` changes the wall body's group, `L` changes the warm light's
-membership, `B` toggles blur, `Q` changes quality, and `Space` pauses motion.
+Press `R` to split the combined view into wall and object receiver layers;
+each receives its matching light groups plus the effects star. `Tab` selects a
+view, `1`/`2` selects individual light groups, `3` selects all, and `0` selects
+ambient only. `S` toggles selective/all casters, `O` toggles shape inheritance,
+`G` changes the wall body's group, `L` changes the warm light's membership,
+`B` toggles blur, `Q` changes quality, and `Space` pauses motion.
 Verification measures camera selection, upper-circle shadow contrast outside
 its silhouette for hard and soft shadows, override inheritance, cache reuse,
 and equality with forced rebuilds.
@@ -330,6 +351,10 @@ matching screenshot/state output using temporary files.
 The `ImageShadow` demo casts the silhouette and colors of a transparent flower
 image onto a softly lit surface. Move the mouse to reposition the light, press
 `B` to toggle soft shadows, `F12` to capture a screenshot, or `Escape` to exit.
+
+The `Glass` demo draws translucent colored panes and their RGB-transmitted
+shadows. Move the mouse to reposition the light, press `B` to toggle soft
+shadows, or `F12` to capture. `--verify` checks the tinted shadow pixels.
 
 The `CastImage` demo recreates a forest lighting scene with 17 original pixel-art
 trees. Each upright tree casts an alpha-silhouette ground shadow, becomes dark

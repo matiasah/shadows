@@ -1,4 +1,4 @@
---- Implements a polygonal dark region within a light world.
+---@module Implements a polygonal dark region within a light world.
 module("shadows.Room.PolygonRoom", package.seeall)
 
 Shadows = require("shadows")
@@ -53,11 +53,12 @@ function PolygonRoom:GetVertices()
 	return self.Vertices
 end
 
---- @description Replaces the polygon's local vertices.
+--- @description Replaces the polygon's local vertices and invalidates the world room canvas.
 --- @param ... number Alternating local x/y coordinates.
 --- @return nil
 function PolygonRoom:SetVertices(...)
 	self.Vertices = { ... }
+	self.World.UpdateCanvas = true
 end
 
 return PolygonRoom

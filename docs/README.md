@@ -34,14 +34,14 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 | API | Description |
 |---|---|
 | [LightWorld](LightWorld.md) | Scene lifecycle, shared rendering settings, camera, ambient color, and extension callbacks. |
-| [LightCamera](LightCamera.md) | Independent position, zoom, light-group selection, and resizable viewports into a shared scene. |
+| [LightCamera](LightCamera.md) | Independent position, zoom, light-group selection, receiver-layer lighting, and resizable viewports into a shared scene. |
 | [DebugOverlay](DebugOverlay.md) | Light bounds, cached shadow wireframes, camera viewports, and actual cache-work counters. |
 | [Light](Light.md) | Local lights and full-scene stars. |
 | [Light and occluder groups](Light.md#light-and-occluder-groups) | Unsigned 32-bit mask helpers, camera selection, and inherited/overridden caster membership. |
 | [ParticleLight](ParticleLight.md) | Animated particle-system illumination with emitter-centered shadows. |
 | [Penumbras](Penumbras.md) | Contact-hardening shadow filtering, source size, and rendering limits. |
 | [Body](Body.md) | Height-aware groups of shadow shapes and physics integration. |
-| [Shadow shapes](Shadow.md) | Circle and polygon occluders, plus shared shape behavior. |
+| [Shadow shapes](Shadow.md) | Circle and polygon occluders, RGB light transmission, and shared shape behavior. |
 | [ImageShadow](ImageShadow.md) | Texture-based shadow occluders. |
 | [CastImageShadow](CastImageShadow.md) | Upright alpha-image casters with ground projection and mutually shaded sprites. |
 | [NormalShadow](NormalShadow.md) | Normal-map lighting and shadow occluders. |
@@ -62,6 +62,7 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 - [Two lighting cameras sharing one animated world](../DEMOS/LightCameras/main.lua)
 - [Lighting debug overlays and cache-work counters](../DEMOS/DebugOverlay/main.lua)
 - [Three camera selections and selective occluder masks](../DEMOS/LightLayers/main.lua)
+- [Translucent colored glass and transmitted shadows](../DEMOS/Glass/main.lua)
 
 ## Notes
 
@@ -69,3 +70,4 @@ Coordinates and dimensions are in LÖVE's logical pixel units. Rotations use deg
 - A `Light` allocates per-light canvases based on its radius. `Star` uses full-scene canvases instead and cannot illuminate rooms.
 - Physics fixture import supports circle and polygon fixtures. For ongoing physics synchronization, use `Body:TrackPhysics` or `LightWorld:TrackBody`.
 - The package uses LÖVE graphics canvases and shaders and must be created after the graphics context is available.
+- The built-in chromatic-aberration shader preserves the center pixel's alpha, including transparent pixels.

@@ -42,6 +42,12 @@ describe("Transform",
                 assert.equals(5, z)
                 assert.equals(100, child:GetLocalRotation())
                 assert.equals(-170, child:GetRotation())
+
+                child:SetPosition(9, 24)
+                local x, y, z = child:GetPosition()
+                assert.near(9, x, 1e-9)
+                assert.near(24, y, 1e-9)
+                assert.equals(8, z, "Omitting world height must preserve the current world height")
             end)
 
         it("invalidates descendants only when a supplied coordinate changes",
@@ -59,6 +65,32 @@ describe("Transform",
                 assert.is_true(child.HasChanged)
                 assert.is_true(grandchild.HasChanged)
                 assert.equals(0, parent.z)
+
+                local nextParent = Transform:new()
+                parent.HasChanged, child.HasChanged, grandchild.HasChanged = false, false, false
+                child:SetParent(nextParent)
+                assert.is_true(child.HasChanged)
+                assert.is_true(grandchild.HasChanged)
+            end)
+
+        it("rejects invalid and cyclic parent assignments without changing the hierarchy",
+            ---@description Prevents invalid ancestors and descendant cycles before detaching the current parent.
+            ---@return nil
+            function()
+                local parent, child, grandchild = Transform:new(), Transform:new(), Transform:new()
+                child:SetParent(parent)
+                grandchild:SetParent(child)
+
+                assert.is_false(pcall(parent.SetParent, parent, grandchild))
+                assert.is_false(pcall(parent.SetParent, parent, parent))
+                assert.is_false(pcall(child.SetParent, child, {}))
+                assert.is_nil(parent:GetParent())
+                assert.is_true(child:GetParent() == parent)
+                assert.is_true(grandchild:GetParent() == child)
+                local x, y, z = grandchild:GetPosition()
+                assert.is_number(x)
+                assert.is_number(y)
+                assert.is_number(z)
             end)
 
         it("transforms polygon vertices without modifying their local coordinates",

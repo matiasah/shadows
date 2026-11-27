@@ -14,7 +14,7 @@ child:SetLocalPosition(20, 10, 0.5)
 child:SetLocalRotation(30)
 ```
 
-Changing a parent propagates the changed flag through its descendants. Setting a parent does not preserve the child's prior world-space transform.
+Changing a parent propagates the changed flag through its descendants. Setting a parent does not preserve the child's prior world-space transform. A transform cannot be parented to itself or one of its descendants; invalid parent assignments raise an error without changing the hierarchy.
 
 ## Parent and rotation
 
@@ -39,14 +39,14 @@ Angles are normalized into `[-180, 180]` degrees or `[-pi, pi]` radians.
 |---|---|
 | `transform:SetLocalPosition(x, y, z?)` | Sets local x/y and optional height; returns whether a supplied coordinate changed. |
 | `transform:GetLocalPosition()` | Returns local `x`, `y`, and `z`. |
-| `transform:SetPosition(x, y, z)` | Sets world `x`, `y`, and `z`, converting to parent-local coordinates when parented. |
+| `transform:SetPosition(x, y, z?)` | Sets world `x` and `y`, plus optional `z`, converting to parent-local coordinates when parented. If `z` is omitted, preserves the current world height. |
 | `transform:GetPosition()` | Returns world `x`, `y`, and `z`. |
 | `transform:GetPositionVector()` | Returns `{ x = ..., y = ..., z = ... }` in world coordinates. |
 | `transform:ToWorld(x, y, z?)` | Converts one local point to world `x`, `y`, and `z`; omitted local height defaults to zero. |
 | `transform:ToWorldPoints(points)` | Converts a flat array of local x/y pairs to world-space pairs. Height is not supported. |
 | `transform:ToLocal(x, y, z)` | Converts one world point and height to local coordinates. |
 
-For a parented transform, supply all three coordinates to `SetPosition` and `ToLocal`; use `SetLocalPosition` when only x/y need to change while preserving local height.
+For a parented transform, `SetPosition` preserves the current world height when `z` is omitted; use `SetLocalPosition` when changing local x/y while preserving local height.
 
 ## Change tracking
 

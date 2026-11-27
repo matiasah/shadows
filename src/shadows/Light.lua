@@ -1,11 +1,11 @@
 ---@module Implements a local light with cached shadow and illumination canvases.
 module("shadows.Light", package.seeall)
 
-Object                             = require("shadows.Object")
+Object                                          = require("shadows.Object")
 
-Shadows                            = require("shadows")
-Transform                          = require("shadows.Transform")
-local Mask = require("shadows.Mask")
+Shadows                                         = require("shadows")
+Transform                                       = require("shadows.Transform")
+local Mask                                      = require("shadows.Mask")
 
 --- @class Light: Object
 --- @field World LightWorld? World that owns this light.
@@ -32,6 +32,7 @@ local Mask = require("shadows.Mask")
 --- @field Canvas love.Canvas? Cached light canvas.
 --- @field ShadowCanvas love.Canvas? Cached shadow canvas.
 --- @field private ShadowRenderCanvas love.Canvas? Multisampled shadow render target.
+--- @field private TransmissionCanvas love.Canvas? Temporary union mask for transmissive shape shadows.
 --- @field Shapes table? Cached projected shadow draw calls.
 --- @field Changed boolean? Whether shadow geometry and all rendering stages need regeneration.
 --- @field ShadowChanged boolean? Whether shadow pixels changed without invalidating all cached geometry.
@@ -58,30 +59,40 @@ local Mask = require("shadows.Mask")
 --- @field private SampledCanvasAllocationCount integer Allocation total sampled by the previous world update; defaults to 0.
 --- @field private __index Light Instance method lookup.
 --- @field private __type string Runtime type name.
-Light                              = setmetatable({}, Object)
-Light.__index                      = Light
-Light.__type                       = "Light"
+Light                                           = setmetatable({}, Object)
+Light.__index                                   = Light
+Light.__type                                    = "Light"
 
-Light.Arc                          = 360
-Light.LightMask                     = 1
-Light.ShadowMask                    = Mask.ALL
-Light.Radius                       = 0
-Light.SizeRadius                   = 10
-Light.Blur                         = true
+Light.Arc                                       = 360
+Light.LightMask                                 = 1
+Light.ShadowMask                                = Mask.ALL
+Light.Radius                                    = 0
+Light.SizeRadius                                = 10
+Light.Blur                                      = true
 Light.CookieX, Light.CookieY, Light.CookieAngle = 0, 0, 0
-Light.CookieScaleX, Light.CookieScaleY = 1, 1
-Light.ShadowRenderCount             = 0
-Light.GeometryRebuildCount          = 0
-Light.ShadowDrawCount               = 0
-Light.CanvasAllocationCount         = 0
-Light.SampledShadowRenderCount      = 0
-Light.SampledGeometryRebuildCount   = 0
-Light.SampledShadowDrawCount        = 0
-Light.SampledCanvasAllocationCount = 0
+Light.CookieScaleX, Light.CookieScaleY          = 1, 1
+Light.ShadowRenderCount                         = 0
+Light.GeometryRebuildCount                      = 0
+Light.ShadowDrawCount                           = 0
+Light.CanvasAllocationCount                     = 0
+Light.SampledShadowRenderCount                  = 0
+Light.SampledGeometryRebuildCount               = 0
+Light.SampledShadowDrawCount                    = 0
+Light.SampledCanvasAllocationCount              = 0
 
-Light.R, Light.G, Light.B, Light.A = 1, 1, 1, 1
+Light.R, Light.G, Light.B, Light.A              = 1, 1, 1, 1
 
-halfPi                             = math.pi * 0.5
+halfPi                                          = math.pi * 0.5
+
+---@type love.Shader
+local TransmissionShader                        = love.graphics.newShader [[
+	extern vec3 Transmission;
+
+	vec4 effect(vec4 color, Image mask, vec2 uv, vec2 pixel) {
+		float coverage = Texel(mask, uv).a;
+		return vec4(mix(vec3(1.0), Transmission, coverage), 1.0) * color;
+	}
+]]
 
 --- @description Creates and registers a light with the supplied world.
 --- @param World LightWorld? Owning world.
@@ -90,6 +101,8 @@ halfPi                             = math.pi * 0.5
 function Light:new(World, Radius)
 	-- Class constructor
 	if World and Radius then
+		assert(type(Radius) == "number" and Radius > 0 and Radius < math.huge,
+			"Light radius must be finite and positive")
 		local self = setmetatable({}, Light)
 
 		self.Transform = Transform:new()
@@ -153,6 +166,7 @@ function Light:DestroyCanvas()
 	self.Canvas = nil
 	self.ShadowCanvas = nil
 	self.ShadowRenderCanvas = nil
+	self.TransmissionCanvas = nil
 	self.Shapes = nil
 	self.Penumbra = nil
 end
@@ -231,6 +245,53 @@ function Light:GetCanvasCenter()
 	return self.Radius, self.Radius, z
 end
 
+---@description Applies transmission once to the union of one shape's projected shadow draws.
+---@param self Light Renderer accumulating the shape shadow.
+---@param ShadowList table Projected draw calls for one shape.
+---@param Layer number Current shadow layer.
+---@param Red number Red transmission channel.
+---@param Green number Green transmission channel.
+---@param Blue number Blue transmission channel.
+---@return nil
+local function DrawTransmissiveShadows(self, ShadowList, Layer, Red, Green, Blue)
+	local VisibleShadows = {}
+	for _, Shadow in pairs(ShadowList) do
+		if (not Shadow.Layer or Shadow.Layer == Layer) and Shadow:IsVisible(self.ShadowRenderCanvas) then
+			VisibleShadows[#VisibleShadows + 1] = Shadow
+		end
+	end
+	if #VisibleShadows == 0 then return end
+
+	if not self.TransmissionCanvas then
+		local width, height = self.ShadowRenderCanvas:getDimensions()
+		self.TransmissionCanvas = self:NewCanvas(width, height, { msaa = self.Settings.ShadowMSAA })
+	end
+
+	love.graphics.push("all")
+	love.graphics.setCanvas(self.TransmissionCanvas)
+	love.graphics.setScissor()
+	love.graphics.setStencilTest()
+	love.graphics.setShader()
+	love.graphics.clear(0, 0, 0, 0)
+	love.graphics.setBlendMode("alpha", "alphamultiply")
+	love.graphics.setColor(1, 1, 1, 1)
+	for _, Shadow in ipairs(VisibleShadows) do
+		Shadow:Draw(Layer)
+		self.ShadowDrawCount = self.ShadowDrawCount + 1
+	end
+
+	love.graphics.setCanvas(self.ShadowRenderCanvas)
+	love.graphics.origin()
+	love.graphics.setScissor()
+	love.graphics.setStencilTest()
+	love.graphics.setBlendMode("multiply", "premultiplied")
+	love.graphics.setColor(1, 1, 1, 1)
+	TransmissionShader:send("Transmission", { Red, Green, Blue })
+	love.graphics.setShader(TransmissionShader)
+	love.graphics.draw(self.TransmissionCanvas, 0, 0)
+	love.graphics.pop()
+end
+
 --- @description Resolves the multisampled shadow target into the mipmapped visibility canvas.
 --- @return nil
 function Light:ResolveShadowCanvas()
@@ -270,11 +331,19 @@ function Light:GenerateDarkness(x, y, z)
 		-- Draw the shadow shapes		
 		for Body, BodyShapes in pairs(Shapes) do
 			for Shape, ShadowList in pairs(BodyShapes) do
-				for _, Shadow in pairs(ShadowList) do
-					if (not Shadow.Layer or Shadow.Layer == MinAltitude)
-						and Shadow:IsVisible(self.ShadowRenderCanvas) then
-						Shadow:Draw(MinAltitude)
-						self.ShadowDrawCount = self.ShadowDrawCount + 1
+				local TransmissionR, TransmissionG, TransmissionB = Shape:GetTransmission()
+				if TransmissionR > 0 or TransmissionG > 0 or TransmissionB > 0 then
+					DrawTransmissiveShadows(self, ShadowList, MinAltitude,
+						TransmissionR, TransmissionG, TransmissionB)
+				else
+					love.graphics.setBlendMode("subtract", "alphamultiply")
+					love.graphics.setColor(1, 1, 1, 1)
+					for _, Shadow in pairs(ShadowList) do
+						if (not Shadow.Layer or Shadow.Layer == MinAltitude)
+							and Shadow:IsVisible(self.ShadowRenderCanvas) then
+							Shadow:Draw(MinAltitude)
+							self.ShadowDrawCount = self.ShadowDrawCount + 1
+						end
 					end
 				end
 			end
@@ -594,11 +663,11 @@ function Light:GetWorld()
 	return self.World
 end
 
---- @description Sets the light's local rotation in degrees.
---- @param Angle number Rotation angle.
+--- @description Sets the light's world rotation in degrees.
+--- @param Angle number World rotation angle.
 --- @return Light light This light, for chaining.
 function Light:SetAngle(Angle)
-	self.Transform:SetLocalRotation(Angle)
+	self.Transform:SetRotation(Angle)
 
 	return self
 end
@@ -615,7 +684,7 @@ end
 --- @param z number? Height; defaults to the current height.
 --- @return Light light This light, for chaining.
 function Light:SetPosition(x, y, z)
-	self.Transform:SetLocalPosition(x, y, z)
+	self.Transform:SetPosition(x, y, z)
 
 	return self
 end
@@ -749,6 +818,8 @@ end
 --- @param Radius number New radius in world units.
 --- @return nil
 function Light:SetRadius(Radius)
+	assert(type(Radius) == "number" and Radius > 0 and Radius < math.huge,
+		"Light radius must be finite and positive")
 	if Radius ~= self.Radius then
 		self.Radius = Radius
 		self.Changed = true

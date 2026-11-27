@@ -84,6 +84,16 @@ Shadows.DarkenShader = love.graphics.newShader [[
 	
 ]]
 
+Shadows.ReceiverShader = love.graphics.newShader [[
+	extern Image Lighting;
+
+	vec4 effect(vec4 color, Image receiver, vec2 tc, vec2 sc) {
+		vec4 surface = Texel(receiver, tc) * color;
+		vec3 illumination = Texel(Lighting, tc).rgb;
+		return vec4(surface.rgb * illumination, surface.a);
+	}
+]]
+
 -- https://love2d.org/forums/viewtopic.php?t=81014#p189754
 Shadows.AberrationShader = love.graphics.newShader [[
 	
@@ -103,7 +113,7 @@ Shadows.AberrationShader = love.graphics.newShader [[
 		vec4 green = texture2D(texture, texturePos);
 		vec4 blue = texture2D(texture, texturePos + offset);
 		
-		return vec4(red.r, green.g, blue.b, 1E0); //final color with alpha of 1
+		return vec4(red.r, green.g, blue.b, green.a);
 	}
 	
 ]]

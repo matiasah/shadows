@@ -14,7 +14,7 @@ Transform    = require("shadows.Transform")
 --- @field ShadowCanvas love.Canvas Full-scene shadow canvas.
 --- @field private ShadowRenderCanvas love.Canvas Multisampled shadow render target.
 --- @field Shapes table Cached projected shadow draw calls.
---- @field World LightWorld Owning world.
+--- @field World LightWorld? Owning world, or nil after removal.
 --- @field Settings Settings Shared settings object from the owning world.
 --- @field ID integer? Index in the world's star collection; absent on private render views.
 --- @field Camera LightCamera Viewport rendered by this star or its private render view.
@@ -46,6 +46,8 @@ halfPi       = math.pi * 0.5
 function Star:new(World, Radius)
 	-- Class constructor
 	if World and Radius then
+		assert(type(Radius) == "number" and Radius > 0 and Radius < math.huge,
+			"Star radius must be finite and positive")
 		local self = setmetatable({}, Star)
 		local Width, Height = World.Canvas:getDimensions()
 
@@ -240,6 +242,7 @@ function Star:Resize(Width, Height)
 		self.ShadowCanvas = self:NewCanvas(Width, Height, { mipmaps = "manual" })
 		self.ShadowCanvas:setMipmapFilter("linear")
 		self.ShadowRenderCanvas = self:NewCanvas(Width, Height, { msaa = self.Settings.ShadowMSAA })
+		self.TransmissionCanvas = nil
 		self.Penumbra = nil
 		self.Changed = true
 		self.RenderScale = self.Settings.ShadowScale
@@ -248,14 +251,18 @@ function Star:Resize(Width, Height)
 	end
 end
 
---- @description Removes the star from its world's star collection.
+--- @description Removes the star from its world, drops view caches, and detaches its transform.
 --- @return nil
 function Star:Remove()
-	self.World.Stars[self.ID] = nil
-	self.World.UpdateCanvas = true
-	self.Views = {}
+	if self.World then
+		self.World.Stars[self.ID] = nil
+		self.World.UpdateCanvas = true
+		self.World = nil
+		self.ID = nil
+		self.Views = {}
 
-	self.Transform:SetParent(nil)
+		self.Transform:SetParent(nil)
+	end
 end
 
 return Star

@@ -83,10 +83,20 @@ Use `settings:GetQuality()` to retrieve the preset name and effective settings.
 | `world:AddStar(star)` | Registers a star and returns it. Normally called by `Star:new(world, radius)`. |
 | `world:AddRoom(room)` | Registers a room and returns it. Normally called by a room constructor. |
 | `world:TrackBody(physicsBody)` | Creates and returns a [`BodyTransform`](BodyTransform.md) that follows a LÖVE physics body. |
+| `world:GetBodies()` | Returns the live height-ordered `PriorityQueue` of bodies. |
+| `world:GetLights()` / `world:GetStars()` / `world:GetRooms()` | Return the live tables of registered local lights, stars, or rooms. |
+| `world:GetBodyTracks()` | Returns the live table of registered physics-following transforms. |
+| `world:GetCameras()` | Returns the live array of registered cameras, including the default. |
 
 [`ParticleLight`](ParticleLight.md) also registers as a local light. Its emitter
 advances even while offscreen; animation recomposes illumination without
 invalidating stationary shadow geometry.
+
+These getters expose the world's actual collections, not copies. Light, star,
+room, and body-track tables can have holes after removal; iterate them with
+`pairs`, not `ipairs` or `#`. Use constructors and each object's `Remove()`
+method rather than mutating the collections directly so registration,
+ownership, and rendering invalidation stay consistent.
 
 ## Camera and ambient color
 

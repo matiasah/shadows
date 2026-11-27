@@ -21,7 +21,7 @@ local light = Light:new(world, 300)
 local star = Star:new(world, 5000)
 ```
 
-Constructors register their result with the world and return `nil` if required arguments are omitted. `Star` cannot illuminate rooms.
+Constructors register their result with the world and return `nil` if required arguments are omitted. Local-light and star radii must be finite positive numbers. `Star` cannot illuminate rooms.
 
 ## Light methods
 
@@ -29,10 +29,10 @@ Constructors register their result with the world and return `nil` if required a
 |---|---|
 | `light:SetPosition(x, y, z?)` | Sets world position and optional height; returns the light. |
 | `light:GetPosition()` | Returns world `x`, `y`, and `z`. |
-| `light:SetAngle(angle)` / `light:GetAngle()` | Sets or returns rotation in degrees; setter returns the light. |
+| `light:SetAngle(angle)` / `light:GetAngle()` | Sets or returns world rotation in degrees; setter returns the light. |
 | `light:SetColor(r, g, b, a?)` | Sets RGBA channels in the 0–1 range. Omitted alpha keeps the current value; returns the light. |
 | `light:GetColor()` | Returns `r`, `g`, `b`, and `a`. |
-| `light:SetRadius(radius)` / `light:GetRadius()` | Sets or returns the radius in world units. Setting a radius invalidates the cached light. |
+| `light:SetRadius(radius)` / `light:GetRadius()` | Sets or returns the finite positive radius in world units. Setting a radius invalidates the cached light. |
 | `light:SetImage(texture)` / `light:GetImage()` | Sets or returns a custom light texture. Setting one derives the radius from its dimensions. |
 | `light:SetCookie(texture?)` / `light:GetCookie()` | Sets, clears, or returns a 2D illumination mask without changing radius; setter returns the light. |
 | `light:SetCookieTransform(x?, y?, angle?, scaleX?, scaleY?)` | Sets light-local offsets, relative rotation, and positive scale multipliers; returns the light. Defaults: `0, 0, 0, 1, scaleX`. |
@@ -175,6 +175,8 @@ Stars' public `Canvas`, `Width`, and `Height` fields describe their default
 camera buffers. Their position, radius, color, texture, and blur settings follow
 the `Light` API and are shared across views. During a world rendering callback,
 the star argument's `Camera` identifies the view being rendered.
+`star:Remove()` unregisters it, clears its world and ID, and detaches its
+transform; repeated removal is harmless.
 Textured stars draw their image at the star's world position, translated and
 scaled by each camera, rather than at a fixed viewport offset.
 

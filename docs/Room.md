@@ -60,6 +60,7 @@ Coordinates and dimensions are in logical pixels. Polygon vertices are a flat ar
 | `PolygonRoom:new(world, x, y, vertices)` | Creates a polygon from a flat local coordinate array. |
 | `room:GetVertices()` | Returns the stored local coordinate array. |
 | `room:GetWorldVertices()` | Returns a transformed coordinate array in world space. |
-| `room:SetVertices(x1, y1, ...)` | Replaces the vertex array with the supplied alternating coordinates. |
+| `room:SetVertices(x1, y1, ...)` | Replaces the vertex array with the supplied alternating coordinates and invalidates the world canvas. |
 
-Changing polygon vertices directly does not currently mark the world canvas dirty. Call `world:ForceUpdate()` after changing them if the room has already been rendered.
+Use `SetVertices` rather than mutating the array returned by `GetVertices` directly;
+direct mutations do not invalidate the world canvas.

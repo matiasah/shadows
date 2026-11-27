@@ -37,10 +37,10 @@ local Mask = require("shadows.Mask")
 --- @field DefaultCamera LightCamera Default viewport backing the legacy world rendering API.
 --- @field private Cameras LightCamera[] Registered viewports sharing this scene.
 --- @field Bodies PriorityQueue Bodies ordered by height.
---- @field BodyTracks table Physics-body-following transforms.
---- @field Rooms Room[] Registered dark rooms.
---- @field Lights Light[] Registered local lights.
---- @field Stars Star[] Registered full-scene lights.
+--- @field BodyTracks table<integer, BodyTransform> Physics-body-following transforms; indices may be sparse.
+--- @field Rooms table<integer, Room> Registered dark rooms; indices may be sparse.
+--- @field Lights table<integer, Light> Registered local lights; indices may be sparse.
+--- @field Stars table<integer, Star> Registered full-scene lights; indices may be sparse.
 --- @field Changed boolean Whether all shadow caches need rebuilding.
 --- @field private ShapeBounds table<Shadow, ShadowBounds> Last updated shape bounds, including removed shapes until the next update.
 --- @field Settings Settings Shared rendering settings for this world's lights and stars.
@@ -118,6 +118,42 @@ end
 ---@return LightCamera camera Default viewport.
 function LightWorld:GetCamera()
 	return self.DefaultCamera
+end
+
+---@description Returns the live collection of registered viewports.
+---@return LightCamera[] cameras Registered cameras, including the default.
+function LightWorld:GetCameras()
+	return self.Cameras
+end
+
+---@description Returns the live height-ordered collection of registered bodies.
+---@return PriorityQueue bodies Registered bodies.
+function LightWorld:GetBodies()
+	return self.Bodies
+end
+
+---@description Returns the live collection of physics-body-following transforms.
+---@return table<integer, BodyTransform> tracks Registered transforms; indices may be sparse.
+function LightWorld:GetBodyTracks()
+	return self.BodyTracks
+end
+
+---@description Returns the live collection of registered local lights.
+---@return table<integer, Light> lights Registered lights; indices may be sparse.
+function LightWorld:GetLights()
+	return self.Lights
+end
+
+---@description Returns the live collection of registered full-scene stars.
+---@return table<integer, Star> stars Registered stars; indices may be sparse.
+function LightWorld:GetStars()
+	return self.Stars
+end
+
+---@description Returns the live collection of registered dark rooms.
+---@return table<integer, Room> rooms Registered rooms; indices may be sparse.
+function LightWorld:GetRooms()
+	return self.Rooms
 end
 
 --- @description Applies a quality preset and optional per-world setting overrides.
@@ -282,7 +318,7 @@ end
 function LightWorld:AddRoom(Room)
 	local ID = #self.Rooms + 1
 	Room.World = self
-	Room.ID = Room
+	Room.ID = ID
 
 	self.UpdateCanvas = true
 	self.Rooms[ID] = Room

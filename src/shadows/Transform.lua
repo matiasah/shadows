@@ -42,6 +42,16 @@ end
 --- @param Parent Transform? Parent transform; nil detaches this transform.
 --- @return nil
 function Transform:SetParent(Parent)
+	assert(Parent == nil or (type(Parent) == "table" and Parent.typeOf
+		and Parent:typeOf("Transform")), "Parent must be a Transform or nil")
+	if self.Parent == Parent then return end
+
+	local ancestor = Parent
+	while ancestor do
+		assert(ancestor ~= self, "Transform parenting cannot create a cycle")
+		ancestor = ancestor.Parent
+	end
+
 	if self.Parent then
 		self.Parent.Children[self.ID] = nil
 	end
@@ -55,6 +65,8 @@ function Transform:SetParent(Parent)
 		self.ID = nil
 		self.Parent = nil
 	end
+
+	self:Change()
 end
 
 --- @description Returns the parent transform.
@@ -224,10 +236,14 @@ end
 --- @description Sets the world position, converting it into parent-local coordinates when needed.
 --- @param x number World x-coordinate.
 --- @param y number World y-coordinate.
---- @param z number? World height; defaults through the parent conversion.
+--- @param z number? World height; defaults to the current world height.
 --- @return boolean changed Whether any coordinate changed.
 function Transform:SetPosition(x, y, z)
 	if self.Parent then
+		if z == nil then
+			local _, _, worldZ = self:GetPosition()
+			z = worldZ
+		end
 		x, y, z = self.Parent:ToLocal(x, y, z)
 	end
 

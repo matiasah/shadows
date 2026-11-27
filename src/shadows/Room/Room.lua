@@ -7,7 +7,7 @@ Shadows = require("shadows")
 --- @class Room: Object
 --- @field World LightWorld? World containing this room.
 --- @field Transform Transform Transform used for room placement.
---- @field ID any? Identifier assigned by the owning world.
+--- @field ID integer? Index in the owning world's room collection.
 --- @field R number Red color channel in the 0-1 range; defaults to 0.
 --- @field G number Green color channel in the 0-1 range; defaults to 0.
 --- @field B number Blue color channel in the 0-1 range; defaults to 0.

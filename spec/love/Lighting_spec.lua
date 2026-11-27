@@ -12,6 +12,9 @@ local PolygonShadow = require("shadows.ShadowShapes.PolygonShadow")
 local CastImageShadow = require("shadows.ShadowShapes.CastImageShadow")
 local OutputShadow = require("shadows.OutputShadow")
 local Mask = require("shadows.Mask")
+local CircleRoom = require("shadows.Room.CircleRoom")
+local RectangleRoom = require("shadows.Room.RectangleRoom")
+local PolygonRoom = require("shadows.Room.PolygonRoom")
 ---@type fun(self: OutputShadow, Canvas: love.Canvas): boolean
 local defaultOutputVisibility = OutputShadow.IsVisible
 
@@ -72,6 +75,120 @@ describe("LOVE lighting",
                 collectgarbage("collect")
             end)
 
+        it("exposes live world collections as objects are registered and removed",
+            ---@description Checks collection identity and membership without mutating internal tables.
+            ---@return nil
+            function()
+                local bodies, lights, stars = world:GetBodies(), world:GetLights(), world:GetStars()
+                local rooms, tracks, cameras = world:GetRooms(), world:GetBodyTracks(), world:GetCameras()
+                assert.equals(world.Bodies, bodies)
+                assert.equals(world.Lights, lights)
+                assert.equals(world.Stars, stars)
+                assert.equals(world.Rooms, rooms)
+                assert.equals(world.BodyTracks, tracks)
+                assert.equals(world.Cameras, cameras)
+                assert.is_truthy(bodies:Contains(body))
+                assert.equals(light, lights[light.ID])
+                assert.equals(world:GetCamera(), cameras[1])
+
+                local star = Star:new(world, 40)
+                local room = CircleRoom:new(world, 10, 10, 5)
+                local physicsWorld = love.physics.newWorld()
+                local physicsBody = love.physics.newBody(physicsWorld)
+                local track = world:TrackBody(physicsBody)
+                local camera = LightCamera:new(world, 32, 32)
+                local starID, roomID, trackID = star.ID, room.ID, track.TransformID
+                assert.equals(star, stars[starID])
+                assert.equals(room, rooms[roomID])
+                assert.equals(track, tracks[trackID])
+                assert.equals(camera, cameras[2])
+
+                star:Remove()
+                room:Remove()
+                track:Remove()
+                camera:Remove()
+                assert.is_nil(stars[starID])
+                assert.is_nil(rooms[roomID])
+                assert.is_nil(tracks[trackID])
+                assert.is_nil(cameras[2])
+            end)
+
+        it("removes rooms without affecting other rooms and redraws every camera",
+            ---@description Checks registered room removal and the resulting composed pixels.
+            ---@return nil
+            function()
+                light:Remove()
+                world:Resize(64, 64)
+                local camera = LightCamera:new(world, 64, 64)
+                world:SetColor(1, 1, 1, 1)
+                local circle = CircleRoom:new(world, 10, 10, 5)
+                local rectangle = RectangleRoom:new(world, 20, 5, 10, 10)
+                local polygon = PolygonRoom:new(world, 40, 5, { 0, 0, 10, 0, 10, 10, 0, 10 })
+                world:Update()
+                local scale = world.Canvas:getDPIScale()
+                for _, view in ipairs({ world:GetCamera(), camera }) do
+                    local pixels = view.Canvas:newImageData()
+                    assert.is_true(pixels:getPixel(10 * scale, 10 * scale) < 0.1)
+                    assert.is_true(pixels:getPixel(25 * scale, 10 * scale) < 0.1)
+                    assert.is_true(pixels:getPixel(45 * scale, 10 * scale) < 0.1)
+                end
+
+                rectangle:Remove()
+                rectangle:Remove()
+                world:Update()
+                assert.is_nil(rectangle.World)
+                assert.is_nil(rectangle.ID)
+                for _, view in ipairs({ world:GetCamera(), camera }) do
+                    local pixels = view.Canvas:newImageData()
+                    assert.is_true(pixels:getPixel(10 * scale, 10 * scale) < 0.1)
+                    assert.is_true(pixels:getPixel(25 * scale, 10 * scale) > 0.9)
+                    assert.is_true(pixels:getPixel(45 * scale, 10 * scale) < 0.1)
+                end
+                circle:Remove()
+                polygon:Remove()
+                world:Update()
+                assert.is_nil(next(world:GetRooms()))
+            end)
+
+        it("redraws polygon rooms after replacing vertices",
+            ---@description Verifies old and new room coverage in both registered camera canvases.
+            ---@return nil
+            function()
+                light:Remove()
+                world:Resize(64, 64)
+                local camera = LightCamera:new(world, 64, 64)
+                world:SetColor(1, 1, 1, 1)
+                local room = PolygonRoom:new(world, 0, 0, { 0, 0, 20, 0, 20, 20, 0, 20 })
+                world:Update()
+                room:SetVertices(30, 0, 50, 0, 50, 20, 30, 20)
+                world:Update()
+                local scale = world.Canvas:getDPIScale()
+                for _, view in ipairs({ world:GetCamera(), camera }) do
+                    local pixels = view.Canvas:newImageData()
+                    assert.is_true(pixels:getPixel(10 * scale, 10 * scale) > 0.9)
+                    assert.is_true(pixels:getPixel(40 * scale, 10 * scale) < 0.1)
+                end
+            end)
+
+        it("makes star removal idempotent even when its index is reused",
+            ---@description Ensures repeated removal cannot unregister another star.
+            ---@return nil
+            function()
+                local star = Star:new(world, 40)
+                local parent = Transform:new()
+                star:GetTransform():SetParent(parent)
+                local id = star.ID
+                star:Remove()
+                assert.is_nil(star:GetWorld())
+                assert.is_nil(star.ID)
+                assert.is_nil(star:GetTransform():GetParent())
+                local replacement = Star:new(world, 40)
+                assert.equals(id, replacement.ID)
+                star:Remove()
+                assert.equals(replacement, world:GetStars()[replacement.ID])
+                world:Update()
+            end)
+
         it("renders a visible shadow on the first update",
             ---@description Measures occlusion against an equally distant unobstructed pixel and saves the render.
             ---@return nil
@@ -85,6 +202,46 @@ describe("LOVE lighting",
                 assert.is_true(clear > 0.1, "The unobstructed sample must contain light")
                 assert.is_true(clear - shadow > 0.08, "The caster must darken its projected shadow on the first update")
                 assert.equals(1, shadowRenders)
+            end)
+
+        it("sets a parented light's world position and rotation through its transform",
+            ---@description Checks world setters and omitted-height preservation under a rotated parent.
+            ---@return nil
+            function()
+                local parent = Transform:new()
+                parent:SetLocalPosition(30, 40, 4)
+                parent:SetLocalRotation(90)
+                light:GetTransform():SetParent(parent)
+
+                light:SetPosition(20, 50, 7)
+                light:SetAngle(35)
+                local x, y, z = light:GetPosition()
+                assert.near(20, x, 1e-9)
+                assert.near(50, y, 1e-9)
+                assert.near(7, z, 1e-9)
+                assert.equals(35, light:GetAngle())
+
+                light:SetPosition(22, 50)
+                x, y, z = light:GetPosition()
+                assert.near(22, x, 1e-9)
+                assert.near(50, y, 1e-9)
+                assert.near(7, z, 1e-9)
+            end)
+
+        it("rejects invalid light and star radii before they reach rendering",
+            ---@description Requires finite positive constructor and setter radii without mutating valid lights.
+            ---@return nil
+            function()
+                for _, radius in ipairs({ 0, -1, math.huge }) do
+                    assert.is_false(pcall(Light.new, Light, world, radius))
+                    assert.is_false(pcall(Star.new, Star, world, radius))
+                    assert.is_false(pcall(light.SetRadius, light, radius))
+                end
+                assert.is_false(pcall(Light.new, Light, world, 0 / 0))
+                assert.is_false(pcall(Star.new, Star, world, 0 / 0))
+                assert.is_false(pcall(light.SetRadius, light, 0 / 0))
+                assert.equals(112, light:GetRadius())
+                assert.equals(0, #world.Stars)
             end)
 
         it("reuses shadows for stationary and color-only updates",
@@ -1179,6 +1336,122 @@ describe("LOVE lighting",
                 assert.equals(0, camera.FrameMetrics.ShadowRedraws)
             end)
 
+        it("composes receiver passes using both camera and receiver light masks",
+            ---@description Verifies separate receiver groups, camera selection, and cached pass release.
+            ---@return nil
+            function()
+                local redGroup, blueGroup = Mask.group(0), Mask.group(1)
+                light.Blur = false
+                light:SetLightMask(redGroup):SetPosition(64, 64, 2):SetColor(1, 0, 0, 1)
+                local blue = Light:new(world, 112)
+                blue.Blur = false
+                blue:SetLightMask(blueGroup):SetPosition(64, 64, 2):SetColor(0, 0, 1, 1)
+                local greenGroup = Mask.group(2)
+                local star = Star:new(world, 112)
+                star.Blur = false
+                star:SetLightMask(greenGroup):SetPosition(64, 64, 2):SetColor(0, 1, 0, 1)
+                world:Update(0)
+
+                local camera = world:GetCamera()
+                local canvasOptions = { dpiscale = camera.Canvas:getDPIScale() }
+                local layer = love.graphics.newCanvas(camera.Width, camera.Height, canvasOptions)
+                local target = love.graphics.newCanvas(camera.Width, camera.Height,
+                    canvasOptions)
+                local scale = target:getDPIScale()
+                love.graphics.push("all")
+                love.graphics.setCanvas(layer)
+                love.graphics.clear(0, 0, 0, 0)
+                love.graphics.setColor(1, 1, 1, 1)
+                love.graphics.rectangle("fill", 60, 60, 8, 8)
+                love.graphics.setCanvas()
+                love.graphics.pop()
+
+                ---@description Reads a lit receiver pixel and checks that transparent areas stay transparent.
+                ---@param mask integer Receiver light-group selection.
+                ---@return number r Sampled red channel.
+                ---@return number g Sampled green channel.
+                ---@return number b Sampled blue channel.
+                ---@return number a Sampled receiver alpha.
+                ---@return number outsideAlpha Alpha outside the receiver layer.
+                local function sample(mask)
+                    love.graphics.push("all")
+                    love.graphics.setCanvas(target)
+                    love.graphics.clear(0, 0, 0, 0)
+                    camera:DrawReceiverLayer(mask, layer)
+                    love.graphics.setCanvas()
+                    local pixels = target:newImageData()
+                    local r, g, b, a = pixels:getPixel(64 * scale, 64 * scale)
+                    local _, _, _, outsideAlpha = pixels:getPixel(32 * scale, 32 * scale)
+                    love.graphics.pop()
+                    return r, g, b, a, outsideAlpha
+                end
+
+                local r, g, b, a, outsideAlpha = sample(redGroup)
+                assert.is_true(r > 0.8 and g < 0.05 and b < 0.05,
+                    "The red receiver pass must exclude blue-group illumination")
+                assert.near(1, a, 0.01)
+                assert.near(0, outsideAlpha, 0.01,
+                    "Transparent receiver pixels must remain transparent")
+                r, g, b = sample(blueGroup)
+                assert.is_true(r < 0.05 and g < 0.05 and b > 0.8,
+                    "The blue receiver pass must exclude red-group illumination")
+                r, g, b = sample(greenGroup)
+                assert.is_true(r < 0.05 and g > 0.8 and b < 0.05,
+                    "The green receiver pass must include the matching star")
+
+                camera:SetLightMask(redGroup)
+                world:Update(0)
+                r, g, b = sample(blueGroup)
+                assert.is_true(r < 0.05 and g < 0.05 and b < 0.05,
+                    "Camera selection must gate receiver-pass lights")
+
+                camera:ReleaseReceiverMask(blueGroup)
+                local allocations = camera.CanvasAllocationCount
+                sample(blueGroup)
+                assert.equals(allocations + 1, camera.CanvasAllocationCount,
+                    "A released receiver pass must allocate again when next requested")
+            end)
+
+        it("preserves source alpha in the chromatic-aberration shader",
+            ---@description Keeps transparent source pixels and fractional center coverage transparent after channel offsets.
+            ---@return nil
+            function()
+                local data = love.image.newImageData(8, 8)
+                data:mapPixel(
+                    ---@description Creates transparent pixels around a partially covered source pixel.
+                    ---@param x number Pixel x-coordinate.
+                    ---@param y number Pixel y-coordinate.
+                    ---@return number r Red channel.
+                    ---@return number g Green channel.
+                    ---@return number b Blue channel.
+                    ---@return number a Alpha channel.
+                    function(x, y)
+                        if x == 3 and y == 3 then return 1, 0, 0, 0.25 end
+                        if x == 5 and y == 3 then return 0, 1, 0, 1 end
+                        return 0, 0, 0, 0
+                    end)
+                local image = love.graphics.newImage(data)
+                image:setFilter("nearest", "nearest")
+                local target = love.graphics.newCanvas(8, 8, { dpiscale = 1 })
+                local shader = require("shadows").AberrationShader
+                shader:send("Size", { 8, 8 })
+                shader:send("Aberration", 2)
+
+                love.graphics.push("all")
+                love.graphics.setCanvas(target)
+                love.graphics.clear(0, 0, 0, 0)
+                love.graphics.setColor(1, 1, 1, 1)
+                love.graphics.setShader(shader)
+                love.graphics.draw(image)
+                love.graphics.pop()
+
+                local pixels = target:newImageData()
+                assert.near(0.25, select(4, pixels:getPixel(3, 3)), 0.01,
+                    "The effect must retain the center pixel's fractional coverage")
+                assert.near(0, select(4, pixels:getPixel(0, 0)), 0.01,
+                    "The effect must not make transparent pixels opaque")
+            end)
+
         it("selects 32-bit light groups independently per camera and preserves shared cache ownership",
             ---@description Exercises the highest group bit, mixed selections, zero masks, membership changes, and invalid input errors.
             ---@return nil
@@ -1270,6 +1543,37 @@ describe("LOVE lighting",
                     world:Update(0)
                     assert.is_true(light.ShadowCanvas:newImageData():getPixel(168, 112) > 0.99)
                 end
+            end)
+
+        it("applies validated RGB transmission to cached projected shadows",
+            ---@description Checks tinted transmission, multiplicative overlap, opaque defaults, and invalidation.
+            ---@return nil
+            function()
+                light.Blur = false
+                local shape = body:GetShapes():Get(1)
+                assert.same({ 0, 0, 0 }, { shape:GetTransmission() })
+                assert.equals(shape, shape:SetTransmission(0.2, 0.6, 0.8))
+                world:Update(0)
+                local red, green, blue = light.ShadowCanvas:newImageData():getPixel(168, 112)
+                assert.near(0.2, red, 0.02)
+                assert.near(0.6, green, 0.02)
+                assert.near(0.8, blue, 0.02)
+
+                CircleShadow:new(body, 0, 0, 10):SetTransmission(0.5, 0.5, 0.5)
+                world:Update(0)
+                red, green, blue = light.ShadowCanvas:newImageData():getPixel(168, 112)
+                assert.near(0.1, red, 0.02)
+                assert.near(0.3, green, 0.02)
+                assert.near(0.4, blue, 0.02)
+
+                assert.has_error(function() shape:SetTransmission(-0.1, 0, 0) end)
+                assert.has_error(function() shape:SetTransmission(0, 1.1, 0) end)
+                assert.has_error(function() shape:SetTransmission(0 / 0, 0, 0) end)
+                shape:SetTransmission(0, 0, 0)
+                world:Update(0)
+                red, green, blue = light.ShadowCanvas:newImageData():getPixel(168, 112)
+                assert.is_true(red < 0.05 and green < 0.05 and blue < 0.05,
+                    "Zero transmission must retain the opaque-shadow default")
             end)
 
         it("does not restore ignored caster silhouettes or include them in penumbra filtering",

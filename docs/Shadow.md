@@ -26,9 +26,16 @@ Coordinates are local to the body. Polygon vertices are passed as alternating `x
 | `shape:GetTransform()` | Returns the shape's [`Transform`](Transform.md). |
 | `shape:GetCentroid()` | Returns the shape's world-space centroid. |
 | `shape:GetRadius()` / `shape:GetSqrRadius()` | Returns its bounding radius or squared radius. |
+| `shape:SetTransmission(red, green, blue)` / `shape:GetTransmission()` | Sets or returns RGB light transmission in the 0–1 range. Zero is opaque (the default); one transmits that color channel fully. The setter returns the shape. |
 | `shape:SetShadowMask(mask?)` / `shape:GetShadowMask()` | Sets an optional unsigned 32-bit caster membership override or returns effective membership. Nil restores body inheritance; setter returns the shape. |
 | `shape:SetChanged(changed)` / `shape:GetChanged()` | Sets or returns the renderer's geometry-dirty flag. |
 | `shape:Remove()` | Removes the shape from its body and detaches its transform. |
+
+Transmission tints and attenuates the shape's projected shadow; for example,
+`shape:SetTransmission(0.12, 0.72, 0.88)` produces a cyan-tinted shadow.
+Overlapping transmitting shapes combine their channel values. This controls
+light passing through the shadow caster; draw the visible translucent object
+separately with your scene renderer.
 
 `Update`, `Draw`, and `GenerateShadows` are renderer hooks called by the body and light world.
 Shape-local changes invalidate only that shape's projected geometry and local

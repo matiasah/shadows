@@ -9,11 +9,24 @@ local Mask = require("shadows.Mask")
 --- @field Transform Transform? Shape transform relative to its body.
 --- @field Changed boolean? Whether the shape needs shadow regeneration.
 --- @field ShadowMask integer? Occluder membership override; nil inherits the body, or mask 1 when detached. Use SetShadowMask.
+---@field TransmissionR number Red light transmission from 0 (opaque) to 1 (clear); defaults to 0.
+---@field TransmissionG number Green light transmission from 0 (opaque) to 1 (clear); defaults to 0.
+---@field TransmissionB number Blue light transmission from 0 (opaque) to 1 (clear); defaults to 0.
 --- @field private __index Shadow Instance method lookup.
 --- @field private __type string Runtime type name.
 Shadow = setmetatable({}, Object)
 Shadow.__index = Shadow
 Shadow.__type = "Shadow"
+Shadow.TransmissionR, Shadow.TransmissionG, Shadow.TransmissionB = 0, 0, 0
+
+---@description Validates a light-transmission channel in the normalized range.
+---@param value number Transmission from 0 (opaque) to 1 (clear).
+---@return number channel Validated transmission.
+local function validateTransmission(value)
+	assert(type(value) == "number" and value >= 0 and value <= 1,
+		"Transmission channels must be numbers from 0 to 1")
+	return value
+end
 
 --- @description Invalidates only this shape when its transform or an ancestor changes.
 --- @return nil
@@ -97,6 +110,30 @@ end
 function Shadow:GetShadowMask()
 	if self.ShadowMask ~= nil then return self.ShadowMask end
 	return self.Body and self.Body:GetShadowMask() or 1
+end
+
+---@description Sets per-channel light transmission for this shape's projected shadow.
+---@param red number Red transmission from 0 (opaque) to 1 (clear).
+---@param green number Green transmission from 0 (opaque) to 1 (clear).
+---@param blue number Blue transmission from 0 (opaque) to 1 (clear).
+---@return Shadow shape This shape, for chaining.
+function Shadow:SetTransmission(red, green, blue)
+	red = validateTransmission(red)
+	green = validateTransmission(green)
+	blue = validateTransmission(blue)
+	if self.TransmissionR ~= red or self.TransmissionG ~= green or self.TransmissionB ~= blue then
+		self.TransmissionR, self.TransmissionG, self.TransmissionB = red, green, blue
+		self.Changed = true
+	end
+	return self
+end
+
+---@description Returns the RGB transmission applied to this shape's projected shadow.
+---@return number red Red transmission from 0 (opaque) to 1 (clear).
+---@return number green Green transmission from 0 (opaque) to 1 (clear).
+---@return number blue Blue transmission from 0 (opaque) to 1 (clear).
+function Shadow:GetTransmission()
+	return self.TransmissionR, self.TransmissionG, self.TransmissionB
 end
 
 --- @description Returns the squared bounding radius; subclasses provide the geometry.

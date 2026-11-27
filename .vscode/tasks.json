@@ -19,7 +19,8 @@
                 "LightCameras",
                 "DebugOverlay",
                 "LightCookies",
-                "LightLayers"
+                "LightLayers",
+                "Glass"
             ],
             "default": "HighDPI"
         }

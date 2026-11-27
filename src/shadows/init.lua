@@ -10,6 +10,7 @@ end
 --- @field AberrationShader love.Shader Chromatic-aberration shader.
 --- @field LightShader love.Shader Radial light falloff shader.
 --- @field CookieShader love.Shader Transformed RGB/alpha illumination mask shader.
+--- @field ReceiverShader love.Shader Receiver-layer illumination compositor.
 --- @field OccluderSeedShader love.Shader Occluder-coordinate initialization shader.
 --- @field OccluderDistanceShader love.Shader Nearest-occluder jump-flood shader.
 --- @field PenumbraRadiusShader love.Shader Per-pixel contact-hardening footprint shader.

@@ -27,6 +27,7 @@ local Mask = require("shadows.Mask")
 ---@field private CanvasAllocationCount integer Successful composition-canvas allocations; defaults to 0.
 ---@field private SampledCanvasAllocationCount integer Allocations sampled by the previous world update; defaults to 0.
 ---@field private CompositedLights table<Light, boolean> Local lights included in this camera's last composition.
+---@field private ReceiverCanvases table<integer, { Canvas: love.Canvas? }> Cached lighting passes requested by receiver mask.
 ---@field private UpdateCanvas boolean? Whether composition needs refreshing.
 ---@field private UpdateStars boolean? Whether view-dependent star shadows need refreshing.
 ---@field private Removed boolean? Whether this camera is detached.
@@ -66,6 +67,99 @@ local function validatePosition(x, y)
         "LightCamera position must be finite")
 end
 
+---@description Allocates a cached lighting canvas for one receiver mask.
+---@param Camera LightCamera Camera owning the receiver pass.
+---@return love.Canvas canvas New receiver lighting canvas.
+local function newReceiverCanvas(Camera)
+    local canvas = love.graphics.newCanvas(Camera.Width, Camera.Height,
+        { dpiscale = Camera.Settings.ShadowScale })
+    Camera.CanvasAllocationCount = Camera.CanvasAllocationCount + 1
+    return canvas
+end
+
+---@description Composes ambient, rooms, and only the lights accepted by both masks.
+---@param Camera LightCamera Camera whose viewport is being composed.
+---@param Canvas love.Canvas Destination lighting canvas.
+---@param ReceiverMask integer Light groups that may illuminate this receiver pass.
+---@param Metrics CameraFrameMetrics? In-progress metrics; omitted outside world updates.
+---@return table<Light, boolean> compositedLights Local lights submitted to this canvas.
+local function composeCanvas(Camera, Canvas, ReceiverMask, Metrics)
+    local start = love.timer.getTime()
+    local world = Camera.World
+    love.graphics.push("all")
+    love.graphics.setCanvas(Canvas)
+    love.graphics.setScissor()
+    love.graphics.setStencilTest()
+    love.graphics.setShader()
+    love.graphics.origin()
+    love.graphics.clear(world.R, world.G, world.B, world.A)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setBlendMode("add", "alphamultiply")
+    for _, star in pairs(world.Stars) do
+        if Camera:AcceptsLight(star) and Mask.matches(ReceiverMask, star.LightMask) then
+            local view = star:GetView(Camera)
+            if not view:GetCanvasDestroyed() then
+                love.graphics.draw(view.Canvas, 0, 0)
+                if Metrics then Metrics.LightsComposited = Metrics.LightsComposited + 1 end
+            end
+        end
+    end
+    love.graphics.translate(-Camera.x * Camera.z, -Camera.y * Camera.z)
+    love.graphics.scale(Camera.z, Camera.z)
+    love.graphics.setShader(Shadows.DarkenShader)
+    love.graphics.setBlendMode("alpha", "alphamultiply")
+    for _, room in pairs(world.Rooms) do room:Draw() end
+    love.graphics.setShader()
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setBlendMode("add", "alphamultiply")
+    local compositedLights = {}
+    for _, light in pairs(world.Lights) do
+        if not light:GetCanvasDestroyed() and Mask.matches(ReceiverMask, light.LightMask)
+            and Camera:IsLightVisible(light) then
+            local x, y = light:GetPosition()
+            love.graphics.draw(light.Canvas, x - light.Radius, y - light.Radius)
+            compositedLights[light] = true
+            if Metrics then Metrics.LightsComposited = Metrics.LightsComposited + 1 end
+        end
+    end
+    love.graphics.pop()
+    if Metrics then Metrics.CompositionMs = Metrics.CompositionMs + (love.timer.getTime() - start) * 1000 end
+    return compositedLights
+end
+
+---@description Returns a cached receiver lighting pass, composing it on first use.
+---@param Camera LightCamera Camera owning the receiver pass.
+---@param ReceiverMask integer Light groups that may illuminate this receiver.
+---@return love.Canvas canvas Lighting for this receiver mask.
+local function getReceiverCanvas(Camera, ReceiverMask)
+    if ReceiverMask == Camera.LightMask then return Camera.Canvas end
+    local entry = Camera.ReceiverCanvases[ReceiverMask]
+    if not entry then
+        entry = { Canvas = newReceiverCanvas(Camera) }
+        Camera.ReceiverCanvases[ReceiverMask] = entry
+        composeCanvas(Camera, entry.Canvas, ReceiverMask, Camera.PendingFrameMetrics)
+    elseif not entry.Canvas then
+        entry.Canvas = newReceiverCanvas(Camera)
+        composeCanvas(Camera, entry.Canvas, ReceiverMask, Camera.PendingFrameMetrics)
+    end
+    return entry.Canvas
+end
+
+---@description Multiplies a lighting canvas onto the current target in screen coordinates.
+---@param Canvas love.Canvas Lighting source.
+---@param x number? Screen destination x-coordinate; defaults to 0.
+---@param y number? Screen destination y-coordinate; defaults to 0.
+---@return nil
+local function drawLightingCanvas(Canvas, x, y)
+    love.graphics.push("all")
+    love.graphics.origin()
+    love.graphics.setShader()
+    love.graphics.setBlendMode("multiply", "premultiplied")
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(Canvas, x or 0, y or 0)
+    love.graphics.pop()
+end
+
 ---@description Creates and registers a viewport; the world's first camera becomes its default.
 ---@param World LightWorld Scene to view.
 ---@param Width number? Logical width; defaults to the world's width or display width.
@@ -84,7 +178,7 @@ function LightCamera:new(World, Width, Height)
         Transform = Transform:new(),
         FrameMetrics = newFrameMetrics(0),
         CanvasAllocationCount = 0, SampledCanvasAllocationCount = 0,
-        CompositedLights = {},
+        CompositedLights = {}, ReceiverCanvases = {},
         x = 0, y = 0, z = 1,
     }, LightCamera)
     camera.Transform.Object = camera
@@ -150,6 +244,7 @@ function LightCamera:Resize(Width, Height)
     self.Width, self.Height = Width, Height
     self.BorderRadius = math.sqrt(Width * Width + Height * Height) * 0.5
     self.UpdateCanvas, self.UpdateStars = true, true
+    for _, entry in pairs(self.ReceiverCanvases) do entry.Canvas = nil end
     self:SyncWorld()
     for _, star in pairs(self.World.Stars) do
         if self:AcceptsLight(star) or star.Camera == self or star.Views[self] then
@@ -269,48 +364,47 @@ end
 function LightCamera:Compose()
     self:UpdateTransform()
     if not self.UpdateCanvas and not self.World.UpdateCanvas then return end
-    local start = love.timer.getTime()
     local metrics = self.PendingFrameMetrics
-    local world = self.World
-    love.graphics.push("all")
-    love.graphics.setCanvas(self.Canvas)
-    love.graphics.setScissor()
-    love.graphics.setStencilTest()
-    love.graphics.setShader()
-    love.graphics.origin()
-    love.graphics.clear(world.R, world.G, world.B, world.A)
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.setBlendMode("add", "alphamultiply")
-    for _, star in pairs(world.Stars) do
-        if self:AcceptsLight(star) then
-            local view = star:GetView(self)
-            if not view:GetCanvasDestroyed() then
-                love.graphics.draw(view.Canvas, 0, 0)
-                if metrics then metrics.LightsComposited = metrics.LightsComposited + 1 end
-            end
+    self.CompositedLights = composeCanvas(self, self.Canvas, self.LightMask, metrics)
+    for mask, entry in pairs(self.ReceiverCanvases) do
+        if mask ~= self.LightMask then
+            if not entry.Canvas then entry.Canvas = newReceiverCanvas(self) end
+            composeCanvas(self, entry.Canvas, mask, metrics)
         end
     end
-    love.graphics.translate(-self.x * self.z, -self.y * self.z)
-    love.graphics.scale(self.z, self.z)
-    love.graphics.setShader(Shadows.DarkenShader)
-    love.graphics.setBlendMode("alpha", "alphamultiply")
-    for _, room in pairs(world.Rooms) do room:Draw() end
-    love.graphics.setShader()
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.setBlendMode("add", "alphamultiply")
-    local compositedLights = {}
-    for _, light in pairs(world.Lights) do
-        if not light:GetCanvasDestroyed() and self:IsLightVisible(light) then
-            local x, y = light:GetPosition()
-            love.graphics.draw(light.Canvas, x - light.Radius, y - light.Radius)
-            compositedLights[light] = true
-            if metrics then metrics.LightsComposited = metrics.LightsComposited + 1 end
-        end
-    end
-    love.graphics.pop()
-    self.CompositedLights = compositedLights
-    if metrics then metrics.CompositionMs = metrics.CompositionMs + (love.timer.getTime() - start) * 1000 end
     self.UpdateCanvas, self.UpdateStars = nil, nil
+end
+
+---@description Lights a separately rendered receiver layer and alpha-composites it onto the current target.
+---@param mask integer Unsigned receiver groups; a light must match both this mask and the camera's LightMask.
+---@param ReceiverCanvas love.Canvas Unlit receiver layer matching this camera's viewport.
+---@param x number? Screen destination x-coordinate; defaults to 0.
+---@param y number? Screen destination y-coordinate; defaults to 0.
+---@return nil
+function LightCamera:DrawReceiverLayer(mask, ReceiverCanvas, x, y)
+    assert(not self.Removed, "Cannot draw from a removed LightCamera")
+    mask = Mask.validate(mask)
+    assert(type(ReceiverCanvas) == "userdata" and ReceiverCanvas:typeOf("Canvas"),
+        "Receiver layer must be a LOVE Canvas")
+    self:Compose()
+    Shadows.ReceiverShader:send("Lighting", getReceiverCanvas(self, mask))
+    love.graphics.push("all")
+    love.graphics.origin()
+    love.graphics.setShader(Shadows.ReceiverShader)
+    love.graphics.setBlendMode("alpha", "premultiplied")
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(ReceiverCanvas, x or 0, y or 0)
+    love.graphics.pop()
+end
+
+---@description Releases the cached lighting pass for a receiver mask.
+---@param mask integer Unsigned receiver groups previously passed to DrawReceiverLayer.
+---@return LightCamera camera This camera, for chaining.
+function LightCamera:ReleaseReceiverMask(mask)
+    assert(not self.Removed, "Cannot change a removed LightCamera")
+    mask = Mask.validate(mask)
+    self.ReceiverCanvases[mask] = nil
+    return self
 end
 
 ---@description Multiplies cached lighting onto a scene viewport in screen coordinates, preserving graphics state.
@@ -319,13 +413,7 @@ end
 ---@return nil
 function LightCamera:Draw(x, y)
     assert(not self.Removed, "Cannot draw a removed LightCamera")
-    love.graphics.push("all")
-    love.graphics.origin()
-    love.graphics.setShader()
-    love.graphics.setBlendMode("multiply", "premultiplied")
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.draw(self.Canvas, x or 0, y or 0)
-    love.graphics.pop()
+    drawLightingCanvas(self.Canvas, x, y)
 end
 
 ---@description Detaches an additional camera and drops its per-star caches; the default cannot be removed.
@@ -341,6 +429,7 @@ function LightCamera:Remove()
     end
     for _, star in pairs(self.World.Stars) do star.Views[self] = nil end
     self.CompositedLights = {}
+    self.ReceiverCanvases = {}
     self.Transform:SetParent(nil)
     self.Removed = true
 end

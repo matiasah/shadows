@@ -185,6 +185,19 @@
                 "LightLayers"
             ],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Love: Glass",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "love"
+            },
+            "args": [
+                "${workspaceFolder}",
+                "Glass"
+            ],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
