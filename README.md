@@ -377,9 +377,8 @@ pixel-snapped translation so shadows stay attached to the visible walls.
 
 ## Lighting showcase
 
-Scenes captured from the included demos, showing map lighting, contact-hardening
-penumbras, height-map shadows, normal-map lighting, moving/rotating occluders under
-multiple colored lights, upright image casters, and animated particle lights.
+Scenes captured from all included demos, including lighting, shadows, cameras,
+debugging, and translucent glass.
 
 | Standard map lighting | Contact-hardening penumbras |
 | --- | --- |
@@ -420,6 +419,24 @@ through cached emitter-centered shadows in the
 [`ParticleLights` demo](DEMOS/ParticleLights/main.lua).
 
 ![Animated fire, blue water spray, and green sparks lighting a tiled surface around circle and polygon casters](docs/images/lighting-particle-lights.gif)
+
+### More demonstrations
+
+| [High-DPI rendering](DEMOS/HighDPI/main.lua) | [Textured image shadows](DEMOS/ImageShadow/main.lua) |
+| --- | --- |
+| ![A light illuminating circle and polygon occluders in the high-DPI scene](docs/images/lighting-highdpi.png) | ![A flower image casting a textured shadow](docs/images/lighting-image-shadow.png) |
+
+| [Multiple lighting cameras](DEMOS/LightCameras/main.lua) | [Debug overlay](DEMOS/DebugOverlay/main.lua) |
+| --- | --- |
+| ![Two camera views of the same illuminated scene](docs/images/lighting-light-cameras.png) | ![Lighting bounds, occluders, shadow geometry, and cache counters over two views](docs/images/lighting-debug-overlay.png) |
+
+| [Light cookies](DEMOS/LightCookies/main.lua) | [Light and occluder layers](DEMOS/LightLayers/main.lua) |
+| --- | --- |
+| ![Window, cone, and ripple light cookie patterns](docs/images/lighting-light-cookies.png) | ![Three views showing selected wall, object, and combined lighting](docs/images/lighting-light-layers.png) |
+
+#### [Translucent glass](DEMOS/Glass/main.lua)
+
+![Cyan, magenta, and amber glass panes casting tinted shadows](docs/images/lighting-glass.png)
 
 ## Tests
 
