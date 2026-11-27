@@ -394,7 +394,7 @@ Five objects, including a 7-shaped polygon, oscillate back and forth under three
 fixed, colored lights in the
 [`MovingObjects` demo](DEMOS/MovingObjects/main.lua).
 
-![Moving circles, rectangles, and a 7-shaped polygon casting shadows under orange, blue, and green lights](docs/images/lighting-moving-objects.png)
+![Moving circles, rectangles, and a 7-shaped polygon casting shadows under orange, blue, and green lights](docs/images/lighting-moving-objects.gif)
 
 ### Rotating polygons
 
@@ -402,7 +402,7 @@ Clockwise and counterclockwise polygons cast changing shadows, with a separate
 shape-local rotor and stationary circle in the
 [`RotatingObjects` demo](DEMOS/RotatingObjects/main.lua).
 
-![Rotating rectangle, triangle, pentagon, and local rotor casting shadows from three colored lights](docs/images/lighting-rotating-objects.png)
+![Rotating rectangle, triangle, pentagon, and local rotor casting shadows from three colored lights](docs/images/lighting-rotating-objects.gif)
 
 ### Upright trees casting and receiving shadows
 
